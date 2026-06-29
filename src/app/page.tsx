@@ -1,65 +1,275 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
+import { useState, type FormEvent } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
+
+type Mode = 'criar' | 'entrar'
+
+function gerarPin(): string {
+  return String(Math.floor(1000 + Math.random() * 9000))
+}
+
+export default function EntryScreen() {
+  const router = useRouter()
+  const [mode, setMode] = useState<Mode>('criar')
+  const [name, setName] = useState('')
+  const [pin, setPin] = useState('')
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  async function ensureAuth() {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) return user
+
+    const { data } = await supabase.auth.signInAnonymously()
+    if (!data.user) throw new Error('Falha na autenticação anônima')
+    return data.user
+  }
+
+  async function handleCriarSala(e: FormEvent) {
+    e.preventDefault()
+    const trimmed = name.trim()
+    if (!trimmed) { setError('Digite seu nome'); return }
+
+    setBusy(true)
+    setError('')
+    const supabase = createClient()
+
+    for (let tentativa = 0; tentativa < 5; tentativa++) {
+      try {
+        const user = await ensureAuth()
+        const pinCode = gerarPin()
+
+        const { data: room, error: roomErr } = await supabase
+          .from('rooms')
+          .insert({
+            pin_code: pinCode,
+            host_id: user.id,
+            max_players: 8,
+          })
+          .select('id, pin_code')
+          .single()
+
+        if (roomErr) {
+          if (roomErr.message.includes('duplicate key')) continue
+          setError(roomErr.message)
+          setBusy(false)
+          return
+        }
+
+        const { error: playerErr } = await supabase.from('players').insert({
+          room_id: room.id,
+          name: trimmed,
+          user_id: user.id,
+          is_host: true,
+        })
+
+        if (playerErr) {
+          setError(playerErr.message)
+          setBusy(false)
+          return
+        }
+
+        router.push(`/lobby/${room.id}`)
+        return
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Erro inesperado')
+        setBusy(false)
+        return
+      }
+    }
+
+    setError('Erro ao gerar PIN único. Tente novamente.')
+    setBusy(false)
+  }
+
+  async function handleEntrar(e: FormEvent) {
+    e.preventDefault()
+    const trimmed = name.trim()
+    if (!trimmed) { setError('Digite seu nome'); return }
+    if (!/^\d{4}$/.test(pin)) { setError('PIN deve ter 4 dígitos'); return }
+
+    setBusy(true)
+    setError('')
+    const supabase = createClient()
+
+    try {
+      const user = await ensureAuth()
+
+      const { data: room, error: roomErr } = await supabase
+        .from('rooms')
+        .select('id, max_players')
+        .eq('pin_code', pin)
+        .single()
+
+      if (roomErr || !room) {
+        setError('Sala não encontrada')
+        setBusy(false)
+        return
+      }
+
+      const { data: existing } = await supabase
+        .from('players')
+        .select('id')
+        .eq('room_id', room.id)
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      if (existing) {
+        router.push(`/lobby/${room.id}`)
+        return
+      }
+
+      const { count } = await supabase
+        .from('players')
+        .select('*', { count: 'exact', head: true })
+        .eq('room_id', room.id)
+
+      if ((count ?? 0) >= room.max_players) {
+        setError('Sala cheia')
+        setBusy(false)
+        return
+      }
+
+      const { error: playerErr } = await supabase.from('players').insert({
+        room_id: room.id,
+        name: trimmed,
+        user_id: user.id,
+        is_host: false,
+      })
+
+      if (playerErr) {
+        setError(playerErr.message)
+        setBusy(false)
+        return
+      }
+
+      router.push(`/lobby/${room.id}`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro inesperado')
+      setBusy(false)
+    }
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="flex flex-1 flex-col items-center justify-center px-6 min-h-dvh">
+      <div className="w-full max-w-xs flex flex-col items-center gap-10">
+        {/* Título */}
+        <div className="text-center">
+          <h1 className="text-5xl font-black tracking-widest text-red-600 drop-shadow-[0_0_20px_rgba(220,38,38,0.3)]">
+            LOBINHO
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-neutral-600 text-xs tracking-widest uppercase mt-2">
+            A Werewolf Game Based
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+
+        {/* Formulário */}
+        <form className="w-full flex flex-col gap-4">
+          <input
+            type="text"
+            placeholder="Seu nome"
+            maxLength={30}
+            value={name}
+            onChange={(e) => { setName(e.target.value); setError('') }}
+            className="
+              w-full px-4 py-3 rounded-xl text-sm
+              bg-neutral-900 border border-neutral-800
+              text-neutral-200 placeholder-neutral-600
+              focus:outline-none focus:ring-2 focus:ring-red-700 focus:border-red-800
+              transition-all
+            "
+          />
+
+          {/* PIN — só aparece no modo "entrar" */}
+          {mode === 'entrar' && (
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]{4}"
+              placeholder="PIN da sala (4 dígitos)"
+              maxLength={4}
+              value={pin}
+              onChange={(e) => { setPin(e.target.value.replace(/\D/g, '')); setError('') }}
+              className="
+                w-full px-4 py-3 rounded-xl text-sm tracking-widest text-center
+                bg-neutral-900 border border-neutral-800
+                text-neutral-200 placeholder-neutral-600
+                focus:outline-none focus:ring-2 focus:ring-red-700 focus:border-red-800
+                transition-all
+              "
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+          )}
+
+          {error && (
+            <p className="text-red-500 text-xs text-center">{error}</p>
+          )}
+
+          {/* Alternador criar / entrar */}
+          <div className="flex rounded-xl border border-neutral-800 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => { setMode('criar'); setError('') }}
+              className={`flex-1 py-2.5 text-xs font-medium tracking-wider transition-colors cursor-pointer ${
+                mode === 'criar'
+                  ? 'bg-red-900/40 text-red-400 border-r border-neutral-800'
+                  : 'bg-neutral-900 text-neutral-500 hover:text-neutral-400'
+              }`}
+            >
+              Criar Sala
+            </button>
+            <button
+              type="button"
+              onClick={() => { setMode('entrar'); setError('') }}
+              className={`flex-1 py-2.5 text-xs font-medium tracking-wider transition-colors cursor-pointer ${
+                mode === 'entrar'
+                  ? 'bg-red-900/40 text-red-400'
+                  : 'bg-neutral-900 text-neutral-500 hover:text-neutral-400'
+              }`}
+            >
+              Entrar
+            </button>
+          </div>
+
+          {/* Botão de ação */}
+          {mode === 'criar' ? (
+            <button
+              type="button"
+              onClick={handleCriarSala}
+              disabled={busy}
+              className="
+                w-full py-3.5 rounded-2xl font-bold text-sm tracking-wider
+                bg-red-700 text-white
+                hover:bg-red-600 active:bg-red-800
+                disabled:opacity-40 disabled:cursor-not-allowed
+                shadow-lg shadow-red-900/30
+                transition-all duration-200
+                cursor-pointer
+              "
+            >
+              {busy ? 'Criando...' : 'Criar Sala'}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleEntrar}
+              disabled={busy}
+              className="
+                w-full py-3.5 rounded-2xl font-bold text-sm tracking-wider
+                border border-red-700 text-red-400
+                hover:bg-red-950/30 active:bg-red-950/50
+                disabled:opacity-40 disabled:cursor-not-allowed
+                transition-all duration-200
+                cursor-pointer
+              "
+            >
+              {busy ? 'Entrando...' : 'Entrar'}
+            </button>
+          )}
+        </form>
+      </div>
     </div>
-  );
+  )
 }
