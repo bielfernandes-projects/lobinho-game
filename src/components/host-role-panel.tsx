@@ -5,13 +5,10 @@ import { createClient } from '@/lib/supabase/client'
 
 interface RoleRow {
   id: string
-  role: string
-}
-
-interface PlayerProfile {
-  id: string
   name: string
+  role: string
   is_alive: boolean
+  has_viewed_card: boolean
 }
 
 interface HostRolePanelProps {
@@ -28,7 +25,7 @@ const ROLE_LABEL: Record<string, string> = {
 }
 
 export function HostRolePanel({ roomId, isHost }: HostRolePanelProps) {
-  const [rows, setRows] = useState<{ id: string; name: string; role: string; isAlive: boolean }[]>([])
+  const [rows, setRows] = useState<RoleRow[]>([])
   const [collapsed, setCollapsed] = useState(false)
   const supabase = createClient()
 
@@ -36,25 +33,11 @@ export function HostRolePanel({ roomId, isHost }: HostRolePanelProps) {
     if (!isHost) return
 
     async function load() {
-      const [rolesRes, profilesRes] = await Promise.all([
-        supabase.rpc('get_player_roles', { p_room_id: roomId }),
-        supabase.from('player_profiles').select('id, name, is_alive').eq('room_id', roomId),
-      ])
+      const { data } = await supabase.rpc('get_player_roles', { p_room_id: roomId })
 
-      const roles = (rolesRes.data ?? []) as RoleRow[]
-      const profiles = (profilesRes.data ?? []) as PlayerProfile[]
-
-      const merged = roles.map((r) => {
-        const profile = profiles.find((p) => p.id === r.id)
-        return {
-          id: r.id,
-          name: profile?.name ?? '???',
-          role: r.role,
-          isAlive: profile?.is_alive ?? true,
-        }
-      })
-
-      setRows(merged)
+      if (data) {
+        setRows(data as RoleRow[])
+      }
     }
 
     load()
@@ -86,10 +69,11 @@ export function HostRolePanel({ roomId, isHost }: HostRolePanelProps) {
               <div key={r.id} className="flex items-center gap-3 px-4 py-2.5">
                 <span
                   className={`w-2 h-2 rounded-full shrink-0 ${
-                    r.isAlive ? 'bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.5)]' : 'bg-red-800'
+                    r.is_alive ? 'bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.5)]' : 'bg-red-800'
                   }`}
                 />
-                <span className={`flex-1 text-sm font-medium truncate ${r.isAlive ? 'text-neutral-200' : 'text-neutral-600 line-through'}`}>
+                <span className={`flex-1 text-sm font-medium truncate ${r.is_alive ? 'text-neutral-200' : 'text-neutral-600 line-through'}`}>
+                  {r.has_viewed_card && <span className="mr-1 opacity-70">👁</span>}
                   {r.name}
                 </span>
                 <span className={`text-xs tracking-wider shrink-0 ${r.role === 'moderator' ? 'text-yellow-500' : r.role === 'werewolf' ? 'text-red-400' : r.role === 'seer' ? 'text-sky-400' : r.role === 'witch' ? 'text-emerald-400' : 'text-neutral-500'}`}>
