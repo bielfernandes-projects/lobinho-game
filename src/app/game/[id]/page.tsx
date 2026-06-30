@@ -6,7 +6,6 @@ import { createClient } from '@/lib/supabase/client'
 import { useCurrentPlayer } from '@/hooks/use-player'
 import { useRoomPlayers, useGameState } from '@/hooks/use-room'
 import { FlipCard } from '@/components/flip-card'
-import { PlayerList } from '@/components/player-list'
 import { HostControls } from '@/components/host-controls'
 import { NightPhase } from '@/components/night-phase'
 import { DayAnnouncement } from '@/components/day-announcement'
@@ -25,7 +24,6 @@ export default function GameScreen() {
   const { players, loading: playersLoading } = useRoomPlayers(roomId)
   const { gameState, loading: stateLoading } = useGameState(roomId)
 
-  const [viewMode, setViewMode] = useState<'card' | 'indicators'>('card')
   const [roomStatus, setRoomStatus] = useState<string | null>(null)
   const hasFlippedRef = useRef(false)
 
@@ -103,6 +101,34 @@ export default function GameScreen() {
 
   // ── Phase: card_reveal ────────────────────────────────────────────
   if (phase === 'card_reveal') {
+    // Host/moderator: skip card reveal entirely
+    if (isHost || isModerator) {
+      return (
+        <div className="flex flex-1 flex-col items-center px-6 py-8 min-h-dvh">
+          <div className="w-full max-w-sm flex flex-col items-center gap-6">
+            <div className="text-center">
+              <p className="text-neutral-600 text-[10px] uppercase tracking-widest mb-1">
+                Fase
+              </p>
+              <p className="text-sm font-bold tracking-wider text-red-500 uppercase">
+                🎴 Revelação
+              </p>
+            </div>
+            <p className="text-neutral-500 text-xs text-center">
+              Aguardando jogadores revelarem suas cartas...
+            </p>
+            <HostRolePanel roomId={roomId} isHost={true} />
+            <HostControls
+              roomId={roomId}
+              mode="advance"
+              allViewed={allViewed}
+              advanceLabel="Avançar para Noite"
+            />
+          </div>
+        </div>
+      )
+    }
+
     return (
       <div className="flex flex-1 flex-col items-center px-6 py-8 min-h-dvh">
         <div className="w-full max-w-sm flex flex-col items-center gap-6">
@@ -115,55 +141,14 @@ export default function GameScreen() {
             </p>
           </div>
 
-          {isHost && (
-            <div className="flex rounded-xl border border-neutral-800 overflow-hidden">
-              <button onClick={() => setViewMode('card')}
-                className={`px-4 py-2 text-xs font-medium tracking-wider transition-colors cursor-pointer ${
-                  viewMode === 'card'
-                    ? 'bg-red-900/40 text-red-400 border-r border-neutral-800'
-                    : 'bg-neutral-900 text-neutral-500 hover:text-neutral-400'
-                }`}
-              >
-                🎴 Minha Carta
-              </button>
-              <button onClick={() => setViewMode('indicators')}
-                className={`px-4 py-2 text-xs font-medium tracking-wider transition-colors cursor-pointer ${
-                  viewMode === 'indicators'
-                    ? 'bg-red-900/40 text-red-400'
-                    : 'bg-neutral-900 text-neutral-500 hover:text-neutral-400'
-                }`}
-              >
-                👁 Jogadores
-              </button>
-            </div>
-          )}
-
-          {viewMode === 'card' || !isHost ? (
-            <>
-              <p className="text-neutral-500 text-xs uppercase tracking-widest text-center select-none">
-                Pressione e segure a carta para ver sua função
-              </p>
-              <FlipCard
-                playerName={player.name}
-                role={player.role ?? '???'}
-                onFirstFlip={handleFirstFlip}
-              />
-            </>
-          ) : (
-            <div className="w-full">
-              <PlayerList
-                players={players}
-                currentPlayerId={player.id}
-                showViewedIndicators
-              />
-              <HostControls
-                roomId={roomId}
-                mode="advance"
-                allViewed={allViewed}
-                advanceLabel="Avançar para Noite"
-              />
-            </div>
-          )}
+          <p className="text-neutral-500 text-xs uppercase tracking-widest text-center select-none">
+            Pressione e segure a carta para ver sua função
+          </p>
+          <FlipCard
+            playerName={player.name}
+            role={player.role ?? '???'}
+            onFirstFlip={handleFirstFlip}
+          />
         </div>
       </div>
     )
