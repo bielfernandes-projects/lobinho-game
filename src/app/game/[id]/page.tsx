@@ -16,6 +16,7 @@ import { TimerDisplay } from '@/components/timer-display'
 import { HostTimerControls } from '@/components/host-timer-controls'
 import { HostRolePanel } from '@/components/host-role-panel'
 import { VoteTimerPanel } from '@/components/vote-timer-panel'
+import { DeadPlayerScreen } from '@/components/dead-player-screen'
 
 export default function GameScreen() {
   const params = useParams()
@@ -68,6 +69,10 @@ export default function GameScreen() {
           if (payload.new && 'status' in payload.new) {
             const s = payload.new.status as string
             setRoomStatus(s)
+            if (s === 'waiting') {
+              router.push(`/lobby/${roomId}`)
+              return
+            }
           }
         }
       )
@@ -109,6 +114,11 @@ export default function GameScreen() {
   // Game ended — ONLY triggered by rooms.status via Supabase Realtime
   if (gameEnded) {
     return renderEnded()
+  }
+
+  // Dead players (non-moderator) only see the death screen
+  if (!player.isAlive && player.role !== 'moderator') {
+    return <DeadPlayerScreen />
   }
 
   // Reset actedRoles when nightStep changes

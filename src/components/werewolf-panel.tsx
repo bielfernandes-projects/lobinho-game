@@ -47,7 +47,7 @@ export function WerewolfPanel({ roomId, playerId, turnIndex, onDone }: WerewolfP
         )
 
         setWolves(profiles.filter((p) => wolfIds.has(p.id)))
-        setTargets(profiles.filter((p) => p.isAlive && !wolfIds.has(p.id) && !p.isHost))
+        setTargets(profiles.filter((p) => p.isAlive && !wolfIds.has(p.id) && !p.isHost && p.id !== playerId))
       }
     }
 

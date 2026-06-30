@@ -47,7 +47,7 @@ export function SeerPanel({ roomId, playerId, turnIndex, onDone }: SeerPanelProp
         return
       }
       if (data) {
-        setResult(data.result)
+        setResult(data.is_werewolf)
         setDone(true)
         onDone?.()
       }
