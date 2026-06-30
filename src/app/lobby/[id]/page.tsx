@@ -19,7 +19,19 @@ export default function LobbyScreen() {
 
   const [roomStatus, setRoomStatus] = useState<string | null>(null)
   const [roomPin, setRoomPin] = useState('')
+  const [transferError, setTransferError] = useState('')
+  const [transferBusy, setTransferBusy] = useState(false)
   const redirectedRef = useRef(false)
+
+  async function handleTransferHost(newHostPlayerId: string) {
+    setTransferBusy(true); setTransferError('')
+    const { error: e } = await supabase.rpc('transfer_host', {
+      p_room_id: roomId,
+      p_new_host_player_id: newHostPlayerId,
+    })
+    if (e) { setTransferError(e.message); setTransferBusy(false); return }
+    setTransferBusy(false)
+  }
 
   /*
    * Wake Lock API:
@@ -141,7 +153,15 @@ export default function LobbyScreen() {
         </div>
 
         {/* Lista de jogadores */}
-        <PlayerList players={players} currentPlayerId={player.id} />
+        <PlayerList
+          players={players}
+          currentPlayerId={player.id}
+          onTransferHost={player.isHost ? handleTransferHost : undefined}
+        />
+
+        {transferError && (
+          <p className="text-red-500 text-xs text-center">{transferError}</p>
+        )}
 
         {/* Botão de iniciar (só host vê) */}
         {player.isHost && <HostControls roomId={roomId} mode="start" />}

@@ -23,6 +23,11 @@ export function NightPhase({
   wolvesResolved,
   wolfVictimName,
 }: NightPhaseProps) {
+  // Moderador: nao age, apenas observa
+  if (role === 'moderator') {
+    return null
+  }
+
   const noRole = role !== 'werewolf' && role !== 'seer' && role !== 'witch'
 
   // Lobo: ativo independente de wolvesResolved

@@ -46,3 +46,4 @@ export interface Vote {
 
 export type ViewMode = 'card' | 'indicators'
 export type Phase = 'card_reveal' | 'night' | 'day' | 'vote' | 'ended'
+export type Role = 'werewolf' | 'seer' | 'witch' | 'villager' | 'moderator'

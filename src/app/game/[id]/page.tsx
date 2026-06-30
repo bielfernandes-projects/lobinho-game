@@ -13,6 +13,7 @@ import { DayAnnouncement } from '@/components/day-announcement'
 import { VotingPanel } from '@/components/voting-panel'
 import { TimerDisplay } from '@/components/timer-display'
 import { HostTimerControls } from '@/components/host-timer-controls'
+import { HostRolePanel } from '@/components/host-role-panel'
 
 export default function GameScreen() {
   const params = useParams()
@@ -25,6 +26,7 @@ export default function GameScreen() {
   const { gameState, loading: stateLoading } = useGameState(roomId)
 
   const [viewMode, setViewMode] = useState<'card' | 'indicators'>('card')
+  const [roomStatus, setRoomStatus] = useState<string | null>(null)
   const hasFlippedRef = useRef(false)
 
   const phase = gameState?.current_phase ?? null
@@ -44,6 +46,30 @@ export default function GameScreen() {
       router.push('/')
     }
   }, [player, playerLoading, router])
+
+  // Watch rooms.status for game over (fallback para Realtime)
+  useEffect(() => {
+    const channel = supabase
+      .channel(`game-room:${roomId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'rooms',
+          filter: `id=eq.${roomId}`,
+        },
+        (payload) => {
+          if (payload.new && 'status' in payload.new) {
+            const s = payload.new.status as string
+            setRoomStatus(s)
+          }
+        }
+      )
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [roomId])
 
   // Mark has_viewed_card on first flip
   async function handleFirstFlip() {
@@ -73,6 +99,7 @@ export default function GameScreen() {
 
   const isHost = player.isHost
   const isAlive = player.isAlive
+  const isModerator = player.role === 'moderator'
 
   // ── Phase: card_reveal ────────────────────────────────────────────
   if (phase === 'card_reveal') {
@@ -143,8 +170,12 @@ export default function GameScreen() {
   }
 
   // ── Phase: night ──────────────────────────────────────────────────
-  if (phase === 'night') {
+  if (phase === 'night' || roomStatus?.startsWith('finished_')) {
     const wolfVictimName = lastEvent?.victim_name ?? null
+
+    if (phase === 'ended') {
+      return renderEnded()
+    }
 
     return (
       <div className="flex flex-1 flex-col items-center min-h-dvh">
@@ -175,6 +206,13 @@ export default function GameScreen() {
           wolfVictimName={wolfVictimName}
         />
 
+        {/* Painel do mestre (visivel apenas para o host/moderador) */}
+        {(isHost || isModerator) && (
+          <div className="w-full px-6 pb-4 pt-2">
+            <HostRolePanel roomId={roomId} isHost={true} />
+          </div>
+        )}
+
         {isHost && !wolvesResolved && (
           <div className="pb-8">
             <HostControls
@@ -194,7 +232,7 @@ export default function GameScreen() {
           </div>
         )}
 
-        {!isHost && player.role !== 'werewolf' && player.role !== 'seer' && player.role !== 'witch' && (
+        {!isHost && player.role !== 'werewolf' && player.role !== 'seer' && player.role !== 'witch' && !isModerator && (
           <p className="text-neutral-700 text-xs mt-4 select-none text-center px-6 pb-8">
             Quando todos estiverem prontos, o host resolverá a noite
           </p>
@@ -213,6 +251,13 @@ export default function GameScreen() {
           victims={victims}
           turnIndex={turnIndex}
         />
+
+        {/* Painel do mestre */}
+        {(isHost || isModerator) && (
+          <div className="w-full max-w-sm mx-auto px-6 pt-4">
+            <HostRolePanel roomId={roomId} isHost={true} />
+          </div>
+        )}
 
         <div className="w-full max-w-sm mx-auto py-4 flex flex-col items-center gap-3">
           <TimerDisplay
@@ -280,8 +325,19 @@ export default function GameScreen() {
   }
 
   // ── Phase: ended ──────────────────────────────────────────────────
-  if (phase === 'ended') {
-    const winner = lastEvent?.winner ?? 'unknown'
+  const isGameOver =
+    phase === 'ended' ||
+    roomStatus === 'finished_villagers_win' ||
+    roomStatus === 'finished_wolves_win'
+
+  if (isGameOver) {
+    return renderEnded()
+  }
+
+  return null
+
+  function renderEnded() {
+    const winner = lastEvent?.winner ?? (roomStatus === 'finished_wolves_win' ? 'wolves_win' : 'unknown')
     return (
       <div className="flex flex-1 flex-col items-center justify-center min-h-dvh px-6 gap-6">
         <p className="text-6xl">🏆</p>
@@ -299,6 +355,4 @@ export default function GameScreen() {
       </div>
     )
   }
-
-  return null
 }

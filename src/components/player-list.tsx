@@ -9,12 +9,14 @@ interface PlayerListProps {
   players: PlayerListItem[]
   currentPlayerId?: string
   showViewedIndicators?: boolean
+  onTransferHost?: (playerId: string) => void
 }
 
 export function PlayerList({
   players,
   currentPlayerId,
   showViewedIndicators,
+  onTransferHost,
 }: PlayerListProps) {
   const total = players.length
   const viewed = players.filter((p) => p.hasViewedCard).length
@@ -86,6 +88,15 @@ export function PlayerList({
                 <span className="text-[10px] uppercase tracking-wider bg-red-900/60 text-red-400 px-2 py-0.5 rounded-full font-semibold">
                   Host
                 </span>
+              )}
+
+              {onTransferHost && !player.isHost && !showViewedIndicators && (
+                <button
+                  onClick={() => onTransferHost(player.id)}
+                  className="text-[10px] uppercase tracking-wider bg-neutral-800 hover:bg-yellow-900/40 text-neutral-500 hover:text-yellow-400 px-2 py-0.5 rounded-full font-semibold transition-colors cursor-pointer"
+                >
+                  👑 Passar
+                </button>
               )}
             </div>
           )
