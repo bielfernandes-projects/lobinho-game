@@ -50,7 +50,7 @@ export function HostRolePanel({ roomId, isHost }: HostRolePanelProps) {
     return () => { supabase.removeChannel(channel) }
   }, [roomId, isHost])
 
-  if (!isHost || rows.length === 0) return null
+  if (!isHost) return null
 
   return (
     <div className="w-full max-w-sm mx-auto">

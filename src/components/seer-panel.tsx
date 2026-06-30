@@ -20,13 +20,13 @@ export function SeerPanel({ roomId, playerId, turnIndex }: SeerPanelProps) {
   useEffect(() => {
     supabase
       .from('player_profiles')
-      .select('id, name, is_alive')
+      .select('id, name, is_alive, is_host')
       .eq('room_id', roomId)
       .then(({ data }) => {
         if (data) {
           setTargets(
             (data as any[])
-              .filter((r) => r.id !== playerId && r.is_alive)
+              .filter((r) => r.id !== playerId && r.is_alive && !r.is_host)
               .map((r) => ({ id: r.id, name: r.name }))
           )
         }

@@ -172,6 +172,15 @@ export default function LobbyScreen() {
             Aguardando o Host iniciar a partida...
           </p>
         )}
+
+        <div className="mt-8">
+          <button
+            onClick={() => router.push('/')}
+            className="w-full py-2.5 rounded-xl text-xs font-medium tracking-wider text-neutral-600 border border-neutral-800 hover:border-neutral-700 hover:text-neutral-400 transition-all duration-200 cursor-pointer bg-transparent"
+          >
+            Sair da Sala
+          </button>
+        </div>
       </div>
     </div>
   )

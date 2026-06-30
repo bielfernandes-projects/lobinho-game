@@ -19,13 +19,13 @@ export function VotingPanel({ roomId, playerId, isAlive, turnIndex }: VotingPane
   useEffect(() => {
     supabase
       .from('player_profiles')
-      .select('id, name, is_alive')
+      .select('id, name, is_alive, is_host')
       .eq('room_id', roomId)
       .then(({ data }) => {
         if (data) {
           setTargets(
             (data as any[])
-              .filter((r) => r.id !== playerId && r.is_alive)
+              .filter((r) => r.id !== playerId && r.is_alive && !r.is_host)
               .map((r) => ({ id: r.id, name: r.name }))
           )
         }
@@ -34,13 +34,12 @@ export function VotingPanel({ roomId, playerId, isAlive, turnIndex }: VotingPane
 
   async function handleVote(targetId: string) {
     setBusy(true)
-    await supabase.from('votes').insert({
-      room_id: roomId,
-      turn_index: turnIndex,
-      voter_id: playerId,
-      target_id: targetId,
+    const { error } = await supabase.rpc('submit_vote', {
+      p_room_id: roomId,
+      p_turn_index: turnIndex,
+      p_target_id: targetId,
     })
-    setVotedFor(targetId)
+    if (!error) setVotedFor(targetId)
     setBusy(false)
   }
 

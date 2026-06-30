@@ -14,7 +14,7 @@ type Step = 'save' | 'poison' | 'done'
 
 export function WitchPanel({ roomId, playerId, turnIndex, victimName }: WitchPanelProps) {
   const [step, setStep] = useState<Step>('save')
-  const [targets, setTargets] = useState<{ id: string; name: string }[]>([])
+  const [targets, setTargets] = useState<{ id: string; name: string; isHost: boolean }[]>([])
   const [poisonBusy, setPoisonBusy] = useState(false)
   const [usedLife, setUsedLife] = useState(false)
   const [usedDeath, setUsedDeath] = useState(false)
@@ -23,14 +23,14 @@ export function WitchPanel({ roomId, playerId, turnIndex, victimName }: WitchPan
   useEffect(() => {
     supabase
       .from('player_profiles')
-      .select('id, name, is_alive')
+      .select('id, name, is_alive, is_host')
       .eq('room_id', roomId)
       .then(({ data }) => {
         if (data) {
           setTargets(
             (data as any[])
               .filter((r) => r.is_alive)
-              .map((r) => ({ id: r.id, name: r.name }))
+              .map((r) => ({ id: r.id, name: r.name, isHost: r.is_host }))
           )
         }
       })
@@ -50,11 +50,12 @@ export function WitchPanel({ roomId, playerId, turnIndex, victimName }: WitchPan
 
   async function handleSave(save: boolean) {
     if (save && !usedLife) {
-      await supabase.rpc('submit_night_action', {
+      const { error } = await supabase.rpc('submit_night_action', {
         p_room_id: roomId,
         p_action_type: 'witch_save',
         p_target_id: null,
       })
+      if (error) return
     }
     setStep('poison')
   }
@@ -63,11 +64,12 @@ export function WitchPanel({ roomId, playerId, turnIndex, victimName }: WitchPan
     setPoisonBusy(true)
 
     if (targetId && !usedDeath) {
-      await supabase.rpc('submit_night_action', {
+      const { error } = await supabase.rpc('submit_night_action', {
         p_room_id: roomId,
         p_action_type: 'witch_poison',
         p_target_id: targetId,
       })
+      if (error) { setPoisonBusy(false); return }
     }
 
     setStep('done')
@@ -153,7 +155,7 @@ export function WitchPanel({ roomId, playerId, turnIndex, victimName }: WitchPan
 
           <div className="space-y-2">
             {targets
-              .filter((t) => t.id !== playerId)
+              .filter((t) => t.id !== playerId && !t.isHost)
               .map((t) => (
                 <button
                   key={t.id}

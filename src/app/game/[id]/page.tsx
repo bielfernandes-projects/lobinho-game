@@ -27,6 +27,7 @@ export default function GameScreen() {
   const { gameState, loading: stateLoading } = useGameState(roomId)
 
   const [roomStatus, setRoomStatus] = useState<string | null>(null)
+  const [showExitModal, setShowExitModal] = useState(false)
   const hasFlippedRef = useRef(false)
 
   const phase = gameState?.current_phase ?? null
@@ -110,6 +111,12 @@ export default function GameScreen() {
   const isAlive = player.isAlive
   const isModerator = player.role === 'moderator'
 
+  async function handleExitToLobby() {
+    const supabase = createClient()
+    await supabase.from('rooms').update({ status: 'waiting' }).eq('id', roomId)
+    router.push(`/lobby/${roomId}`)
+  }
+
   // ── Moderator / Host Dashboard ──────────────────────────
   // Omniscient view — NEVER shows the "close your eyes" screen
   if (isHost || isModerator) {
@@ -122,6 +129,9 @@ export default function GameScreen() {
             {phase === 'night' && '🌙 Noite'}
             {phase === 'day' && '☀️ Dia'}
             {phase === 'vote' && '🗳️ Votação'}
+            {!'card_reveal night day vote'.includes(phase) && (
+              <span className="text-red-500">⚠️ {phase}</span>
+            )}
           </p>
         </div>
 
@@ -202,6 +212,39 @@ export default function GameScreen() {
             mode="resolve_vote"
             turnIndex={turnIndex}
           />
+        )}
+
+        <div className="mt-auto pt-6 pb-8 px-6 w-full max-w-sm mx-auto">
+          <button
+            onClick={() => setShowExitModal(true)}
+            className="w-full py-2.5 rounded-xl text-xs font-medium tracking-wider text-neutral-600 border border-neutral-800 hover:border-red-900/50 hover:text-red-500 transition-all duration-200 cursor-pointer bg-transparent"
+          >
+            ⚠️ Voltar para o Lobby
+          </button>
+        </div>
+
+        {showExitModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-6">
+            <div className="w-full max-w-xs rounded-2xl border border-neutral-800 bg-neutral-950 p-6 text-center space-y-4">
+              <p className="text-neutral-300 text-sm font-medium">
+                Tem certeza? O jogo será interrompido.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowExitModal(false)}
+                  className="flex-1 py-3 rounded-xl text-sm font-medium bg-neutral-900 border border-neutral-800 text-neutral-400 hover:bg-neutral-800 cursor-pointer transition-all duration-200"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleExitToLobby}
+                  className="flex-1 py-3 rounded-xl text-sm font-bold bg-red-900/30 border border-red-700/50 text-red-400 hover:bg-red-800/40 cursor-pointer transition-all duration-200"
+                >
+                  Sim, voltar
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     )

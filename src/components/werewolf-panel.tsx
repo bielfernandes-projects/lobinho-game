@@ -45,7 +45,7 @@ export function WerewolfPanel({ roomId, playerId, turnIndex }: WerewolfPanelProp
         )
 
         setWolves(profiles.filter((p) => wolfIds.has(p.id)))
-        setTargets(profiles.filter((p) => p.isAlive && !wolfIds.has(p.id)))
+        setTargets(profiles.filter((p) => p.isAlive && !wolfIds.has(p.id) && !p.isHost))
       }
     }
 
@@ -54,12 +54,12 @@ export function WerewolfPanel({ roomId, playerId, turnIndex }: WerewolfPanelProp
 
   async function handleKill(targetId: string) {
     setBusy(true)
-    await supabase.rpc('submit_night_action', {
+    const { error } = await supabase.rpc('submit_night_action', {
       p_room_id: roomId,
       p_action_type: 'werewolf_kill',
       p_target_id: targetId,
     })
-    setVoted(true)
+    if (!error) setVoted(true)
     setBusy(false)
   }
 
