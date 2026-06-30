@@ -27,13 +27,22 @@ const ROLE_LABEL: Record<string, string> = {
 export function HostRolePanel({ roomId, isHost }: HostRolePanelProps) {
   const [rows, setRows] = useState<RoleRow[]>([])
   const [collapsed, setCollapsed] = useState(false)
+  const [error, setError] = useState('')
   const supabase = createClient()
 
   useEffect(() => {
     if (!isHost) return
 
+    setError('')
+
     async function load() {
-      const { data } = await supabase.rpc('get_player_roles', { p_room_id: roomId })
+      const { data, error: rpcError } = await supabase.rpc('get_player_roles', { p_room_id: roomId })
+
+      if (rpcError) {
+        console.error('get_player_roles error:', rpcError)
+        setError(rpcError.message)
+        return
+      }
 
       if (data) {
         setRows(data as RoleRow[])
@@ -42,9 +51,16 @@ export function HostRolePanel({ roomId, isHost }: HostRolePanelProps) {
 
     load()
 
+    function handleRealtimeChange() {
+      load().catch((e) => {
+        console.error('Realtime refresh error:', e)
+        setError(e instanceof Error ? e.message : 'Erro ao atualizar lista')
+      })
+    }
+
     const channel = supabase
       .channel(`host-roles:${roomId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'players', filter: `room_id=eq.${roomId}` }, load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'players', filter: `room_id=eq.${roomId}` }, handleRealtimeChange)
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
@@ -64,6 +80,11 @@ export function HostRolePanel({ roomId, isHost }: HostRolePanelProps) {
 
       {!collapsed && (
         <div className="rounded-xl border border-neutral-800 bg-neutral-900/60 overflow-hidden">
+          {error && (
+            <div className="px-4 py-2 bg-red-950/30 border-b border-red-900/30">
+              <p className="text-red-500 text-xs">{error}</p>
+            </div>
+          )}
           <div className="divide-y divide-neutral-800">
             {rows.map((r) => (
               <div key={r.id} className="flex items-center gap-3 px-4 py-2.5">
