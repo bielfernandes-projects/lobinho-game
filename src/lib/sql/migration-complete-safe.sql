@@ -324,56 +324,79 @@ $$;
 -- ============================================================
 -- RPC: resolve_night_wolves
 -- ============================================================
+DROP FUNCTION IF EXISTS public.resolve_night_wolves(UUID) CASCADE;
 CREATE OR REPLACE FUNCTION public.resolve_night_wolves(p_room_id UUID)
-RETURNS void
+RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
   v_turn INT;
-  v_target_id UUID;
+  v_victim_id UUID;
   v_victim_name TEXT;
-  v_vote_count INT;
-  v_max_votes INT;
+  v_max_votes INT := 0;
+  v_tie_count INT := 0;
 BEGIN
   IF NOT EXISTS (
-    SELECT 1 FROM players
-    WHERE room_id = p_room_id AND user_id = auth.uid() AND is_host = true
+    SELECT 1 FROM players WHERE room_id = p_room_id AND user_id = auth.uid() AND is_host = true
   ) THEN
-    RAISE EXCEPTION 'Somente o host pode resolver a noite';
+    RAISE EXCEPTION 'Somente o host pode resolver o ataque';
   END IF;
 
   SELECT turn_index INTO v_turn FROM game_state WHERE room_id = p_room_id;
 
-  -- Contar votos dos lobos
-  SELECT target_id, COUNT(*) AS cnt INTO v_target_id, v_vote_count
-  FROM night_actions
-  WHERE room_id = p_room_id AND turn_index = v_turn AND action_type = 'werewolf_kill'
-  GROUP BY target_id
-  ORDER BY cnt DESC
-  LIMIT 1;
+  WITH vote_counts AS (
+    SELECT target_id, COUNT(*)::INT as cnt
+    FROM night_actions
+    WHERE room_id = p_room_id AND turn_index = v_turn AND action_type = 'werewolf_kill'
+    GROUP BY target_id
+  ),
+  max_votes AS (
+    SELECT COALESCE(MAX(cnt), 0) as max_cnt,
+           COUNT(*)::INT as tied_targets
+    FROM vote_counts
+  ),
+  top_target AS (
+    SELECT v.target_id
+    FROM vote_counts v, max_votes m
+    WHERE v.cnt = m.max_cnt
+    ORDER BY v.target_id
+    LIMIT 1
+  )
+  SELECT m.max_cnt, m.tied_targets, t.target_id
+  INTO v_max_votes, v_tie_count, v_victim_id
+  FROM max_votes m LEFT JOIN top_target t ON true;
 
-  -- Salvar alvo dos lobos no last_event
-  SELECT name INTO v_victim_name FROM players WHERE id = v_target_id;
+  IF v_victim_id IS NOT NULL AND v_max_votes > 0 AND v_tie_count = 1 THEN
+    SELECT name INTO v_victim_name FROM players WHERE id = v_victim_id;
+  END IF;
 
   UPDATE game_state
   SET wolves_resolved = true,
       last_event = jsonb_build_object(
-        'type', 'wolves_attack',
-        'victim_id', v_target_id,
+        'type', 'wolf_target',
+        'victim_id', v_victim_id,
         'victim_name', v_victim_name,
-        'wolf_votes', v_vote_count
+        'wolf_votes', v_max_votes
       )
   WHERE room_id = p_room_id;
+
+  RETURN jsonb_build_object(
+    'victim_id', v_victim_id,
+    'victim_name', v_victim_name,
+    'votes', v_max_votes,
+    'tie', CASE WHEN v_tie_count > 1 THEN true ELSE false END
+  );
 END;
 $$;
 
 -- ============================================================
 -- RPC: resolve_night
 -- ============================================================
+DROP FUNCTION IF EXISTS public.resolve_night(UUID) CASCADE;
 CREATE OR REPLACE FUNCTION public.resolve_night(p_room_id UUID)
-RETURNS void
+RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
@@ -445,14 +468,17 @@ BEGIN
       wolves_resolved = false,
       last_event = jsonb_build_object('type', 'night_result', 'victims', v_victims)
   WHERE room_id = p_room_id;
+
+  RETURN jsonb_build_object('success', true, 'victims', v_victims);
 END;
 $$;
 
 -- ============================================================
 -- RPC: resolve_day_vote
 -- ============================================================
+DROP FUNCTION IF EXISTS public.resolve_day_vote(UUID) CASCADE;
 CREATE OR REPLACE FUNCTION public.resolve_day_vote(p_room_id UUID)
-RETURNS void
+RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
@@ -529,6 +555,8 @@ BEGIN
         )
     WHERE room_id = p_room_id;
   END IF;
+
+  RETURN jsonb_build_object('success', true);
 END;
 $$;
 
@@ -603,6 +631,9 @@ $$;
 -- ============================================================
 -- TRIGGER: check_game_over on is_alive change
 -- ============================================================
+DROP TRIGGER IF EXISTS trg_check_game_over ON players;
+DROP FUNCTION IF EXISTS public.trg_check_game_over() CASCADE;
+DROP FUNCTION IF EXISTS public.check_game_over_trigger() CASCADE;
 CREATE OR REPLACE FUNCTION public.trg_check_game_over()
 RETURNS trigger
 LANGUAGE plpgsql
