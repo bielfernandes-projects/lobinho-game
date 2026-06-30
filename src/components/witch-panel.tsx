@@ -16,6 +16,7 @@ type Step = 'save' | 'poison' | 'done'
 export function WitchPanel({ roomId, playerId, turnIndex, victimName, onDone }: WitchPanelProps) {
   const [step, setStep] = useState<Step>('save')
   const [targets, setTargets] = useState<{ id: string; name: string; isHost: boolean }[]>([])
+  const [saveBusy, setSaveBusy] = useState(false)
   const [poisonBusy, setPoisonBusy] = useState(false)
   const [usedLife, setUsedLife] = useState(false)
   const [usedDeath, setUsedDeath] = useState(false)
@@ -51,6 +52,7 @@ export function WitchPanel({ roomId, playerId, turnIndex, victimName, onDone }: 
   }, [roomId, playerId])
 
   async function handleSave(save: boolean) {
+    setSaveBusy(true)
     setError('')
     if (save && !usedLife) {
       try {
@@ -62,15 +64,18 @@ export function WitchPanel({ roomId, playerId, turnIndex, victimName, onDone }: 
         if (rpcErr) {
           console.error('[WitchPanel] save error:', rpcErr)
           setError(rpcErr.message)
+          setSaveBusy(false)
           return
         }
       } catch (err) {
         console.error('[WitchPanel] save unexpected:', err)
         setError(err instanceof Error ? err.message : 'Erro inesperado')
+        setSaveBusy(false)
         return
       }
     }
     setStep('poison')
+    setSaveBusy(false)
   }
 
   async function handlePoison(targetId: string | null) {
@@ -142,11 +147,13 @@ export function WitchPanel({ roomId, playerId, turnIndex, victimName, onDone }: 
             {victimName && !usedLife && (
               <button
                 onClick={() => handleSave(true)}
+                disabled={saveBusy}
                 className="
                   px-6 py-3 rounded-xl text-sm font-bold
                   bg-green-900/30 border border-green-700/50 text-green-400
                   hover:bg-green-800/40 active:bg-green-900/50
                   transition-all duration-200 cursor-pointer
+                  disabled:opacity-30 disabled:cursor-not-allowed
                 "
               >
                 💚 Salvar
@@ -155,11 +162,13 @@ export function WitchPanel({ roomId, playerId, turnIndex, victimName, onDone }: 
 
             <button
               onClick={() => handleSave(false)}
+              disabled={saveBusy}
               className="
                 px-6 py-3 rounded-xl text-sm font-medium
                 bg-neutral-900 border border-neutral-800 text-neutral-400
                 hover:border-neutral-700 active:bg-neutral-800
                 transition-all duration-200 cursor-pointer
+                disabled:opacity-30 disabled:cursor-not-allowed
               "
             >
               {victimName ? 'Deixar Morrer' : 'Continuar'}

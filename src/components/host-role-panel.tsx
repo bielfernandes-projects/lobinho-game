@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 interface RoleRow {
@@ -30,29 +30,31 @@ export function HostRolePanel({ roomId, isHost }: HostRolePanelProps) {
   const [error, setError] = useState('')
   const supabase = createClient()
 
-  useEffect(() => {
+  const fetchPlayers = useCallback(async () => {
     if (!isHost) return
 
     setError('')
 
-    async function load() {
-      const { data, error: rpcError } = await supabase.rpc('get_player_roles', { p_room_id: roomId })
+    const { data, error: rpcError } = await supabase.rpc('get_player_roles', { p_room_id: roomId })
 
-      if (rpcError) {
-        console.error('get_player_roles error:', rpcError)
-        setError(rpcError.message)
-        return
-      }
-
-      if (data) {
-        setRows(data as RoleRow[])
-      }
+    if (rpcError) {
+      console.error('get_player_roles error:', rpcError)
+      setError(rpcError.message)
+      return
     }
 
-    load()
+    if (data) {
+      setRows(data as RoleRow[])
+    }
+  }, [roomId, isHost])
 
-    function handleRealtimeChange() {
-      load().catch((e) => {
+  useEffect(() => {
+    if (!isHost) return
+
+    fetchPlayers()
+
+    const handleChange = () => {
+      fetchPlayers().catch((e) => {
         console.error('Realtime refresh error:', e)
         setError(e instanceof Error ? e.message : 'Erro ao atualizar lista')
       })
@@ -60,11 +62,12 @@ export function HostRolePanel({ roomId, isHost }: HostRolePanelProps) {
 
     const channel = supabase
       .channel(`host-roles:${roomId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'players', filter: `room_id=eq.${roomId}` }, handleRealtimeChange)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'players', filter: `room_id=eq.${roomId}` }, handleChange)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'game_state', filter: `room_id=eq.${roomId}` }, handleChange)
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [roomId, isHost])
+  }, [roomId, isHost, fetchPlayers])
 
   if (!isHost) return null
 
@@ -102,6 +105,11 @@ export function HostRolePanel({ roomId, isHost }: HostRolePanelProps) {
                 </span>
               </div>
             ))}
+            {rows.length === 0 && !error && (
+              <div className="px-4 py-6 text-center">
+                <p className="text-neutral-700 text-xs">Nenhum jogador encontrado</p>
+              </div>
+            )}
           </div>
         </div>
       )}
