@@ -105,9 +105,9 @@ export function WitchPanel({ roomId, playerId, turnIndex, victimName, onDone }: 
 
   if (step === 'done') {
     return (
-      <div className="text-center">
-        <p className="text-green-600 text-sm font-semibold">✅ Decisão registrada</p>
-        <p className="text-neutral-700 text-xs mt-1">Aguardando o dia...</p>
+      <div className="w-full max-w-sm text-center space-y-2">
+        <p className="text-neutral-500 text-sm font-semibold">✅ Ação Registrada</p>
+        <p className="text-neutral-700 text-xs">Aguarde a noite passar...</p>
       </div>
     )
   }

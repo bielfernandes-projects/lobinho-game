@@ -79,7 +79,12 @@ export function WerewolfPanel({ roomId, playerId, turnIndex, onDone }: WerewolfP
   }
 
   if (voted) {
-    return null
+    return (
+      <div className="w-full max-w-sm text-center space-y-2">
+        <p className="text-neutral-500 text-sm font-semibold">✅ Ação Registrada</p>
+        <p className="text-neutral-700 text-xs">Aguarde a noite passar...</p>
+      </div>
+    )
   }
 
   return (

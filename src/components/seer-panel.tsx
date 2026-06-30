@@ -93,7 +93,7 @@ export function SeerPanel({ roomId, playerId, turnIndex, onDone }: SeerPanelProp
           <button
             key={t.id}
             onClick={() => handleInvestigate(t.id, t.name)}
-            disabled={busy}
+            disabled={busy || done}
             className="
               w-full py-3 px-4 rounded-xl text-sm font-medium
               bg-neutral-900 border border-neutral-800 text-neutral-300
