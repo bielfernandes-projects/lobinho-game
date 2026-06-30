@@ -7,7 +7,9 @@ import { useCurrentPlayer } from '@/hooks/use-player'
 import { useRoomPlayers, useGameState } from '@/hooks/use-room'
 import { FlipCard } from '@/components/flip-card'
 import { HostControls } from '@/components/host-controls'
-import { NightPhase } from '@/components/night-phase'
+import { WerewolfPanel } from '@/components/werewolf-panel'
+import { SeerPanel } from '@/components/seer-panel'
+import { WitchPanel } from '@/components/witch-panel'
 import { DayAnnouncement } from '@/components/day-announcement'
 import { VotingPanel } from '@/components/voting-panel'
 import { TimerDisplay } from '@/components/timer-display'
@@ -108,36 +110,105 @@ export default function GameScreen() {
   const isAlive = player.isAlive
   const isModerator = player.role === 'moderator'
 
-  // ── Phase: card_reveal ────────────────────────────────────────────
-  if (phase === 'card_reveal') {
-    // Host/moderator: skip card reveal entirely
-    if (isHost || isModerator) {
-      return (
-        <div className="flex flex-1 flex-col items-center px-6 py-8 min-h-dvh">
-          <div className="w-full max-w-sm flex flex-col items-center gap-6">
-            <div className="text-center">
-              <p className="text-neutral-600 text-[10px] uppercase tracking-widest mb-1">
-                Fase
-              </p>
-              <p className="text-sm font-bold tracking-wider text-red-500 uppercase">
-                🎴 Revelação
-              </p>
-            </div>
-            <p className="text-neutral-500 text-xs text-center">
-              Aguardando jogadores revelarem suas cartas...
+  // ── Moderator / Host Dashboard ──────────────────────────
+  // Omniscient view — NEVER shows the "close your eyes" screen
+  if (isHost || isModerator) {
+    return (
+      <div className="flex flex-1 flex-col items-center min-h-dvh">
+        <div className="w-full px-6 pt-8 pb-4 text-center">
+          <p className="text-neutral-600 text-[10px] uppercase tracking-widest mb-1">Fase</p>
+          <p className="text-sm font-bold tracking-wider uppercase">
+            {phase === 'card_reveal' && '🎴 Revelação'}
+            {phase === 'night' && '🌙 Noite'}
+            {phase === 'day' && '☀️ Dia'}
+            {phase === 'vote' && '🗳️ Votação'}
+          </p>
+        </div>
+
+        {lastVoteResult?.type === 'vote_tie' && (
+          <div className="w-full bg-orange-950/40 border-b border-orange-900/30 px-6 py-4 text-center">
+            <p className="text-orange-400 text-sm font-bold tracking-wide">
+              🤝 A vila não chegou a um consenso. Ninguém foi linchado.
             </p>
-            <HostRolePanel roomId={roomId} isHost={true} />
+          </div>
+        )}
+
+        {lastVoteResult?.type === 'lynch' && lastVoteResult.victim_name && (
+          <div className="w-full bg-red-950/40 border-b border-red-900/30 px-6 py-4 text-center">
+            <p className="text-red-400 text-sm font-bold tracking-wide">
+              ☠️ {lastVoteResult.victim_name} foi linchado pela vila.
+            </p>
+          </div>
+        )}
+
+        {phase === 'day' && lastEvent?.victims && (
+          <DayAnnouncement
+            victims={lastEvent.victims as { name: string; cause: string }[]}
+            turnIndex={turnIndex}
+          />
+        )}
+
+        <div className="w-full px-6 pb-4">
+          <HostRolePanel roomId={roomId} isHost={true} />
+        </div>
+
+        {phase === 'card_reveal' && (
+          <HostControls
+            roomId={roomId}
+            mode="advance"
+            allViewed={allViewed}
+            advanceLabel="Avançar para Noite"
+          />
+        )}
+
+        {phase === 'night' && !wolvesResolved && (
+          <HostControls
+            roomId={roomId}
+            mode="resolve_night_wolves"
+            turnIndex={turnIndex}
+          />
+        )}
+
+        {phase === 'night' && wolvesResolved && (
+          <HostControls
+            roomId={roomId}
+            mode="resolve_night"
+          />
+        )}
+
+        {phase === 'day' && (
+          <div className="w-full max-w-sm mx-auto py-4 flex flex-col items-center gap-3">
+            <TimerDisplay
+              remaining={timerRemaining}
+              isRunning={isTimerRunning}
+              startedAt={timerStartedAt}
+            />
+            <HostTimerControls
+              roomId={roomId}
+              isRunning={isTimerRunning}
+              hasTimer={hasTimer}
+            />
             <HostControls
               roomId={roomId}
               mode="advance"
-              allViewed={allViewed}
-              advanceLabel="Avançar para Noite"
+              advanceLabel="Iniciar Votação"
             />
           </div>
-        </div>
-      )
-    }
+        )}
 
+        {phase === 'vote' && (
+          <HostControls
+            roomId={roomId}
+            mode="resolve_vote"
+            turnIndex={turnIndex}
+          />
+        )}
+      </div>
+    )
+  }
+
+  // ── Phase: card_reveal ────────────────────────────────────────────
+  if (phase === 'card_reveal') {
     return (
       <div className="flex flex-1 flex-col items-center px-6 py-8 min-h-dvh">
         <div className="w-full max-w-sm flex flex-col items-center gap-6">
@@ -165,12 +236,9 @@ export default function GameScreen() {
 
   // ── Phase: night ──────────────────────────────────────────────────
   if (phase === 'night') {
-    const wolfVictimName = lastEvent?.victim_name ?? null
-
     return (
       <div className="flex flex-1 flex-col items-center min-h-dvh">
-        {/* Banner: resultado da votacao anterior (empate ou linchamento) */}
-        {lastVoteResult && lastVoteResult.type === 'vote_tie' && (
+        {lastVoteResult?.type === 'vote_tie' && (
           <div className="w-full bg-orange-950/40 border-b border-orange-900/30 px-6 py-4 text-center">
             <p className="text-orange-400 text-sm font-bold tracking-wide">
               🤝 A vila não chegou a um consenso. Ninguém foi linchado.
@@ -178,7 +246,7 @@ export default function GameScreen() {
           </div>
         )}
 
-        {lastVoteResult && lastVoteResult.type === 'lynch' && lastVoteResult.victim_name && (
+        {lastVoteResult?.type === 'lynch' && lastVoteResult.victim_name && (
           <div className="w-full bg-red-950/40 border-b border-red-900/30 px-6 py-4 text-center">
             <p className="text-red-400 text-sm font-bold tracking-wide">
               ☠️ {lastVoteResult.victim_name} foi linchado pela vila.
@@ -186,47 +254,7 @@ export default function GameScreen() {
           </div>
         )}
 
-        <NightPhase
-          roomId={roomId}
-          role={player.role ?? ''}
-          playerId={player.id}
-          turnIndex={turnIndex}
-          isAlive={isAlive}
-          wolvesResolved={wolvesResolved}
-          wolfVictimName={wolfVictimName}
-        />
-
-        {/* Painel do mestre (visivel apenas para o host/moderador) */}
-        {(isHost || isModerator) && (
-          <div className="w-full px-6 pb-4 pt-2">
-            <HostRolePanel roomId={roomId} isHost={true} />
-          </div>
-        )}
-
-        {isHost && !wolvesResolved && (
-          <div className="pb-8">
-            <HostControls
-              roomId={roomId}
-              mode="resolve_night_wolves"
-              turnIndex={turnIndex}
-            />
-          </div>
-        )}
-
-        {isHost && wolvesResolved && (
-          <div className="pb-8">
-            <HostControls
-              roomId={roomId}
-              mode="resolve_night"
-            />
-          </div>
-        )}
-
-        {!isHost && player.role !== 'werewolf' && player.role !== 'seer' && player.role !== 'witch' && !isModerator && (
-          <p className="text-neutral-700 text-xs mt-4 select-none text-center px-6 pb-8">
-            Quando todos estiverem prontos, o host resolverá a noite
-          </p>
-        )}
+        {renderNightPanel()}
       </div>
     )
   }
@@ -241,13 +269,6 @@ export default function GameScreen() {
           victims={victims}
           turnIndex={turnIndex}
         />
-
-        {/* Painel do mestre */}
-        {(isHost || isModerator) && (
-          <div className="w-full max-w-sm mx-auto px-6 pt-4">
-            <HostRolePanel roomId={roomId} isHost={true} />
-          </div>
-        )}
 
         <div className="w-full max-w-sm mx-auto py-4 flex flex-col items-center gap-3">
           <TimerDisplay
@@ -315,6 +336,87 @@ export default function GameScreen() {
   }
 
   return null
+
+  function renderNightPanel() {
+    if (!player) return null
+    const wolfVictimName = lastEvent?.victim_name ?? null
+
+    if (!isAlive) {
+      return (
+        <div className="flex flex-1 flex-col items-center justify-center px-6 gap-6">
+          <p className="text-neutral-600 text-xs uppercase tracking-widest select-none animate-pulse">
+            🌙 Fechem os olhos...
+          </p>
+          <p className="text-neutral-800 text-sm select-none">
+            Aguarde o dia nascer...
+          </p>
+        </div>
+      )
+    }
+
+    if (player.role === 'werewolf') {
+      return (
+        <div className="flex flex-1 flex-col items-center justify-center px-6 gap-6">
+          <p className="text-neutral-600 text-xs uppercase tracking-widest select-none animate-pulse">
+            🌙 Fechem os olhos...
+          </p>
+          <WerewolfPanel roomId={roomId} playerId={player.id} turnIndex={turnIndex} />
+        </div>
+      )
+    }
+
+    if (player.role === 'seer') {
+      return (
+        <div className="flex flex-1 flex-col items-center justify-center px-6 gap-6">
+          <p className="text-neutral-600 text-xs uppercase tracking-widest select-none animate-pulse">
+            🌙 Fechem os olhos...
+          </p>
+          <SeerPanel roomId={roomId} playerId={player.id} turnIndex={turnIndex} />
+        </div>
+      )
+    }
+
+    if (player.role === 'witch') {
+      if (!wolvesResolved) {
+        return (
+          <div className="flex flex-1 flex-col items-center justify-center px-6 gap-6">
+            <p className="text-neutral-600 text-xs uppercase tracking-widest select-none animate-pulse">
+              🌙 Fechem os olhos...
+            </p>
+            <p className="text-neutral-800 text-sm select-none">
+              Aguardando o ataque dos lobos...
+            </p>
+          </div>
+        )
+      }
+
+      return (
+        <div className="flex flex-1 flex-col items-center justify-center px-6 gap-6">
+          <p className="text-neutral-600 text-xs uppercase tracking-widest select-none animate-pulse">
+            🌙 Fechem os olhos...
+          </p>
+          <WitchPanel
+            roomId={roomId}
+            playerId={player.id}
+            turnIndex={turnIndex}
+            victimName={wolfVictimName}
+          />
+        </div>
+      )
+    }
+
+    // Villager, unknown role, or any other
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center px-6 gap-6">
+        <p className="text-neutral-600 text-xs uppercase tracking-widest select-none animate-pulse">
+          🌙 Fechem os olhos...
+        </p>
+        <p className="text-neutral-800 text-sm select-none">
+          Aguarde o dia nascer...
+        </p>
+      </div>
+    )
+  }
 
   function renderEnded() {
     const winner = lastEvent?.winner ?? (roomStatus === 'finished_wolves_win' ? 'wolves_win' : 'unknown')
