@@ -56,7 +56,7 @@ export function WitchPanel({ roomId, playerId, turnIndex, victimName, onDone }: 
     setError('')
     if (save && !usedLife) {
       try {
-        const { error: rpcErr } = await supabase.rpc('submit_night_action', {
+        const { error: rpcErr } = await supabase.rpc('execute_night_action', {
           p_room_id: roomId,
           p_action_type: 'witch_save',
           p_target_id: null,
@@ -84,7 +84,7 @@ export function WitchPanel({ roomId, playerId, turnIndex, victimName, onDone }: 
 
     if (targetId && !usedDeath) {
       try {
-        const { error: rpcErr } = await supabase.rpc('submit_night_action', {
+        const { error: rpcErr } = await supabase.rpc('execute_night_action', {
           p_room_id: roomId,
           p_action_type: 'witch_poison',
           p_target_id: targetId,

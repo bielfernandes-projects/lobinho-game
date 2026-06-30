@@ -35,7 +35,7 @@ export function HostRolePanel({ roomId, isHost }: HostRolePanelProps) {
 
     setError('')
 
-    const { data, error: rpcError } = await supabase.rpc('get_player_roles', { p_room_id: roomId })
+    const { data, error: rpcError } = await supabase.rpc('fetch_roles_for_host', { p_room_id: roomId })
 
     if (rpcError) {
       console.error('get_player_roles error:', rpcError)

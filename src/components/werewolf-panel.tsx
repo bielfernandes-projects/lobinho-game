@@ -58,7 +58,7 @@ export function WerewolfPanel({ roomId, playerId, turnIndex, onDone }: WerewolfP
     setBusy(true)
     setError('')
     try {
-      const { error: rpcErr } = await supabase.rpc('submit_night_action', {
+      const { error: rpcErr } = await supabase.rpc('execute_night_action', {
         p_room_id: roomId,
         p_action_type: 'werewolf_kill',
         p_target_id: targetId,

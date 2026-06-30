@@ -40,7 +40,7 @@ export function SeerPanel({ roomId, playerId, turnIndex, onDone }: SeerPanelProp
     setTargetName(name)
     setError('')
     try {
-      const res = await supabase.rpc('submit_night_action', {
+      const res = await supabase.rpc('execute_night_action', {
         p_room_id: roomId,
         p_action_type: 'seer_investigate',
         p_target_id: targetId,
