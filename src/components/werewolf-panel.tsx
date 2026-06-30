@@ -8,13 +8,15 @@ interface WerewolfPanelProps {
   roomId: string
   playerId: string
   turnIndex: number
+  onDone?: () => void
 }
 
-export function WerewolfPanel({ roomId, playerId, turnIndex }: WerewolfPanelProps) {
+export function WerewolfPanel({ roomId, playerId, turnIndex, onDone }: WerewolfPanelProps) {
   const [wolves, setWolves] = useState<RoomProfile[]>([])
   const [targets, setTargets] = useState<RoomProfile[]>([])
   const [voted, setVoted] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
   const supabase = createClient()
 
   useEffect(() => {
@@ -54,22 +56,30 @@ export function WerewolfPanel({ roomId, playerId, turnIndex }: WerewolfPanelProp
 
   async function handleKill(targetId: string) {
     setBusy(true)
-    const { error } = await supabase.rpc('submit_night_action', {
-      p_room_id: roomId,
-      p_action_type: 'werewolf_kill',
-      p_target_id: targetId,
-    })
-    if (!error) setVoted(true)
+    setError('')
+    try {
+      const { error: rpcErr } = await supabase.rpc('submit_night_action', {
+        p_room_id: roomId,
+        p_action_type: 'werewolf_kill',
+        p_target_id: targetId,
+      })
+      if (rpcErr) {
+        console.error('[WerewolfPanel] RPC error:', rpcErr)
+        setError(rpcErr.message)
+        setBusy(false)
+        return
+      }
+      setVoted(true)
+      onDone?.()
+    } catch (err) {
+      console.error('[WerewolfPanel] Unexpected:', err)
+      setError(err instanceof Error ? err.message : 'Erro inesperado')
+    }
     setBusy(false)
   }
 
   if (voted) {
-    return (
-      <div className="text-center">
-        <p className="text-green-600 text-sm font-semibold">✅ Voto registrado</p>
-        <p className="text-neutral-700 text-xs mt-1">Aguardando os outros lobos...</p>
-      </div>
-    )
+    return null
   }
 
   return (
@@ -121,6 +131,10 @@ export function WerewolfPanel({ roomId, playerId, turnIndex }: WerewolfPanelProp
           ))}
         </div>
       </div>
+
+      {error && (
+        <p className="text-red-500 text-xs text-center">{error}</p>
+      )}
     </div>
   )
 }

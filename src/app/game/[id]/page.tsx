@@ -15,6 +15,7 @@ import { VotingPanel } from '@/components/voting-panel'
 import { TimerDisplay } from '@/components/timer-display'
 import { HostTimerControls } from '@/components/host-timer-controls'
 import { HostRolePanel } from '@/components/host-role-panel'
+import { VoteTimerPanel } from '@/components/vote-timer-panel'
 
 export default function GameScreen() {
   const params = useParams()
@@ -28,10 +29,13 @@ export default function GameScreen() {
 
   const [roomStatus, setRoomStatus] = useState<string | null>(null)
   const [showExitModal, setShowExitModal] = useState(false)
+  const [actedRoles, setActedRoles] = useState<Set<string>>(new Set())
+  const prevNightStepRef = useRef<string>('sleeping')
   const hasFlippedRef = useRef(false)
 
   const phase = gameState?.current_phase ?? null
   const turnIndex = gameState?.turn_index ?? 0
+  const nightStep = gameState?.night_step ?? 'sleeping'
   const wolvesResolved = gameState?.wolves_resolved ?? false
   const lastEvent = gameState?.last_event ?? null
   const lastVoteResult = gameState?.last_vote_result ?? null
@@ -107,9 +111,23 @@ export default function GameScreen() {
     return renderEnded()
   }
 
+  // Reset actedRoles when nightStep changes
+  if (nightStep !== prevNightStepRef.current) {
+    prevNightStepRef.current = nightStep
+    setActedRoles(new Set())
+  }
+
   const isHost = player.isHost
   const isAlive = player.isAlive
   const isModerator = player.role === 'moderator'
+
+  function handleRoleDone(role: string) {
+    setActedRoles((prev) => new Set([...prev, role]))
+  }
+
+  async function handleSetNightStep(step: string) {
+    await supabase.from('game_state').update({ night_step: step }).eq('room_id', roomId)
+  }
 
   async function handleExitToLobby() {
     const supabase = createClient()
@@ -171,19 +189,57 @@ export default function GameScreen() {
           />
         )}
 
-        {phase === 'night' && !wolvesResolved && (
-          <HostControls
-            roomId={roomId}
-            mode="resolve_night_wolves"
-            turnIndex={turnIndex}
-          />
-        )}
+        {phase === 'night' && (
+          <div className="w-full max-w-sm mx-auto space-y-3 py-2">
+            <p className="text-neutral-600 text-[10px] uppercase tracking-widest text-center">
+              Controle da Noite
+            </p>
+            <div className="flex flex-wrap gap-2 justify-center">
+              <button
+                onClick={() => handleSetNightStep('sleeping')}
+                disabled={nightStep === 'sleeping'}
+                className="px-3 py-2 rounded-lg text-xs font-bold tracking-wider bg-neutral-900 border border-neutral-800 text-neutral-500 hover:text-neutral-400 disabled:opacity-30 cursor-pointer transition-all duration-200"
+              >
+                😴 Todos Dormindo
+              </button>
+              <button
+                onClick={() => handleSetNightStep('wolves')}
+                disabled={nightStep === 'wolves' || wolvesResolved}
+                className="px-3 py-2 rounded-lg text-xs font-bold tracking-wider bg-neutral-900 border border-red-900/30 text-red-400 hover:bg-red-900/20 disabled:opacity-30 cursor-pointer transition-all duration-200"
+              >
+                🐺 Acordar Lobos
+              </button>
+              <button
+                onClick={() => handleSetNightStep('seer')}
+                disabled={nightStep === 'seer'}
+                className="px-3 py-2 rounded-lg text-xs font-bold tracking-wider bg-neutral-900 border border-purple-900/30 text-purple-400 hover:bg-purple-900/20 disabled:opacity-30 cursor-pointer transition-all duration-200"
+              >
+                🔮 Acordar Vidente
+              </button>
+              <button
+                onClick={() => handleSetNightStep('witch')}
+                disabled={nightStep === 'witch'}
+                className="px-3 py-2 rounded-lg text-xs font-bold tracking-wider bg-neutral-900 border border-emerald-900/30 text-emerald-400 hover:bg-emerald-900/20 disabled:opacity-30 cursor-pointer transition-all duration-200"
+              >
+                🧪 Acordar Bruxa
+              </button>
+            </div>
 
-        {phase === 'night' && wolvesResolved && (
-          <HostControls
-            roomId={roomId}
-            mode="resolve_night"
-          />
+            {!wolvesResolved && (
+              <HostControls
+                roomId={roomId}
+                mode="resolve_night_wolves"
+                turnIndex={turnIndex}
+              />
+            )}
+
+            {wolvesResolved && (
+              <HostControls
+                roomId={roomId}
+                mode="resolve_night"
+              />
+            )}
+          </div>
         )}
 
         {phase === 'day' && (
@@ -207,11 +263,14 @@ export default function GameScreen() {
         )}
 
         {phase === 'vote' && (
-          <HostControls
-            roomId={roomId}
-            mode="resolve_vote"
-            turnIndex={turnIndex}
-          />
+          <>
+            <HostControls
+              roomId={roomId}
+              mode="resolve_vote"
+              turnIndex={turnIndex}
+            />
+            <VoteTimerPanel />
+          </>
         )}
 
         <div className="mt-auto pt-6 pb-8 px-6 w-full max-w-sm mx-auto">
@@ -382,9 +441,8 @@ export default function GameScreen() {
 
   function renderNightPanel() {
     if (!player) return null
-    const wolfVictimName = lastEvent?.victim_name ?? null
 
-    if (!isAlive) {
+    function sleepScreen() {
       return (
         <div className="flex flex-1 flex-col items-center justify-center px-6 gap-6">
           <p className="text-neutral-600 text-xs uppercase tracking-widest select-none animate-pulse">
@@ -397,42 +455,40 @@ export default function GameScreen() {
       )
     }
 
+    if (!isAlive) return sleepScreen()
+
+    const wolfVictimName = lastEvent?.victim_name ?? null
+
     if (player.role === 'werewolf') {
+      if (nightStep !== 'wolves') return sleepScreen()
+      if (actedRoles.has('werewolf')) return sleepScreen()
       return (
         <div className="flex flex-1 flex-col items-center justify-center px-6 gap-6">
           <p className="text-neutral-600 text-xs uppercase tracking-widest select-none animate-pulse">
             🌙 Fechem os olhos...
           </p>
-          <WerewolfPanel roomId={roomId} playerId={player.id} turnIndex={turnIndex} />
+          <WerewolfPanel roomId={roomId} playerId={player.id} turnIndex={turnIndex} onDone={() => handleRoleDone('werewolf')} />
         </div>
       )
     }
 
     if (player.role === 'seer') {
+      if (nightStep !== 'seer') return sleepScreen()
+      if (actedRoles.has('seer')) return sleepScreen()
       return (
         <div className="flex flex-1 flex-col items-center justify-center px-6 gap-6">
           <p className="text-neutral-600 text-xs uppercase tracking-widest select-none animate-pulse">
             🌙 Fechem os olhos...
           </p>
-          <SeerPanel roomId={roomId} playerId={player.id} turnIndex={turnIndex} />
+          <SeerPanel roomId={roomId} playerId={player.id} turnIndex={turnIndex} onDone={() => handleRoleDone('seer')} />
         </div>
       )
     }
 
     if (player.role === 'witch') {
-      if (!wolvesResolved) {
-        return (
-          <div className="flex flex-1 flex-col items-center justify-center px-6 gap-6">
-            <p className="text-neutral-600 text-xs uppercase tracking-widest select-none animate-pulse">
-              🌙 Fechem os olhos...
-            </p>
-            <p className="text-neutral-800 text-sm select-none">
-              Aguardando o ataque dos lobos...
-            </p>
-          </div>
-        )
-      }
-
+      if (!wolvesResolved) return sleepScreen()
+      if (nightStep !== 'witch') return sleepScreen()
+      if (actedRoles.has('witch')) return sleepScreen()
       return (
         <div className="flex flex-1 flex-col items-center justify-center px-6 gap-6">
           <p className="text-neutral-600 text-xs uppercase tracking-widest select-none animate-pulse">
@@ -443,22 +499,13 @@ export default function GameScreen() {
             playerId={player.id}
             turnIndex={turnIndex}
             victimName={wolfVictimName}
+            onDone={() => handleRoleDone('witch')}
           />
         </div>
       )
     }
 
-    // Villager, unknown role, or any other
-    return (
-      <div className="flex flex-1 flex-col items-center justify-center px-6 gap-6">
-        <p className="text-neutral-600 text-xs uppercase tracking-widest select-none animate-pulse">
-          🌙 Fechem os olhos...
-        </p>
-        <p className="text-neutral-800 text-sm select-none">
-          Aguarde o dia nascer...
-        </p>
-      </div>
-    )
+    return sleepScreen()
   }
 
   function renderEnded() {

@@ -8,16 +8,18 @@ interface WitchPanelProps {
   playerId: string
   turnIndex: number
   victimName: string | null
+  onDone?: () => void
 }
 
 type Step = 'save' | 'poison' | 'done'
 
-export function WitchPanel({ roomId, playerId, turnIndex, victimName }: WitchPanelProps) {
+export function WitchPanel({ roomId, playerId, turnIndex, victimName, onDone }: WitchPanelProps) {
   const [step, setStep] = useState<Step>('save')
   const [targets, setTargets] = useState<{ id: string; name: string; isHost: boolean }[]>([])
   const [poisonBusy, setPoisonBusy] = useState(false)
   const [usedLife, setUsedLife] = useState(false)
   const [usedDeath, setUsedDeath] = useState(false)
+  const [error, setError] = useState('')
   const supabase = createClient()
 
   useEffect(() => {
@@ -49,30 +51,55 @@ export function WitchPanel({ roomId, playerId, turnIndex, victimName }: WitchPan
   }, [roomId, playerId])
 
   async function handleSave(save: boolean) {
+    setError('')
     if (save && !usedLife) {
-      const { error } = await supabase.rpc('submit_night_action', {
-        p_room_id: roomId,
-        p_action_type: 'witch_save',
-        p_target_id: null,
-      })
-      if (error) return
+      try {
+        const { error: rpcErr } = await supabase.rpc('submit_night_action', {
+          p_room_id: roomId,
+          p_action_type: 'witch_save',
+          p_target_id: null,
+        })
+        if (rpcErr) {
+          console.error('[WitchPanel] save error:', rpcErr)
+          setError(rpcErr.message)
+          return
+        }
+      } catch (err) {
+        console.error('[WitchPanel] save unexpected:', err)
+        setError(err instanceof Error ? err.message : 'Erro inesperado')
+        return
+      }
     }
     setStep('poison')
   }
 
   async function handlePoison(targetId: string | null) {
     setPoisonBusy(true)
+    setError('')
 
     if (targetId && !usedDeath) {
-      const { error } = await supabase.rpc('submit_night_action', {
-        p_room_id: roomId,
-        p_action_type: 'witch_poison',
-        p_target_id: targetId,
-      })
-      if (error) { setPoisonBusy(false); return }
+      try {
+        const { error: rpcErr } = await supabase.rpc('submit_night_action', {
+          p_room_id: roomId,
+          p_action_type: 'witch_poison',
+          p_target_id: targetId,
+        })
+        if (rpcErr) {
+          console.error('[WitchPanel] poison error:', rpcErr)
+          setError(rpcErr.message)
+          setPoisonBusy(false)
+          return
+        }
+      } catch (err) {
+        console.error('[WitchPanel] poison unexpected:', err)
+        setError(err instanceof Error ? err.message : 'Erro inesperado')
+        setPoisonBusy(false)
+        return
+      }
     }
 
     setStep('done')
+    onDone?.()
     setPoisonBusy(false)
   }
 
@@ -144,6 +171,10 @@ export function WitchPanel({ roomId, playerId, turnIndex, victimName }: WitchPan
               Poção da vida já usada
             </p>
           )}
+
+          {error && (
+            <p className="text-red-500 text-xs text-center">{error}</p>
+          )}
         </>
       )}
 
@@ -185,6 +216,10 @@ export function WitchPanel({ roomId, playerId, turnIndex, victimName }: WitchPan
           >
             {usedDeath ? 'Poção já usada' : 'Pular (não envenenar)'}
           </button>
+
+          {error && (
+            <p className="text-red-500 text-xs text-center">{error}</p>
+          )}
         </>
       )}
     </div>

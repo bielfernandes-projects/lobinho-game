@@ -1,22 +1,20 @@
 'use client'
-
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-
 interface SeerPanelProps {
   roomId: string
   playerId: string
   turnIndex: number
+  onDone?: () => void
 }
-
-export function SeerPanel({ roomId, playerId, turnIndex }: SeerPanelProps) {
+export function SeerPanel({ roomId, playerId, turnIndex, onDone }: SeerPanelProps) {
   const [targets, setTargets] = useState<{ id: string; name: string }[]>([])
   const [result, setResult] = useState<boolean | null>(null)
   const [targetName, setTargetName] = useState('')
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
+  const [error, setError] = useState('')
   const supabase = createClient()
-
   useEffect(() => {
     supabase
       .from('player_profiles')
@@ -32,24 +30,33 @@ export function SeerPanel({ roomId, playerId, turnIndex }: SeerPanelProps) {
         }
       })
   }, [roomId, playerId])
-
   async function handleInvestigate(targetId: string, name: string) {
     setBusy(true)
     setTargetName(name)
-
-    const { data, error } = await supabase.rpc('submit_night_action', {
-      p_room_id: roomId,
-      p_action_type: 'seer_investigate',
-      p_target_id: targetId,
-    })
-
-    if (!error && data) {
-      setResult(data.result)
-      setDone(true)
+    setError('')
+    try {
+      const { data, error: rpcErr } = await supabase.rpc('submit_night_action', {
+        p_room_id: roomId,
+        p_action_type: 'seer_investigate',
+        p_target_id: targetId,
+      })
+      if (rpcErr) {
+        console.error('[SeerPanel] RPC error:', rpcErr)
+        setError(rpcErr.message)
+        setBusy(false)
+        return
+      }
+      if (data) {
+        setResult(data.result)
+        setDone(true)
+        onDone?.()
+      }
+    } catch (err) {
+      console.error('[SeerPanel] Unexpected:', err)
+      setError(err instanceof Error ? err.message : 'Erro inesperado')
     }
     setBusy(false)
   }
-
   if (done && result !== null) {
     return (
       <div className="w-full max-w-sm text-center space-y-4">
@@ -75,14 +82,12 @@ export function SeerPanel({ roomId, playerId, turnIndex }: SeerPanelProps) {
       </div>
     )
   }
-
   return (
     <div className="w-full max-w-sm text-center space-y-4">
       <p className="text-purple-500 text-sm uppercase tracking-widest font-bold">
         🔮 Vidente
       </p>
       <p className="text-neutral-500 text-xs">Escolha alguém para investigar:</p>
-
       <div className="space-y-2">
         {targets.map((t) => (
           <button
@@ -100,9 +105,12 @@ export function SeerPanel({ roomId, playerId, turnIndex }: SeerPanelProps) {
             "
           >
             {t.name}
-          </button>
-        ))}
+            </button>
+          ))}
+        </div>
+        {error && (
+          <p className="text-red-500 text-xs text-center">{error}</p>
+        )}
       </div>
-    </div>
   )
 }

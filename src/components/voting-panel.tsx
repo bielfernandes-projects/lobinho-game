@@ -14,6 +14,7 @@ export function VotingPanel({ roomId, playerId, isAlive, turnIndex }: VotingPane
   const [targets, setTargets] = useState<{ id: string; name: string }[]>([])
   const [votedFor, setVotedFor] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
   const supabase = createClient()
 
   useEffect(() => {
@@ -34,12 +35,24 @@ export function VotingPanel({ roomId, playerId, isAlive, turnIndex }: VotingPane
 
   async function handleVote(targetId: string) {
     setBusy(true)
-    const { error } = await supabase.rpc('submit_vote', {
-      p_room_id: roomId,
-      p_turn_index: turnIndex,
-      p_target_id: targetId,
-    })
-    if (!error) setVotedFor(targetId)
+    setError('')
+    try {
+      const { error: rpcErr } = await supabase.rpc('submit_vote', {
+        p_room_id: roomId,
+        p_turn_index: turnIndex,
+        p_target_id: targetId,
+      })
+      if (rpcErr) {
+        console.error('[VotingPanel] RPC error:', rpcErr)
+        setError(rpcErr.message)
+        setBusy(false)
+        return
+      }
+      setVotedFor(targetId)
+    } catch (err) {
+      console.error('[VotingPanel] Unexpected:', err)
+      setError(err instanceof Error ? err.message : 'Erro inesperado')
+    }
     setBusy(false)
   }
 
@@ -88,9 +101,13 @@ export function VotingPanel({ roomId, playerId, isAlive, turnIndex }: VotingPane
             "
           >
             {t.name}
-          </button>
-        ))}
+            </button>
+          ))}
+        </div>
+
+        {error && (
+          <p className="text-red-500 text-xs text-center">{error}</p>
+        )}
       </div>
-    </div>
   )
 }
