@@ -69,6 +69,10 @@ export default function GameScreen() {
     return () => { supabase.removeChannel(channel) }
   }, [roomId])
 
+  // Derived state: gameEnded is true ONLY when rooms.status says so
+  const gameEnded =
+    roomStatus === 'finished_villagers_win' || roomStatus === 'finished_wolves_win'
+
   // Mark has_viewed_card on first flip
   async function handleFirstFlip() {
     if (hasFlippedRef.current || !player) return
@@ -94,6 +98,11 @@ export default function GameScreen() {
   }
 
   if (!player || !phase) return null
+
+  // Game ended — ONLY triggered by rooms.status via Supabase Realtime
+  if (gameEnded) {
+    return renderEnded()
+  }
 
   const isHost = player.isHost
   const isAlive = player.isAlive
@@ -155,12 +164,8 @@ export default function GameScreen() {
   }
 
   // ── Phase: night ──────────────────────────────────────────────────
-  if (phase === 'night' || roomStatus?.startsWith('finished_')) {
+  if (phase === 'night') {
     const wolfVictimName = lastEvent?.victim_name ?? null
-
-    if (phase === 'ended') {
-      return renderEnded()
-    }
 
     return (
       <div className="flex flex-1 flex-col items-center min-h-dvh">
@@ -307,16 +312,6 @@ export default function GameScreen() {
         )}
       </div>
     )
-  }
-
-  // ── Phase: ended ──────────────────────────────────────────────────
-  const isGameOver =
-    phase === 'ended' ||
-    roomStatus === 'finished_villagers_win' ||
-    roomStatus === 'finished_wolves_win'
-
-  if (isGameOver) {
-    return renderEnded()
   }
 
   return null
