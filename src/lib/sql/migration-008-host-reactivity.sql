@@ -17,6 +17,8 @@ END $$;
 -- ============================================================
 -- 2. RPC: get_player_roles (retorna tabela completa)
 -- ============================================================
+DROP FUNCTION IF EXISTS public.get_player_roles(UUID) CASCADE;
+
 CREATE OR REPLACE FUNCTION public.get_player_roles(p_room_id UUID)
 RETURNS TABLE(id UUID, name TEXT, role TEXT, is_alive BOOLEAN, has_viewed_card BOOLEAN)
 LANGUAGE plpgsql
