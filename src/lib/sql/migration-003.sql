@@ -145,65 +145,10 @@ $$;
 ALTER TABLE game_state ADD COLUMN IF NOT EXISTS last_event JSONB;
 
 -- ============================================================
--- 7. RPC: submit_night_action
+-- 7. [REMOVED] submit_night_action — use execute_night_action
+-- (criada manualmente no Supabase para evitar overwrite no deploy)
 -- ============================================================
-CREATE OR REPLACE FUNCTION public.submit_night_action(
-  p_room_id UUID,
-  p_action_type TEXT,
-  p_target_id UUID
-)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-  v_turn INT;
-  v_player_id UUID;
-  v_role TEXT;
-  v_alive BOOLEAN;
-  v_result BOOLEAN;
-  v_current_phase TEXT;
-BEGIN
-  SELECT id, role, is_alive INTO v_player_id, v_role, v_alive
-  FROM players WHERE user_id = auth.uid() AND room_id = p_room_id;
-
-  IF v_player_id IS NULL THEN
-    RAISE EXCEPTION 'Jogador nao encontrado na sala';
-  END IF;
-
-  IF NOT v_alive THEN
-    RAISE EXCEPTION 'Jogador morto nao pode agir';
-  END IF;
-
-  IF (p_action_type = 'werewolf_kill' AND v_role != 'werewolf') OR
-     (p_action_type = 'seer_investigate' AND v_role != 'seer') THEN
-    RAISE EXCEPTION 'Acao nao permitida para seu papel';
-  END IF;
-
-  SELECT current_phase, turn_index INTO v_current_phase, v_turn
-  FROM game_state WHERE room_id = p_room_id;
-
-  IF v_current_phase != 'night' THEN
-    RAISE EXCEPTION 'Nao e hora de agir';
-  END IF;
-
-  INSERT INTO night_actions (room_id, turn_index, actor_id, action_type, target_id)
-  VALUES (p_room_id, v_turn, v_player_id, p_action_type, p_target_id);
-
-  IF p_action_type = 'seer_investigate' THEN
-    SELECT role = 'werewolf' INTO v_result
-    FROM players WHERE id = p_target_id AND room_id = p_room_id;
-
-    UPDATE night_actions SET result = v_result
-    WHERE actor_id = v_player_id AND turn_index = v_turn;
-
-    RETURN jsonb_build_object('result', v_result);
-  END IF;
-
-  RETURN jsonb_build_object('result', null);
-END;
-$$;
+-- A definicao abaixo foi removida propositalmente.
 
 -- ============================================================
 -- 8. RPC: resolve_night (conta votos lobos, mata vitima)

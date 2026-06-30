@@ -117,24 +117,10 @@ END;
 $$;
 
 -- ============================================================
--- RPC: get_player_roles (para o host ler papeis)
+-- [REMOVED] get_player_roles — use fetch_roles_for_host
+-- (criada manualmente no Supabase para evitar overwrite no deploy)
 -- ============================================================
-CREATE OR REPLACE FUNCTION public.get_player_roles(p_room_id UUID)
-RETURNS TABLE(id UUID, role TEXT)
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM players
-    WHERE room_id = p_room_id AND user_id = auth.uid() AND is_host = true
-  ) THEN
-    RAISE EXCEPTION 'Somente o host pode ver os papeis';
-  END IF;
-
-  RETURN QUERY SELECT players.id, players.role::TEXT
-  FROM players
-  WHERE room_id = p_room_id;
-END;
-$$;
+-- A definicao abaixo foi removida propositalmente.
+-- O deploy re-executa este arquivo e recriaria a funcao antiga,
+-- sobrescrevendo a versao corrigida (fetch_roles_for_host).
+-- ============================================================
