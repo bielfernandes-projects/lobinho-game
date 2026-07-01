@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useCurrentPlayer } from '@/hooks/use-player'
 import { useRoomPlayers } from '@/hooks/use-room'
 import { PlayerList } from '@/components/player-list'
-import { HostControls } from '@/components/host-controls'
+import { ScenarioBuilder } from '@/components/scenario-builder'
 
 export default function LobbyScreen() {
   const params = useParams()
@@ -242,13 +242,18 @@ export default function LobbyScreen() {
           <p className="text-red-500 text-xs text-center">{transferError}</p>
         )}
 
-        {/* Botão de iniciar (só host vê) */}
-        {player.isHost && <HostControls roomId={roomId} mode="start" />}
+        {/* Construtor de Cenário (só host vê) */}
+        {player.isHost && (
+          <ScenarioBuilder
+            roomId={roomId}
+            playerCount={players.filter((p) => !p.isHost).length}
+          />
+        )}
 
         {/* Aguardando */}
         {!player.isHost && (
           <p className="text-neutral-600 text-xs text-center mt-4">
-            Aguardando o Host iniciar a partida...
+            Aguardando o Host montar o cenário...
           </p>
         )}
 

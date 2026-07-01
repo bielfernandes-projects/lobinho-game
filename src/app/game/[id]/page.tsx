@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useCurrentPlayer } from '@/hooks/use-player'
 import { useRoomPlayers, useGameState } from '@/hooks/use-room'
 import { FlipCard } from '@/components/flip-card'
+import { CARD_CATALOG } from '@/lib/cards'
 import { HostControls } from '@/components/host-controls'
 import { WerewolfPanel } from '@/components/werewolf-panel'
 import { SeerPanel } from '@/components/seer-panel'
@@ -335,6 +336,8 @@ export default function GameScreen() {
 
   // ── Phase: card_reveal ────────────────────────────────────────────
   if (phase === 'card_reveal') {
+    const myCard = CARD_CATALOG.find((c) => c.id === player?.role)
+
     return (
       <div className="flex flex-1 flex-col items-center px-6 py-8 min-h-dvh">
         <div className="w-full max-w-sm flex flex-col items-center gap-6">
@@ -352,7 +355,9 @@ export default function GameScreen() {
           </p>
           <FlipCard
             playerName={player.name}
-            role={player.role ?? '???'}
+            role={myCard?.name ?? player.role ?? '???'}
+            description={myCard?.description}
+            points={myCard?.points}
             onFirstFlip={handleFirstFlip}
           />
         </div>

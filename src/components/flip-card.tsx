@@ -6,10 +6,12 @@ import { motion } from 'framer-motion'
 interface FlipCardProps {
   playerName: string
   role: string
+  description?: string
+  points?: number
   onFirstFlip?: () => void
 }
 
-export function FlipCard({ playerName, role, onFirstFlip }: FlipCardProps) {
+export function FlipCard({ playerName, role, description, points, onFirstFlip }: FlipCardProps) {
   const [isFlipped, setIsFlipped] = useState(false)
   const hasFiredRef = useRef(false)
 
@@ -77,6 +79,23 @@ export function FlipCard({ playerName, role, onFirstFlip }: FlipCardProps) {
           <span className="text-red-500 text-2xl font-bold text-center select-none">
             {role}
           </span>
+          {description && (
+            <>
+              <div className="w-16 h-0.5 bg-red-800/30 rounded-full" />
+              <p className="text-neutral-500 text-[10px] leading-relaxed text-center select-none">
+                {description}
+              </p>
+            </>
+          )}
+          {points != null && (
+            <span
+              className={`text-[10px] font-mono font-bold ${
+                points > 0 ? 'text-emerald-500' : points < 0 ? 'text-red-400' : 'text-neutral-500'
+              }`}
+            >
+              {points > 0 ? `+${points}` : points} pts
+            </span>
+          )}
         </div>
       </motion.div>
     </div>
