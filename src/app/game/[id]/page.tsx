@@ -47,6 +47,8 @@ export default function GameScreen() {
     witch: '🧪 Bruxa',
   }
   const prevNightStepRef = useRef<string>('sleeping')
+  const nightRolesActedRef = useRef<Set<string>>(new Set())
+  const prevTurnRef = useRef<number>(0)
   const hasFlippedRef = useRef(false)
 
   const phase = gameState?.current_phase ?? null
@@ -123,17 +125,20 @@ export default function GameScreen() {
   // Fetch winner player names when game ends (Task 2)
   useEffect(() => {
     if (!gameEnded) return
-    const winner = lastEvent?.winner ?? (roomStatus === 'finished_wolves_win' ? 'wolves_win' : roomStatus === 'finished_tanner_win' ? 'tanner_win' : 'villagers_win')
-    async function fetch() {
-      if (winner === 'wolves_win') {
+    async function poll() {
+      const status = roomStatus
+      const w = lastEvent?.winner ?? (status === 'finished_wolves_win' ? 'wolves_win' : status === 'finished_tanner_win' ? 'tanner_win' : 'villagers_win')
+      if (w === 'wolves_win') {
         const { data } = await supabase.from('players').select('name, role').eq('room_id', roomId).eq('role', 'werewolf')
         if (data) setWinnerPlayers(data as { name: string; role: string }[])
-      } else if (winner === 'tanner_win') {
+      } else if (w === 'tanner_win') {
         const { data } = await supabase.from('players').select('name, role').eq('room_id', roomId).eq('role', 'tanner')
         if (data) setWinnerPlayers(data as { name: string; role: string }[])
       }
     }
-    fetch()
+    poll()
+    const iv = setInterval(poll, 2000)
+    return () => clearInterval(iv)
   }, [gameEnded])
 
   // Poll vote count during voting phase (Task 3)
@@ -191,8 +196,18 @@ export default function GameScreen() {
     return <DeadPlayerScreen />
   }
 
-  // Reset actedRoles when nightStep changes
+  // Reset night role tracking on new turn
+  if (turnIndex !== prevTurnRef.current) {
+    prevTurnRef.current = turnIndex
+    nightRolesActedRef.current = new Set()
+  }
+
+  // Reset actedRoles when nightStep changes; track visited roles
   if (nightStep !== prevNightStepRef.current) {
+    const prevStep = prevNightStepRef.current
+    if (prevStep !== 'sleeping') {
+      nightRolesActedRef.current = new Set([...nightRolesActedRef.current, prevStep])
+    }
     prevNightStepRef.current = nightStep
     setActedRoles(new Set())
   }
@@ -313,6 +328,7 @@ export default function GameScreen() {
                 const role = s === 'wolves' ? 'werewolf' : s
                 if (!availableNightRoles.has(role)) return false
                 if (s === 'wolves') return nightStep !== 'wolves' && !wolvesResolved
+                if (nightRolesActedRef.current.has(s)) return false
                 return nightStep !== s
               })
               if (nightStep === 'sleeping') {
@@ -541,11 +557,13 @@ export default function GameScreen() {
 
     return (
       <div className="flex flex-1 flex-col items-center min-h-dvh">
-        <DayAnnouncement
-          victims={victims}
-          turnIndex={turnIndex}
-          isHost={false}
-        />
+        {(dayStep === 'announcement' || dayStep === 'discussion') && (
+          <DayAnnouncement
+            victims={victims}
+            turnIndex={turnIndex}
+            isHost={false}
+          />
+        )}
 
         {dayStep !== 'announcement' && dayStep === 'discussion' && (
           <>
@@ -611,19 +629,12 @@ export default function GameScreen() {
         )}
 
         {dayStep !== 'announcement' && dayStep === 'voting' && (
-          <>
-            <div className="w-full max-w-sm mx-auto px-6 mt-2">
-              <p className="text-neutral-500 text-xs text-center font-mono">
-                Votos registrados: {voteCount} / {eligibleVoters}
-              </p>
-            </div>
-            <TribunalVoting
-              roomId={roomId}
-              playerId={player.id}
-              isAlive={isAlive}
-              isAccused={player.id === accusedId}
-            />
-          </>
+          <TribunalVoting
+            roomId={roomId}
+            playerId={player.id}
+            isAlive={isAlive}
+            isAccused={player.id === accusedId}
+          />
         )}
 
         {dayStep !== 'announcement' && dayStep === 'reveal' && (
@@ -750,20 +761,15 @@ export default function GameScreen() {
         </p>
 
         {winnerPlayers.length > 0 && (
-          <div className="text-center space-y-2">
-            <p className="text-neutral-500 text-[10px] uppercase tracking-widest">
-              {winner === 'wolves_win' ? '🐺 Lobisomens' : '👔 Curtidor'}
-            </p>
-            <div className="flex flex-col items-center gap-1">
-              {winnerPlayers.map((p, i) => (
-                <p key={i} className="text-neutral-300 text-sm font-medium">
-                  {p.name}
-                  <span className="text-neutral-600 ml-1.5 text-xs">
-                    ({p.role === 'werewolf' ? 'Lobisomem' : p.role})
-                  </span>
-                </p>
-              ))}
-            </div>
+          <div className="text-center space-y-1">
+            {winnerPlayers.map((p, i) => (
+              <p key={i} className="text-neutral-300 text-sm font-medium">
+                {p.name}
+                <span className="text-neutral-600 ml-1.5 text-xs">
+                  ({p.role === 'werewolf' ? 'Lobisomem' : p.role})
+                </span>
+              </p>
+            ))}
           </div>
         )}
 

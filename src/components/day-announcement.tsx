@@ -32,21 +32,23 @@ export function DayAnnouncement({ victims, turnIndex, isHost = false, onStartDis
           </p>
         </div>
       ) : (
-        <div className="text-center space-y-6">
-          {victims.map((v, i) => (
-            <div key={i} className="animate-pulse">
-              <p className="text-6xl mb-4">☠️</p>
-              <p className="text-red-500 text-2xl font-black tracking-widest uppercase drop-shadow-[0_0_15px_rgba(220,38,38,0.5)]">
-                {v.name}
-              </p>
-              {isHost && (
-                <p className="text-neutral-500 text-sm mt-2">
-                  {v.cause === 'lobisomem' && 'morto pelos lobisomens'}
-                  {v.cause === 'veneno' && 'envenenado'}
+        <div className="text-center">
+          <p className="text-6xl mb-4">☠️</p>
+          <div className="space-y-2">
+            {victims.map((v, i) => (
+              <div key={i}>
+                <p className="text-red-500 text-2xl font-black tracking-widest uppercase drop-shadow-[0_0_15px_rgba(220,38,38,0.5)]">
+                  {v.name}
                 </p>
-              )}
-            </div>
-          ))}
+                {isHost && (
+                  <p className="text-neutral-500 text-sm">
+                    {v.cause === 'lobisomem' && 'morto pelos lobisomens'}
+                    {v.cause === 'veneno' && 'envenenado'}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

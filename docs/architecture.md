@@ -92,11 +92,18 @@ lobby → card_reveal → night → day → (tribunal or night) → game_over
 - **Rooms constraint**: added `'finished_tanner_win'` to status check.
 - **Game screen** (`page.tsx`): `gameEnded` includes `'finished_tanner_win'`; `renderEnded` shows gray/brown tanner victory screen.
 
-### `<current+1>` — 4 usability tweaks
+### `<current+1>` — 4 usability tweaks (beta)
 - **Night guide preditivo**: `nextRoleToWake` calcula o primeiro papel em `WAKE_ORDER` disponível e não resolvido; exibe `📍 Vez de acordar: ...` antes do host clicar.
 - **Discussion copywriting**: Não-host vê "Hora da Discussão" com subtítulo explicativo (`Comunique-se com a vila...`).
-- **Vote counter X/Y**: `voteCount` e `eligibleVoters` (vivos - moderador - acusado) exibidos via polling a cada 2s durante `dayStep = 'voting'`, no painel do host e do jogador.
+- **Vote counter X/Y**: `voteCount` e `eligibleVoters` (vivos - moderador - acusado) exibidos via polling a cada 2s durante `dayStep = 'voting'`, apenas no painel do host.
 - **Game over público**: `winnerPlayers` inclui `role` agora; nomes e papéis (ex: "João (Lobisomem)") renderizados para TODOS os jogadores, sem restrição de `isHost`.
+
+### `<current+2>` — Bugfixes dos 4 usability tweaks
+- **Night guide**: `nightRolesActedRef` (useRef<Set>) acumula papéis que já foram acordados (detecta transição `nightStep` de um papel para outro); resetado a cada novo `turnIndex`. `nextRoleToWake` pula papéis no ref (além de `wolvesResolved` para lobos).
+- **DayAnnouncement**: Um único `☠️` no topo, nomes listados abaixo (sem caveira por nome); causa da morte (host only) em cada linha. Layout não empurra outros elementos.
+- **DayAnnouncement escondido**: No player view, só renderiza durante `dayStep === 'announcement' || 'discussion'`; durante `trial`/`voting`/`reveal` some e deixa o conteúdo da fase atual visível.
+- **Vote counter host-only**: Removido do player view (`TribunalVoting` não exibe mais X/Y).
+- **Game over**: Subtítulo redundante (`🐺 Lobisomens` / `👔 Curtidor`) removido; `winnerPlayers` agora com polling a cada 2s (fallback Realtime) para garantir que todos os jogadores recebam os dados.
 
 ### `<current>` — 5 UX/QoL improvements
 - **Day Announcement (Task 1)**: `day_step = 'announcement'` added to `resolve_night` RPC (applied via `supabase db push`, migration `20260701130300_day_step_announcement`); host sees "Iniciar Debate" button; players see victims without sub-phase content until host starts discussion.
