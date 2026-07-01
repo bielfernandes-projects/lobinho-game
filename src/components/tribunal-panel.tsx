@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 interface TribunalPanelProps {
@@ -13,21 +13,36 @@ interface TribunalPanelProps {
 export function TribunalPanel({ roomId, dayStep, accusedId, turnIndex }: TribunalPanelProps) {
   const [accuseModal, setAccuseModal] = useState(false)
   const [players, setPlayers] = useState<{ id: string; name: string }[]>([])
+  const [accusedName, setAccusedName] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [voteCount, setVoteCount] = useState(0)
   const supabase = createClient()
+  const accusedFetchCountRef = useRef(0)
+
+  useEffect(() => {
+    if (!accusedId) { setAccusedName(null); return }
+    const id = ++accusedFetchCountRef.current
+    supabase
+      .from('players')
+      .select('name')
+      .eq('id', accusedId)
+      .single()
+      .then(({ data }) => {
+        if (id === accusedFetchCountRef.current && data) {
+          setAccusedName((data as any).name)
+        }
+      })
+  }, [accusedId])
 
   async function openAccuseModal() {
     const { data } = await supabase
-      .from('player_profiles')
-      .select('id, name, is_alive')
+      .from('players')
+      .select('id, name')
       .eq('room_id', roomId)
+      .neq('role', 'moderator')
+      .eq('is_alive', true)
     if (data) {
-      setPlayers(
-        (data as any[])
-          .filter((p: any) => p.is_alive)
-          .map((p: any) => ({ id: p.id, name: p.name }))
-      )
+      setPlayers(data as { id: string; name: string }[])
     }
     setAccuseModal(true)
   }
@@ -135,7 +150,7 @@ export function TribunalPanel({ roomId, dayStep, accusedId, turnIndex }: Tribuna
           <div className="rounded-xl border border-red-800/60 bg-red-950/20 px-4 py-3 text-center">
             <p className="text-neutral-500 text-[10px] uppercase tracking-widest">Acusado</p>
             <p className="text-red-400 text-lg font-bold mt-1">
-              {accusedId ? players.find((p) => p.id === accusedId)?.name ?? '...' : '...'}
+              {accusedName ?? '...'}
             </p>
           </div>
           <button

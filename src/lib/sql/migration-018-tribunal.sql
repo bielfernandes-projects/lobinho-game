@@ -87,12 +87,12 @@ BEGIN
     RAISE EXCEPTION 'O acusado nao pode votar';
   END IF;
 
-  IF v_pvote_value NOT IN ('yes', 'no') THEN
+  IF p_vote_value NOT IN ('yes', 'no') THEN
     RAISE EXCEPTION 'Voto deve ser yes ou no';
   END IF;
 
   INSERT INTO votes (room_id, turn_index, voter_id, target_id, vote_value)
-  VALUES (p_room_id, v_turn, v_player_id, v_accused_id, v_pvote_value)
+  VALUES (p_room_id, v_turn, v_player_id, v_accused_id, p_vote_value)
   ON CONFLICT (room_id, turn_index, voter_id)
   DO UPDATE SET vote_value = EXCLUDED.vote_value, target_id = EXCLUDED.target_id, created_at = now();
 

@@ -289,12 +289,15 @@ export default function GameScreen() {
             )}
 
             {dayStep === 'trial' && (
-              <TribunalPanel
-                roomId={roomId}
-                dayStep={dayStep}
-                accusedId={accusedId}
-                turnIndex={turnIndex}
-              />
+              <>
+                <VoteTimerPanel />
+                <TribunalPanel
+                  roomId={roomId}
+                  dayStep={dayStep}
+                  accusedId={accusedId}
+                  turnIndex={turnIndex}
+                />
+              </>
             )}
 
             {dayStep === 'voting' && (
@@ -305,7 +308,6 @@ export default function GameScreen() {
                   accusedId={accusedId}
                   turnIndex={turnIndex}
                 />
-                <VoteTimerPanel />
               </>
             )}
 

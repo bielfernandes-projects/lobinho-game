@@ -87,15 +87,7 @@ export function FlipCard({ playerName, role, description, points, onFirstFlip }:
               </p>
             </>
           )}
-          {points != null && (
-            <span
-              className={`text-[10px] font-mono font-bold ${
-                points > 0 ? 'text-emerald-500' : points < 0 ? 'text-red-400' : 'text-neutral-500'
-              }`}
-            >
-              {points > 0 ? `+${points}` : points} pts
-            </span>
-          )}
+
         </div>
       </motion.div>
     </div>
