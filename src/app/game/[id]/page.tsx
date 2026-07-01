@@ -114,6 +114,10 @@ export default function GameScreen() {
     return () => { supabase.removeChannel(channel) }
   }, [roomId])
 
+  // Derived state: gameEnded is true ONLY when rooms.status says so
+  const gameEnded =
+    roomStatus === 'finished_villagers_win' || roomStatus === 'finished_wolves_win' || roomStatus === 'finished_tanner_win'
+
   // Fetch winner player names when game ends (Task 2)
   useEffect(() => {
     if (!gameEnded) return
@@ -129,10 +133,6 @@ export default function GameScreen() {
     }
     fetch()
   }, [gameEnded])
-
-  // Derived state: gameEnded is true ONLY when rooms.status says so
-  const gameEnded =
-    roomStatus === 'finished_villagers_win' || roomStatus === 'finished_wolves_win' || roomStatus === 'finished_tanner_win'
 
   // Mark has_viewed_card on first flip
   async function handleFirstFlip() {
