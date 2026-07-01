@@ -35,8 +35,10 @@ export default function GameScreen() {
   const [roomStatus, setRoomStatus] = useState<string | null>(null)
   const [showExitModal, setShowExitModal] = useState(false)
   const [actedRoles, setActedRoles] = useState<Set<string>>(new Set())
-  const [winnerPlayers, setWinnerPlayers] = useState<{ name: string }[]>([])
+  const [winnerPlayers, setWinnerPlayers] = useState<{ name: string; role: string }[]>([])
   const [availableNightRoles, setAvailableNightRoles] = useState<Set<string>>(new Set(['werewolf']))
+  const [voteCount, setVoteCount] = useState(0)
+  const [eligibleVoters, setEligibleVoters] = useState(0)
 
   const WAKE_ORDER = ['wolves', 'seer', 'witch'] as const
   const NIGHT_ROLE_LABELS: Record<string, string> = {
@@ -124,15 +126,34 @@ export default function GameScreen() {
     const winner = lastEvent?.winner ?? (roomStatus === 'finished_wolves_win' ? 'wolves_win' : roomStatus === 'finished_tanner_win' ? 'tanner_win' : 'villagers_win')
     async function fetch() {
       if (winner === 'wolves_win') {
-        const { data } = await supabase.from('players').select('name').eq('room_id', roomId).eq('role', 'werewolf')
-        if (data) setWinnerPlayers(data as { name: string }[])
+        const { data } = await supabase.from('players').select('name, role').eq('room_id', roomId).eq('role', 'werewolf')
+        if (data) setWinnerPlayers(data as { name: string; role: string }[])
       } else if (winner === 'tanner_win') {
-        const { data } = await supabase.from('players').select('name').eq('room_id', roomId).eq('role', 'tanner')
-        if (data) setWinnerPlayers(data as { name: string }[])
+        const { data } = await supabase.from('players').select('name, role').eq('room_id', roomId).eq('role', 'tanner')
+        if (data) setWinnerPlayers(data as { name: string; role: string }[])
       }
     }
     fetch()
   }, [gameEnded])
+
+  // Poll vote count during voting phase (Task 3)
+  useEffect(() => {
+    if (dayStep !== 'voting' || !roomId) return
+    async function poll() {
+      const [{ count: countVotes }, { data: alivePlayers }] = await Promise.all([
+        supabase.from('votes').select('*', { count: 'exact', head: true }).eq('room_id', roomId).eq('turn_index', turnIndex),
+        supabase.from('players').select('id, role').eq('room_id', roomId).eq('is_alive', true),
+      ])
+      const eligible = (alivePlayers ?? []).filter(
+        (p: any) => p.role !== 'moderator' && p.id !== accusedId
+      ).length
+      setVoteCount(countVotes ?? 0)
+      setEligibleVoters(eligible)
+    }
+    poll()
+    const iv = setInterval(poll, 2000)
+    return () => clearInterval(iv)
+  }, [dayStep, roomId, turnIndex, accusedId])
 
   // Mark has_viewed_card on first flip
   async function handleFirstFlip() {
@@ -287,16 +308,33 @@ export default function GameScreen() {
             <p className="text-neutral-600 text-[10px] uppercase tracking-widest text-center">
               Controle da Noite
             </p>
-            {nightStep !== 'sleeping' && (
-              <p className="text-yellow-400 text-xs text-center">
-                📍 Vez: {NIGHT_ROLE_LABELS[nightStep] ?? nightStep}
-              </p>
-            )}
-            {nightStep === 'sleeping' && wolvesResolved && (
-              <p className="text-emerald-500 text-xs text-center">
-                ✅ Todas as ações concluídas — resolva a noite
-              </p>
-            )}
+            {(() => {
+              const nextRoleToWake = WAKE_ORDER.find((s) => {
+                const role = s === 'wolves' ? 'werewolf' : s
+                if (!availableNightRoles.has(role)) return false
+                if (s === 'wolves') return nightStep !== 'wolves' && !wolvesResolved
+                return nightStep !== s
+              })
+              if (nightStep === 'sleeping') {
+                if (nextRoleToWake) {
+                  return (
+                    <p className="text-yellow-400 text-xs text-center">
+                      📍 Vez de acordar: {NIGHT_ROLE_LABELS[nextRoleToWake]}
+                    </p>
+                  )
+                }
+                return (
+                  <p className="text-emerald-500 text-xs text-center">
+                    ✅ Todas as ações concluídas — resolva a noite
+                  </p>
+                )
+              }
+              return (
+                <p className="text-yellow-400 text-xs text-center">
+                  📍 Vez: {NIGHT_ROLE_LABELS[nightStep] ?? nightStep}
+                </p>
+              )
+            })()}
             <div className="flex flex-wrap gap-2 justify-center">
               <button
                 onClick={() => handleSetNightStep('sleeping')}
@@ -377,6 +415,11 @@ export default function GameScreen() {
 
             {dayStep === 'voting' && (
               <>
+                <div className="w-full max-w-sm mx-auto px-6">
+                  <p className="text-neutral-500 text-xs text-center font-mono">
+                    Votos registrados: {voteCount} / {eligibleVoters}
+                  </p>
+                </div>
                 <TribunalPanel
                   roomId={roomId}
                   dayStep={dayStep}
@@ -539,8 +582,11 @@ export default function GameScreen() {
 
             {!isHost && (
               <div className="pb-8 text-center">
-                <p className="text-neutral-700 text-xs">
-                  Discussão em andamento...
+                <p className="text-neutral-300 text-lg font-bold tracking-wider">
+                  Hora da Discussão
+                </p>
+                <p className="text-neutral-500 text-sm mt-2 max-w-xs">
+                  Comunique-se com a vila para entender o que está acontecendo durante a noite.
                 </p>
               </div>
             )}
@@ -565,12 +611,19 @@ export default function GameScreen() {
         )}
 
         {dayStep !== 'announcement' && dayStep === 'voting' && (
-          <TribunalVoting
-            roomId={roomId}
-            playerId={player.id}
-            isAlive={isAlive}
-            isAccused={player.id === accusedId}
-          />
+          <>
+            <div className="w-full max-w-sm mx-auto px-6 mt-2">
+              <p className="text-neutral-500 text-xs text-center font-mono">
+                Votos registrados: {voteCount} / {eligibleVoters}
+              </p>
+            </div>
+            <TribunalVoting
+              roomId={roomId}
+              playerId={player.id}
+              isAlive={isAlive}
+              isAccused={player.id === accusedId}
+            />
+          </>
         )}
 
         {dayStep !== 'announcement' && dayStep === 'reveal' && (
@@ -697,13 +750,20 @@ export default function GameScreen() {
         </p>
 
         {winnerPlayers.length > 0 && (
-          <div className="text-center">
-            <p className="text-neutral-500 text-[10px] uppercase tracking-widest mb-2">
+          <div className="text-center space-y-2">
+            <p className="text-neutral-500 text-[10px] uppercase tracking-widest">
               {winner === 'wolves_win' ? '🐺 Lobisomens' : '👔 Curtidor'}
             </p>
-            <p className="text-neutral-300 text-sm font-medium">
-              {winnerPlayers.map((p) => p.name).join(', ')}
-            </p>
+            <div className="flex flex-col items-center gap-1">
+              {winnerPlayers.map((p, i) => (
+                <p key={i} className="text-neutral-300 text-sm font-medium">
+                  {p.name}
+                  <span className="text-neutral-600 ml-1.5 text-xs">
+                    ({p.role === 'werewolf' ? 'Lobisomem' : p.role})
+                  </span>
+                </p>
+              ))}
+            </div>
           </div>
         )}
 

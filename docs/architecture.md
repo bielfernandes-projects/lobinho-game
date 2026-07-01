@@ -92,10 +92,16 @@ lobby → card_reveal → night → day → (tribunal or night) → game_over
 - **Rooms constraint**: added `'finished_tanner_win'` to status check.
 - **Game screen** (`page.tsx`): `gameEnded` includes `'finished_tanner_win'`; `renderEnded` shows gray/brown tanner victory screen.
 
+### `<current+1>` — 4 usability tweaks
+- **Night guide preditivo**: `nextRoleToWake` calcula o primeiro papel em `WAKE_ORDER` disponível e não resolvido; exibe `📍 Vez de acordar: ...` antes do host clicar.
+- **Discussion copywriting**: Não-host vê "Hora da Discussão" com subtítulo explicativo (`Comunique-se com a vila...`).
+- **Vote counter X/Y**: `voteCount` e `eligibleVoters` (vivos - moderador - acusado) exibidos via polling a cada 2s durante `dayStep = 'voting'`, no painel do host e do jogador.
+- **Game over público**: `winnerPlayers` inclui `role` agora; nomes e papéis (ex: "João (Lobisomem)") renderizados para TODOS os jogadores, sem restrição de `isHost`.
+
 ### `<current>` — 5 UX/QoL improvements
 - **Day Announcement (Task 1)**: `day_step = 'announcement'` added to `resolve_night` RPC (applied via `supabase db push`, migration `20260701130300_day_step_announcement`); host sees "Iniciar Debate" button; players see victims without sub-phase content until host starts discussion.
 - **Winner names (Task 2)**: `renderEnded` queries `players` table for `role = 'werewolf'` (wolves win) or `role = 'tanner'` (tanner win) and displays the names below the victory banner.
-- **Night guide (Task 3)**: `WAKE_ORDER` constant used to show current turn indicator (`📍 Vez: 🐺 Lobisomens`) in host night panel; "✅ Todas as ações concluídas" when wolves resolved and step is sleeping.
+- **Night guide (Task 3)**: `WAKE_ORDER` constant used to show NEXT turn indicator preditivo (`📍 Vez de acordar: 🐺 Lobisomens`) during sleeping, or `📍 Vez:` when a role is active.
 - **Scenario localStorage (Task 4)**: `counts` persisted to/restored from `localStorage` key `lobinho_last_scenario` — host's role distribution survives page refresh.
 - **Player limit 25 (Task 5)**: `player-list.tsx` shows `/25` instead of `/8`; `scenario-builder.tsx` validates `playerCount <= 25`.
 
