@@ -29,7 +29,7 @@ BEGIN
 
   SELECT
     COUNT(*) FILTER (WHERE is_alive = true AND role = 'werewolf'),
-    COUNT(*) FILTER (WHERE is_alive = true AND role != 'werewolf')
+    COUNT(*) FILTER (WHERE is_alive = true AND role NOT IN ('werewolf', 'moderator'))
   INTO v_wolves, v_non_wolves
   FROM players WHERE room_id = p_room_id;
 
@@ -74,7 +74,7 @@ BEGIN
 
   SELECT
     COUNT(*) FILTER (WHERE is_alive = true AND role = 'werewolf'),
-    COUNT(*) FILTER (WHERE is_alive = true AND role != 'werewolf')
+    COUNT(*) FILTER (WHERE is_alive = true AND role NOT IN ('werewolf', 'moderator'))
   INTO v_wolves, v_non_wolves
   FROM players WHERE room_id = NEW.room_id;
 
