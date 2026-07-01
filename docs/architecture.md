@@ -117,7 +117,7 @@ lobby → card_reveal → night → day → (tribunal or night) → game_over
 - `migration-021-fix-role-constraint.sql`: single ALTER TABLE to drop and recreate constraint.
 - Start game was failing with "violates check constraint players_role_check" for any scenario using new roles.
 
-### `<next>` — DayAnnouncement spacing, discussion banner, Game Over names fix
+### `fc79acc` — DayAnnouncement spacing, discussion banner, Game Over names fix
 - **DayAnnouncement `mb-8`**: container ganha `mb-8` pra evitar colisão do botão "Iniciar Debate" com `HostRolePanel` quando não há vítimas.
 - **Discussion banner**: DayAnnouncement removido do player view durante `discussion`. Substituído por banner `📣 Hora da Discussão` no centro-superior (mesma posição do DayAnnouncement) com timer abaixo.
 - **Game Over via `player_profiles`**: `winnerPlayers` agora busca `name` de `player_profiles` (não `players.name`, coluna vazia) e `role` de `players`, merge por `id` — mesmo padrão de `tribunal-reveal.tsx`.
