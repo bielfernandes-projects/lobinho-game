@@ -81,7 +81,7 @@ lobby → card_reveal → night → day → (tribunal or night) → game_over
 - `availableNightRoles` state (Set<string>) populated via `useEffect` querying `players` table.
 - Buttons rendered via `.filter((b) => availableNightRoles.has(b.role))`.
 
-### `HEAD` — Expansion Lot 1 (Mayor, Prince, Tanner, Lycan)
+### `6940c6c` — Expansion Lot 1 (Mayor, Prince, Tanner, Lycan)
 - **CARD_CATALOG** (`src/lib/cards.ts`): 4 new cards added (mayor, prince, tanner, lycan).
 - **Mayor vote** (`tribunal-reveal.tsx`): weighted vote counting (mayor = 2), `x2` badge displayed.
 - **Prince immunity** (`host_execute_accused` RPC): if accused role is `prince`, identity revealed and absolved instead of killed.
@@ -91,6 +91,11 @@ lobby → card_reveal → night → day → (tribunal or night) → game_over
 - **`host_end_game` updated**: handles `tanner_win` → `rooms.status = 'finished_tanner_win'`.
 - **Rooms constraint**: added `'finished_tanner_win'` to status check.
 - **Game screen** (`page.tsx`): `gameEnded` includes `'finished_tanner_win'`; `renderEnded` shows gray/brown tanner victory screen.
+
+### `6940c6c+1` — Fix players_role_check constraint
+- Added missing `mayor`, `prince`, `tanner`, `lycan` to `players_role_check` constraint.
+- `migration-021-fix-role-constraint.sql`: single ALTER TABLE to drop and recreate constraint.
+- Start game was failing with "violates check constraint players_role_check" for any scenario using new roles.
 
 ---
 
@@ -141,7 +146,8 @@ lobby → card_reveal → night → day → (tribunal or night) → game_over
 | `migration-017-scenario-builder.sql` | `start_game(p_room_id, p_roles JSONB)` | Run in SQL Editor |
 | `migration-018-tribunal.sql` | `day_step`, `current_accused_id`, tribunal RPCs | Run in SQL Editor |
 | `migration-019-game-over-delay.sql` | `game_state.winner`, `check_game_over`, `host_end_game` | Run in SQL Editor |
-| `migration-020-expansion-lot1.sql` | Mayor/Prince/Tanner/Lycan cards, mechanics, tanner win | Apply in SQL Editor |
+| `migration-020-expansion-lot1.sql` | Mayor/Prince/Tanner/Lycan cards, mechanics, tanner win | Apply via CLI (db push) |
+| `migration-021-fix-role-constraint.sql` | Fix `players_role_check` constraint to include new roles | Apply via CLI (db push) |
 
 **Important**: All migrations have `CREATE OR REPLACE FUNCTION` blocks removed (neutered). The actual DB schema is maintained through Supabase SQL Editor. These files are reference copies only.
 
