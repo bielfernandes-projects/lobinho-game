@@ -32,4 +32,32 @@ export const CARD_CATALOG: CardDefinition[] = [
     points: 1,
     description: 'Encontre os lobisomens e elimine-os.',
   },
+  {
+    id: 'mayor',
+    name: 'Prefeito',
+    points: 2,
+    description:
+      'Seu voto no tribunal conta dobrado.',
+  },
+  {
+    id: 'prince',
+    name: 'Príncipe',
+    points: 3,
+    description:
+      'Se a vila decidir te linchar, você revela sua identidade e sobrevive.',
+  },
+  {
+    id: 'tanner',
+    name: 'Curtidor',
+    points: -2,
+    description:
+      'Você odeia seu trabalho. Você ganha o jogo se conseguir ser linchado pela vila.',
+  },
+  {
+    id: 'lycan',
+    name: 'Licano',
+    points: -1,
+    description:
+      'Você é da vila, mas tem sangue de lobo. A Vidente te enxerga como Lobisomem.',
+  },
 ]

@@ -45,7 +45,7 @@ lobby → card_reveal → night → day → (tribunal or night) → game_over
 - Kicked player sees "🚫 Você foi expulso" modal via Realtime `DELETE` listener.
 
 ### `aa4b88d` — Scenario Builder
-- `src/lib/cards.ts`: catalog of 4 cards (`werewolf`, `seer`, `witch`, `villager`).
+- `src/lib/cards.ts`: catalog of 4 cards (`werewolf`, `seer`, `witch`, `villager`), later expanded to 8 cards in Lot 1.
 - `src/components/scenario-builder.tsx`: host UI with +/- counters, thermometer, tooltip, validation.
 - `src/lib/sql/migration-017-scenario-builder.sql`: new `start_game(p_room_id, p_roles JSONB)`.
 - Game page: card_reveal resolves `CARD_CATALOG` and passes name/description/points to `FlipCard`.
@@ -80,6 +80,17 @@ lobby → card_reveal → night → day → (tribunal or night) → game_over
 - Night role buttons (wolves/seer/witch) only appear if those roles exist in `players` for the current game.
 - `availableNightRoles` state (Set<string>) populated via `useEffect` querying `players` table.
 - Buttons rendered via `.filter((b) => availableNightRoles.has(b.role))`.
+
+### `HEAD` — Expansion Lot 1 (Mayor, Prince, Tanner, Lycan)
+- **CARD_CATALOG** (`src/lib/cards.ts`): 4 new cards added (mayor, prince, tanner, lycan).
+- **Mayor vote** (`tribunal-reveal.tsx`): weighted vote counting (mayor = 2), `x2` badge displayed.
+- **Prince immunity** (`host_execute_accused` RPC): if accused role is `prince`, identity revealed and absolved instead of killed.
+- **Tanner win** (`check_game_over` / `trg_check_game_over`): dead tanner with `last_event.event_type = 'lynch'` → `winner = 'tanner_win'` (highest priority).
+- **Lycan seer check** (`execute_night_action` RPC): seer sees lycan as werewolf (`role IN ('werewolf', 'lycan')`).
+- **`host_execute_accused` reordered**: `game_state.last_event` set BEFORE `players.is_alive` UPDATE so trigger sees lynch context.
+- **`host_end_game` updated**: handles `tanner_win` → `rooms.status = 'finished_tanner_win'`.
+- **Rooms constraint**: added `'finished_tanner_win'` to status check.
+- **Game screen** (`page.tsx`): `gameEnded` includes `'finished_tanner_win'`; `renderEnded` shows gray/brown tanner victory screen.
 
 ---
 
@@ -130,6 +141,7 @@ lobby → card_reveal → night → day → (tribunal or night) → game_over
 | `migration-017-scenario-builder.sql` | `start_game(p_room_id, p_roles JSONB)` | Run in SQL Editor |
 | `migration-018-tribunal.sql` | `day_step`, `current_accused_id`, tribunal RPCs | Run in SQL Editor |
 | `migration-019-game-over-delay.sql` | `game_state.winner`, `check_game_over`, `host_end_game` | Run in SQL Editor |
+| `migration-020-expansion-lot1.sql` | Mayor/Prince/Tanner/Lycan cards, mechanics, tanner win | Apply in SQL Editor |
 
 **Important**: All migrations have `CREATE OR REPLACE FUNCTION` blocks removed (neutered). The actual DB schema is maintained through Supabase SQL Editor. These files are reference copies only.
 

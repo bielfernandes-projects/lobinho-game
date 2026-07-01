@@ -108,7 +108,7 @@ export default function GameScreen() {
 
   // Derived state: gameEnded is true ONLY when rooms.status says so
   const gameEnded =
-    roomStatus === 'finished_villagers_win' || roomStatus === 'finished_wolves_win'
+    roomStatus === 'finished_villagers_win' || roomStatus === 'finished_wolves_win' || roomStatus === 'finished_tanner_win'
 
   // Mark has_viewed_card on first flip
   async function handleFirstFlip() {
@@ -611,7 +611,7 @@ export default function GameScreen() {
   }
 
   function renderEnded() {
-    const winner = lastEvent?.winner ?? (roomStatus === 'finished_wolves_win' ? 'wolves_win' : 'unknown')
+    const winner = lastEvent?.winner ?? (roomStatus === 'finished_wolves_win' ? 'wolves_win' : roomStatus === 'finished_tanner_win' ? 'tanner_win' : 'villagers_win')
     const isHost = player?.isHost ?? false
 
     async function handleReturnToLobby() {
@@ -626,18 +626,34 @@ export default function GameScreen() {
       router.push('/')
     }
 
+    const tannerStyle = 'text-stone-600 drop-shadow-[0_0_20px_rgba(120,100,80,0.5)]'
+    const wolfStyle = 'text-red-700 drop-shadow-[0_0_20px_rgba(185,28,28,0.5)]'
+    const villagerStyle = 'text-yellow-500 drop-shadow-[0_0_20px_rgba(234,179,8,0.4)]'
+
+    const colors =
+      winner === 'tanner_win' ? tannerStyle
+        : winner === 'wolves_win' ? wolfStyle
+        : villagerStyle
+
+    const displayText =
+      winner === 'tanner_win' ? '👔 Curtidor Venceu'
+        : winner === 'wolves_win' ? '🐺 Lobisomens Venceram'
+        : '🌿 Aldeões Venceram'
+
     return (
       <div className="flex flex-1 flex-col items-center justify-center min-h-dvh px-6 gap-6">
-        <p className="text-6xl">🏆</p>
+        <p className="text-6xl">{
+          winner === 'tanner_win' ? '👔'
+            : winner === 'wolves_win' ? '🐺'
+            : '🏆'
+        }</p>
         <p className="text-neutral-400 text-xs uppercase tracking-widest">
           Fim de Jogo
         </p>
         <p
-          className={`text-3xl font-black tracking-widest uppercase drop-shadow-[0_0_20px_rgba(234,179,8,0.4)] text-center ${
-            winner === 'wolves_win' ? 'text-red-700 drop-shadow-[0_0_20px_rgba(185,28,28,0.5)]' : 'text-yellow-500'
-          }`}
+          className={`text-3xl font-black tracking-widest uppercase text-center ${colors}`}
         >
-          {winner === 'wolves_win' ? '🐺 Lobisomens Venceram' : '🌿 Aldeões Venceram'}
+          {displayText}
         </p>
 
         <div className="flex flex-col gap-3 w-full max-w-xs mt-4">

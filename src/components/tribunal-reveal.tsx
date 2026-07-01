@@ -3,14 +3,19 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
+interface VoterInfo {
+  name: string
+  role: string
+}
+
 interface TribunalRevealProps {
   roomId: string
   turnIndex: number
 }
 
 export function TribunalReveal({ roomId, turnIndex }: TribunalRevealProps) {
-  const [yesVotes, setYesVotes] = useState<{ name: string }[]>([])
-  const [noVotes, setNoVotes] = useState<{ name: string }[]>([])
+  const [yesVotes, setYesVotes] = useState<VoterInfo[]>([])
+  const [noVotes, setNoVotes] = useState<VoterInfo[]>([])
   const supabase = createClient()
 
   useEffect(() => {
@@ -23,19 +28,43 @@ export function TribunalReveal({ roomId, turnIndex }: TribunalRevealProps) {
 
       if (!data) return
 
-      const yes: { name: string }[] = []
-      const no: { name: string }[] = []
+      const rows = data as { vote_value: string; voter_id: string }[]
+      if (rows.length === 0) return
 
-      for (const v of data as { vote_value: string; voter_id: string }[]) {
-        const { data: profile } = await supabase
-          .from('player_profiles')
-          .select('name')
-          .eq('id', v.voter_id)
-          .single()
+      const voterIds = rows.map((r) => r.voter_id)
 
-        const name = (profile as any)?.name ?? 'Desconhecido'
-        if (v.vote_value === 'yes') yes.push({ name })
-        else no.push({ name })
+      const { data: profiles } = await supabase
+        .from('player_profiles')
+        .select('id, name')
+        .in('id', voterIds)
+
+      const { data: playerRoles } = await supabase
+        .from('players')
+        .select('id, role')
+        .in('id', voterIds)
+
+      const nameMap = new Map<string, string>()
+      if (profiles) {
+        for (const p of profiles as { id: string; name: string }[]) {
+          nameMap.set(p.id, p.name)
+        }
+      }
+
+      const roleMap = new Map<string, string>()
+      if (playerRoles) {
+        for (const p of playerRoles as { id: string; role: string }[]) {
+          roleMap.set(p.id, p.role)
+        }
+      }
+
+      const yes: VoterInfo[] = []
+      const no: VoterInfo[] = []
+
+      for (const v of rows) {
+        const name = nameMap.get(v.voter_id) ?? 'Desconhecido'
+        const role = roleMap.get(v.voter_id) ?? ''
+        if (v.vote_value === 'yes') yes.push({ name, role })
+        else no.push({ name, role })
       }
 
       setYesVotes(yes)
@@ -44,6 +73,9 @@ export function TribunalReveal({ roomId, turnIndex }: TribunalRevealProps) {
 
     load()
   }, [roomId, turnIndex])
+
+  const yesWeighted = yesVotes.reduce((s, v) => s + (v.role === 'mayor' ? 2 : 1), 0)
+  const noWeighted = noVotes.reduce((s, v) => s + (v.role === 'mayor' ? 2 : 1), 0)
 
   return (
     <div className="flex flex-1 flex-col items-center px-6 gap-4 mt-4">
@@ -56,13 +88,16 @@ export function TribunalReveal({ roomId, turnIndex }: TribunalRevealProps) {
         <div className="rounded-xl border border-red-800/40 bg-red-950/10 p-4 space-y-2">
           <div className="flex items-center justify-between">
             <p className="text-red-400 text-sm font-bold uppercase tracking-wider">
-              ✅ SIM ({yesVotes.length})
+              ✅ SIM ({yesWeighted})
             </p>
           </div>
           <div className="space-y-1">
             {yesVotes.map((v, i) => (
-              <p key={i} className="text-neutral-400 text-xs font-mono">
+              <p key={i} className="text-neutral-400 text-xs font-mono flex items-center gap-1">
                 {v.name}
+                {v.role === 'mayor' && (
+                  <span className="text-yellow-600 text-[10px] font-bold">x2</span>
+                )}
               </p>
             ))}
             {yesVotes.length === 0 && (
@@ -75,13 +110,16 @@ export function TribunalReveal({ roomId, turnIndex }: TribunalRevealProps) {
         <div className="rounded-xl border border-emerald-800/40 bg-emerald-950/10 p-4 space-y-2">
           <div className="flex items-center justify-between">
             <p className="text-emerald-400 text-sm font-bold uppercase tracking-wider">
-              ❌ NÃO ({noVotes.length})
+              ❌ NÃO ({noWeighted})
             </p>
           </div>
           <div className="space-y-1">
             {noVotes.map((v, i) => (
-              <p key={i} className="text-neutral-400 text-xs font-mono">
+              <p key={i} className="text-neutral-400 text-xs font-mono flex items-center gap-1">
                 {v.name}
+                {v.role === 'mayor' && (
+                  <span className="text-yellow-600 text-[10px] font-bold">x2</span>
+                )}
               </p>
             ))}
             {noVotes.length === 0 && (
