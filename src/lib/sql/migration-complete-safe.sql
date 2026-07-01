@@ -359,9 +359,10 @@ BEGIN
     v_victims := v_victims || jsonb_build_object('name', v_poison_target_name, 'cause', 'veneno');
   END IF;
 
-  -- Avancar para day
+  -- Avancar para day (começa com announcement)
   UPDATE game_state
   SET current_phase = 'day',
+      day_step = 'announcement',
       turn_index = v_turn,
       phase_started_at = now(),
       wolves_resolved = false,

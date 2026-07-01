@@ -29,7 +29,7 @@ export function PlayerList({
         <h2 className="text-neutral-400 text-sm uppercase tracking-widest">
           Jogadores
         </h2>
-        <span className="text-neutral-600 text-xs">{total}/8</span>
+        <span className="text-neutral-600 text-xs">{total}/25</span>
       </div>
 
       <div className="space-y-2">

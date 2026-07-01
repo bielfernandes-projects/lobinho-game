@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { CARD_CATALOG, type CardDefinition } from '@/lib/cards'
 
@@ -9,21 +9,38 @@ interface ScenarioBuilderProps {
   playerCount: number
 }
 
+const STORAGE_KEY = 'lobinho_last_scenario'
+
+function getInitialCounts(): Record<string, number> {
+  const zeros = Object.fromEntries(CARD_CATALOG.map((c) => [c.id, 0]))
+  if (typeof window === 'undefined') return zeros
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      return { ...zeros, ...parsed }
+    }
+  } catch {}
+  return zeros
+}
+
 export function ScenarioBuilder({ roomId, playerCount }: ScenarioBuilderProps) {
-  const [counts, setCounts] = useState<Record<string, number>>(
-    Object.fromEntries(CARD_CATALOG.map((c) => [c.id, 0]))
-  )
+  const [counts, setCounts] = useState<Record<string, number>>(getInitialCounts)
   const [tooltipId, setTooltipId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const supabase = createClient()
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(counts))
+  }, [counts])
 
   const totalCards = Object.values(counts).reduce((a, b) => a + b, 0)
   const totalPoints = CARD_CATALOG.reduce(
     (sum, c) => sum + c.points * (counts[c.id] ?? 0),
     0
   )
-  const isValid = totalCards === playerCount && playerCount >= 4
+  const isValid = totalCards === playerCount && playerCount >= 4 && playerCount <= 25
 
   function inc(id: string) {
     setCounts((prev) => ({ ...prev, [id]: (prev[id] ?? 0) + 1 }))
@@ -178,6 +195,9 @@ export function ScenarioBuilder({ roomId, playerCount }: ScenarioBuilderProps) {
         </p>
         {playerCount < 4 && (
           <p className="text-red-500 text-[10px]">Mínimo 4 jogadores</p>
+        )}
+        {playerCount > 25 && (
+          <p className="text-red-500 text-[10px]">Máximo 25 jogadores</p>
         )}
       </div>
 

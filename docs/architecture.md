@@ -14,13 +14,13 @@ lobby → card_reveal → night → day → (tribunal or night) → game_over
 | `waiting` / lobby | Players join; host configures scenario (role distribution). |
 | `card_reveal` | Each player sees their role card; host advances when all viewed. |
 | `night` | Host wakes roles sequentially (wolves → seer → witch); each performs action. |
-| `day` | Tribunal phase: accusation → trial (timer) → voting → reveal. May loop back to night. |
+| `day` | Announcement (victims) → discussion → tribunal phase (trial → voting → reveal). May loop back to night. |
 | `finished_villagers_win` | Game over — villagers win. |
 | `finished_wolves_win` | Game over — wolves win. |
 
 **`current_phase`** values: `waiting`, `card_reveal`, `night`, `day`, `ended`.
 
-**`day_step`** (when `current_phase = 'day'`): `accusation`, `trial`, `voting`, `reveal`.
+**`day_step`** (when `current_phase = 'day'`): `announcement`, `discussion`, `trial`, `voting`, `reveal`.
 
 **`night_step`** (when `current_phase = 'night'`): `sleeping`, `wolves`, `seer`, `witch`.
 
@@ -92,6 +92,13 @@ lobby → card_reveal → night → day → (tribunal or night) → game_over
 - **Rooms constraint**: added `'finished_tanner_win'` to status check.
 - **Game screen** (`page.tsx`): `gameEnded` includes `'finished_tanner_win'`; `renderEnded` shows gray/brown tanner victory screen.
 
+### `<current>` — 5 UX/QoL improvements
+- **Day Announcement (Task 1)**: `day_step = 'announcement'` added to `resolve_night` RPC; host sees "Iniciar Debate" button; players see victims without sub-phase content until host starts discussion.
+- **Winner names (Task 2)**: `renderEnded` queries `players` table for `role = 'werewolf'` (wolves win) or `role = 'tanner'` (tanner win) and displays the names below the victory banner.
+- **Night guide (Task 3)**: `WAKE_ORDER` constant used to show current turn indicator (`📍 Vez: 🐺 Lobisomens`) in host night panel; "✅ Todas as ações concluídas" when wolves resolved and step is sleeping.
+- **Scenario localStorage (Task 4)**: `counts` persisted to/restored from `localStorage` key `lobinho_last_scenario` — host's role distribution survives page refresh.
+- **Player limit 25 (Task 5)**: `player-list.tsx` shows `/25` instead of `/8`; `scenario-builder.tsx` validates `playerCount <= 25`.
+
 ### `6940c6c+1` — Fix players_role_check constraint
 - Added missing `mayor`, `prince`, `tanner`, `lycan` to `players_role_check` constraint.
 - `migration-021-fix-role-constraint.sql`: single ALTER TABLE to drop and recreate constraint.
@@ -110,7 +117,7 @@ lobby → card_reveal → night → day → (tribunal or night) → game_over
 | TribunalVoting | `src/components/tribunal-voting.tsx` | Player yes/no voting (SIM = lynch, NÃO = absolve) |
 | TribunalReveal | `src/components/tribunal-reveal.tsx` | Vote tally for all players |
 | VoteTimerPanel | `src/components/vote-timer-panel.tsx` | Single reusable timer (start/stop/reset) |
-| DayAnnouncement | `src/components/day-announcement.tsx` | Day start with victims; cause hidden from non-host |
+| DayAnnouncement | `src/components/day-announcement.tsx` | Day start with victims; cause hidden from non-host; host "Iniciar Debate" button |
 | HostActionLog | `src/components/host-action-log.tsx` | Real-time night action log via Realtime |
 | VotingPanel | `src/components/voting-panel.tsx` | Legacy player voting (deprecated by tribunal) |
 | PlayerList | `src/components/player-list.tsx` | Lobby player list with kick button |

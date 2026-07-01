@@ -35,7 +35,15 @@ export default function GameScreen() {
   const [roomStatus, setRoomStatus] = useState<string | null>(null)
   const [showExitModal, setShowExitModal] = useState(false)
   const [actedRoles, setActedRoles] = useState<Set<string>>(new Set())
+  const [winnerPlayers, setWinnerPlayers] = useState<{ name: string }[]>([])
   const [availableNightRoles, setAvailableNightRoles] = useState<Set<string>>(new Set(['werewolf']))
+
+  const WAKE_ORDER = ['wolves', 'seer', 'witch'] as const
+  const NIGHT_ROLE_LABELS: Record<string, string> = {
+    wolves: '🐺 Lobisomens',
+    seer: '🔮 Vidente',
+    witch: '🧪 Bruxa',
+  }
   const prevNightStepRef = useRef<string>('sleeping')
   const hasFlippedRef = useRef(false)
 
@@ -106,6 +114,22 @@ export default function GameScreen() {
     return () => { supabase.removeChannel(channel) }
   }, [roomId])
 
+  // Fetch winner player names when game ends (Task 2)
+  useEffect(() => {
+    if (!gameEnded) return
+    const winner = lastEvent?.winner ?? (roomStatus === 'finished_wolves_win' ? 'wolves_win' : roomStatus === 'finished_tanner_win' ? 'tanner_win' : 'villagers_win')
+    async function fetch() {
+      if (winner === 'wolves_win') {
+        const { data } = await supabase.from('players').select('name').eq('room_id', roomId).eq('role', 'werewolf')
+        if (data) setWinnerPlayers(data as { name: string }[])
+      } else if (winner === 'tanner_win') {
+        const { data } = await supabase.from('players').select('name').eq('room_id', roomId).eq('role', 'tanner')
+        if (data) setWinnerPlayers(data as { name: string }[])
+      }
+    }
+    fetch()
+  }, [gameEnded])
+
   // Derived state: gameEnded is true ONLY when rooms.status says so
   const gameEnded =
     roomStatus === 'finished_villagers_win' || roomStatus === 'finished_wolves_win' || roomStatus === 'finished_tanner_win'
@@ -164,6 +188,10 @@ export default function GameScreen() {
     await supabase.from('game_state').update({ night_step: step }).eq('room_id', roomId)
   }
 
+  async function handleStartDiscussion() {
+    await supabase.from('game_state').update({ day_step: 'discussion' }).eq('room_id', roomId)
+  }
+
   async function handleExitToLobby() {
     const supabase = createClient()
     await supabase.from('rooms').update({ status: 'waiting' }).eq('id', roomId)
@@ -187,6 +215,7 @@ export default function GameScreen() {
             {phase === 'day' && (
               <>
                 ☀️ Dia
+                {dayStep === 'announcement' && ' - Anúncio'}
                 {dayStep === 'discussion' && ' - Discussão'}
                 {dayStep === 'trial' && ' - Acusação'}
                 {dayStep === 'voting' && ' - Votação'}
@@ -215,11 +244,12 @@ export default function GameScreen() {
           </div>
         )}
 
-        {phase === 'day' && lastEvent?.victims && (
+        {phase === 'day' && dayStep === 'announcement' && (
           <DayAnnouncement
-            victims={lastEvent.victims as { name: string; cause: string }[]}
+            victims={(lastEvent?.victims ?? []) as { name: string; cause: string }[]}
             turnIndex={turnIndex}
             isHost={true}
+            onStartDiscussion={handleStartDiscussion}
           />
         )}
 
@@ -257,6 +287,16 @@ export default function GameScreen() {
             <p className="text-neutral-600 text-[10px] uppercase tracking-widest text-center">
               Controle da Noite
             </p>
+            {nightStep !== 'sleeping' && (
+              <p className="text-yellow-400 text-xs text-center">
+                📍 Vez: {NIGHT_ROLE_LABELS[nightStep] ?? nightStep}
+              </p>
+            )}
+            {nightStep === 'sleeping' && wolvesResolved && (
+              <p className="text-emerald-500 text-xs text-center">
+                ✅ Todas as ações concluídas — resolva a noite
+              </p>
+            )}
             <div className="flex flex-wrap gap-2 justify-center">
               <button
                 onClick={() => handleSetNightStep('sleeping')}
@@ -300,7 +340,7 @@ export default function GameScreen() {
           </div>
         )}
 
-        {phase === 'day' && (
+        {phase === 'day' && dayStep !== 'announcement' && (
           <>
             {dayStep === 'discussion' && (
               <div className="w-full max-w-sm mx-auto py-4 flex flex-col items-center gap-3">
@@ -464,7 +504,7 @@ export default function GameScreen() {
           isHost={false}
         />
 
-        {dayStep === 'discussion' && (
+        {dayStep !== 'announcement' && dayStep === 'discussion' && (
           <>
             <div className="w-full max-w-sm mx-auto py-4 flex flex-col items-center gap-3">
               <TimerDisplay
@@ -507,7 +547,7 @@ export default function GameScreen() {
           </>
         )}
 
-        {dayStep === 'trial' && (
+        {dayStep !== 'announcement' && dayStep === 'trial' && (
           <div className="flex flex-1 flex-col items-center justify-center px-6 gap-4">
             <p className="text-neutral-500 text-xs uppercase tracking-widest text-center">
               🎤 Alguém foi acusado!
@@ -524,7 +564,7 @@ export default function GameScreen() {
           </div>
         )}
 
-        {dayStep === 'voting' && (
+        {dayStep !== 'announcement' && dayStep === 'voting' && (
           <TribunalVoting
             roomId={roomId}
             playerId={player.id}
@@ -533,7 +573,7 @@ export default function GameScreen() {
           />
         )}
 
-        {dayStep === 'reveal' && (
+        {dayStep !== 'announcement' && dayStep === 'reveal' && (
           <TribunalReveal roomId={roomId} turnIndex={turnIndex} />
         )}
       </div>
@@ -655,6 +695,17 @@ export default function GameScreen() {
         >
           {displayText}
         </p>
+
+        {winnerPlayers.length > 0 && (
+          <div className="text-center">
+            <p className="text-neutral-500 text-[10px] uppercase tracking-widest mb-2">
+              {winner === 'wolves_win' ? '🐺 Lobisomens' : '👔 Curtidor'}
+            </p>
+            <p className="text-neutral-300 text-sm font-medium">
+              {winnerPlayers.map((p) => p.name).join(', ')}
+            </p>
+          </div>
+        )}
 
         <div className="flex flex-col gap-3 w-full max-w-xs mt-4">
           {isHost && (

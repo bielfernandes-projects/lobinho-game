@@ -9,9 +9,10 @@ interface DayAnnouncementProps {
   victims: VictimInfo[]
   turnIndex: number
   isHost?: boolean
+  onStartDiscussion?: () => void
 }
 
-export function DayAnnouncement({ victims, turnIndex, isHost = false }: DayAnnouncementProps) {
+export function DayAnnouncement({ victims, turnIndex, isHost = false, onStartDiscussion }: DayAnnouncementProps) {
   const ninguemMorreu = victims.length === 0
 
   return (
@@ -47,6 +48,15 @@ export function DayAnnouncement({ victims, turnIndex, isHost = false }: DayAnnou
             </div>
           ))}
         </div>
+      )}
+
+      {isHost && onStartDiscussion && (
+        <button
+          onClick={onStartDiscussion}
+          className="px-6 py-3 rounded-xl text-sm font-bold tracking-wider bg-red-700 text-white hover:bg-red-600 active:bg-red-800 shadow-lg shadow-red-900/40 transition-all duration-200 cursor-pointer"
+        >
+          Iniciar Debate
+        </button>
       )}
     </div>
   )
