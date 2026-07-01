@@ -93,7 +93,7 @@ lobby → card_reveal → night → day → (tribunal or night) → game_over
 - **Game screen** (`page.tsx`): `gameEnded` includes `'finished_tanner_win'`; `renderEnded` shows gray/brown tanner victory screen.
 
 ### `<current>` — 5 UX/QoL improvements
-- **Day Announcement (Task 1)**: `day_step = 'announcement'` added to `resolve_night` RPC; host sees "Iniciar Debate" button; players see victims without sub-phase content until host starts discussion.
+- **Day Announcement (Task 1)**: `day_step = 'announcement'` added to `resolve_night` RPC (applied via `supabase db push`, migration `20260701130300_day_step_announcement`); host sees "Iniciar Debate" button; players see victims without sub-phase content until host starts discussion.
 - **Winner names (Task 2)**: `renderEnded` queries `players` table for `role = 'werewolf'` (wolves win) or `role = 'tanner'` (tanner win) and displays the names below the victory banner.
 - **Night guide (Task 3)**: `WAKE_ORDER` constant used to show current turn indicator (`📍 Vez: 🐺 Lobisomens`) in host night panel; "✅ Todas as ações concluídas" when wolves resolved and step is sleeping.
 - **Scenario localStorage (Task 4)**: `counts` persisted to/restored from `localStorage` key `lobinho_last_scenario` — host's role distribution survives page refresh.
@@ -155,6 +155,7 @@ lobby → card_reveal → night → day → (tribunal or night) → game_over
 | `migration-019-game-over-delay.sql` | `game_state.winner`, `check_game_over`, `host_end_game` | Run in SQL Editor |
 | `migration-020-expansion-lot1.sql` | Mayor/Prince/Tanner/Lycan cards, mechanics, tanner win | Apply via CLI (db push) |
 | `migration-021-fix-role-constraint.sql` | Fix `players_role_check` constraint to include new roles | Apply via CLI (db push) |
+| `20260701130300_day_step_announcement.sql` | `resolve_night` sets `day_step = 'announcement'` | Apply via CLI (db push) |
 
 **Important**: All migrations have `CREATE OR REPLACE FUNCTION` blocks removed (neutered). The actual DB schema is maintained through Supabase SQL Editor. These files are reference copies only.
 
