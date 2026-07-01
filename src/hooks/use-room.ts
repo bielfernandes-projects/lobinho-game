@@ -27,6 +27,8 @@ export interface GameStateRow {
   night_step: string
   wolves_resolved: boolean
   voting_open: boolean
+  day_step: string
+  current_accused_id: string | null
   last_event: {
     type: string
     victim_id?: string | null
@@ -97,7 +99,7 @@ export function useGameState(roomId: string) {
     async function load() {
       const { data } = await supabase
         .from('game_state')
-        .select('current_phase, turn_index, night_step, wolves_resolved, voting_open, last_event, last_vote_result, timer_duration, timer_remaining, is_timer_running, timer_started_at')
+        .select('current_phase, turn_index, night_step, wolves_resolved, voting_open, day_step, current_accused_id, last_event, last_vote_result, timer_duration, timer_remaining, is_timer_running, timer_started_at')
         .eq('room_id', roomId)
         .single()
 

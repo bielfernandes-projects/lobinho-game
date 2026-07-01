@@ -98,6 +98,7 @@ export function VoteTimerPanel() {
     <div className="w-full max-w-sm mx-auto space-y-4 py-4 border-t border-neutral-800">
       <p className="text-neutral-600 text-[10px] uppercase tracking-widest text-center">Tribunal</p>
       <VoteTimer label="Tempo de Acusação" />
+      <VoteTimer label="Tempo de Apoio" />
       <VoteTimer label="Tempo de Defesa" />
     </div>
   )

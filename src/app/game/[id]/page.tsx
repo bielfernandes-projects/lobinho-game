@@ -12,12 +12,14 @@ import { WerewolfPanel } from '@/components/werewolf-panel'
 import { SeerPanel } from '@/components/seer-panel'
 import { WitchPanel } from '@/components/witch-panel'
 import { DayAnnouncement } from '@/components/day-announcement'
-import { VotingPanel } from '@/components/voting-panel'
 import { TimerDisplay } from '@/components/timer-display'
 import { HostTimerControls } from '@/components/host-timer-controls'
 import { HostRolePanel } from '@/components/host-role-panel'
 import { VoteTimerPanel } from '@/components/vote-timer-panel'
 import { DeadPlayerScreen } from '@/components/dead-player-screen'
+import { TribunalPanel } from '@/components/tribunal-panel'
+import { TribunalVoting } from '@/components/tribunal-voting'
+import { TribunalReveal } from '@/components/tribunal-reveal'
 
 export default function GameScreen() {
   const params = useParams()
@@ -40,6 +42,8 @@ export default function GameScreen() {
   const nightStep = gameState?.night_step ?? 'sleeping'
   const wolvesResolved = gameState?.wolves_resolved ?? false
   const votingOpen = gameState?.voting_open ?? false
+  const dayStep = gameState?.day_step ?? 'discussion'
+  const accusedId = gameState?.current_accused_id ?? null
   const lastEvent = gameState?.last_event ?? null
   const lastVoteResult = gameState?.last_vote_result ?? null
   const timerRemaining = gameState?.timer_remaining ?? null
@@ -157,8 +161,15 @@ export default function GameScreen() {
           <p className="text-sm font-bold tracking-wider uppercase">
             {phase === 'card_reveal' && '🎴 Revelação'}
             {phase === 'night' && '🌙 Noite'}
-            {phase === 'day' && '☀️ Dia'}
-            {phase === 'vote' && '🗳️ Votação'}
+            {phase === 'day' && (
+              <>
+                ☀️ Dia
+                {dayStep === 'discussion' && ' - Discussão'}
+                {dayStep === 'trial' && ' - Acusação'}
+                {dayStep === 'voting' && ' - Votação'}
+                {dayStep === 'reveal' && ' - Julgamento'}
+              </>
+            )}
             {!'card_reveal night day vote'.includes(phase) && (
               <span className="text-red-500">⚠️ {phase}</span>
             )}
@@ -255,46 +266,60 @@ export default function GameScreen() {
         )}
 
         {phase === 'day' && (
-          <div className="w-full max-w-sm mx-auto py-4 flex flex-col items-center gap-3">
-            <TimerDisplay
-              remaining={timerRemaining}
-              isRunning={isTimerRunning}
-              startedAt={timerStartedAt}
-            />
-            <HostTimerControls
-              roomId={roomId}
-              isRunning={isTimerRunning}
-              hasTimer={hasTimer}
-            />
-            <HostControls
-              roomId={roomId}
-              mode="advance"
-              advanceLabel="Iniciar Votação"
-            />
-          </div>
-        )}
-
-        {phase === 'vote' && (
           <>
-            {!votingOpen && (
-              <button
-                onClick={() => supabase.from('game_state').update({ voting_open: true }).eq('room_id', roomId)}
-                className="w-full max-w-sm mx-auto mt-4 py-4 rounded-2xl font-bold text-lg tracking-wider bg-emerald-900/30 border border-emerald-700/50 text-emerald-400 hover:bg-emerald-800/40 transition-all duration-200 cursor-pointer"
-              >
-                🔓 Liberar Urnas
-              </button>
+            {dayStep === 'discussion' && (
+              <div className="w-full max-w-sm mx-auto py-4 flex flex-col items-center gap-3">
+                <TimerDisplay
+                  remaining={timerRemaining}
+                  isRunning={isTimerRunning}
+                  startedAt={timerStartedAt}
+                />
+                <HostTimerControls
+                  roomId={roomId}
+                  isRunning={isTimerRunning}
+                  hasTimer={hasTimer}
+                />
+                <TribunalPanel
+                  roomId={roomId}
+                  dayStep={dayStep}
+                  accusedId={accusedId}
+                  turnIndex={turnIndex}
+                />
+              </div>
             )}
-            {votingOpen && (
-              <p className="w-full max-w-sm mx-auto mt-4 text-center text-neutral-600 text-xs uppercase tracking-widest">
-                🗳️ Votação liberada
-              </p>
+
+            {dayStep === 'trial' && (
+              <TribunalPanel
+                roomId={roomId}
+                dayStep={dayStep}
+                accusedId={accusedId}
+                turnIndex={turnIndex}
+              />
             )}
-            <HostControls
-              roomId={roomId}
-              mode="resolve_vote"
-              turnIndex={turnIndex}
-            />
-            <VoteTimerPanel />
+
+            {dayStep === 'voting' && (
+              <>
+                <TribunalPanel
+                  roomId={roomId}
+                  dayStep={dayStep}
+                  accusedId={accusedId}
+                  turnIndex={turnIndex}
+                />
+                <VoteTimerPanel />
+              </>
+            )}
+
+            {dayStep === 'reveal' && (
+              <>
+                <TribunalPanel
+                  roomId={roomId}
+                  dayStep={dayStep}
+                  accusedId={accusedId}
+                  turnIndex={turnIndex}
+                />
+                <TribunalReveal roomId={roomId} turnIndex={turnIndex} />
+              </>
+            )}
           </>
         )}
 
@@ -390,7 +415,7 @@ export default function GameScreen() {
     )
   }
 
-  // ── Phase: day ────────────────────────────────────────────────────
+  // ── Phase: day (Tribunal) ────────────────────────────────────────
   if (phase === 'day') {
     const victims = (lastEvent?.victims ?? []) as { name: string; cause: string }[]
 
@@ -401,67 +426,77 @@ export default function GameScreen() {
           turnIndex={turnIndex}
         />
 
-        <div className="w-full max-w-sm mx-auto py-4 flex flex-col items-center gap-3">
-          <TimerDisplay
-            remaining={timerRemaining}
-            isRunning={isTimerRunning}
-            startedAt={timerStartedAt}
-          />
+        {dayStep === 'discussion' && (
+          <>
+            <div className="w-full max-w-sm mx-auto py-4 flex flex-col items-center gap-3">
+              <TimerDisplay
+                remaining={timerRemaining}
+                isRunning={isTimerRunning}
+                startedAt={timerStartedAt}
+              />
 
-          {isHost && (
-            <HostTimerControls
-              roomId={roomId}
-              isRunning={isTimerRunning}
-              hasTimer={hasTimer}
-            />
-          )}
+              {isHost && (
+                <HostTimerControls
+                  roomId={roomId}
+                  isRunning={isTimerRunning}
+                  hasTimer={hasTimer}
+                />
+              )}
 
-          {!isHost && hasTimer && !isTimerRunning && timerRemaining != null && timerRemaining > 0 && (
-            <p className="text-neutral-600 text-[10px] uppercase tracking-widest">
-              ⏸️ Pausado pelo anfitrião
+              {!isHost && hasTimer && !isTimerRunning && timerRemaining != null && timerRemaining > 0 && (
+                <p className="text-neutral-600 text-[10px] uppercase tracking-widest">
+                  ⏸️ Pausado pelo anfitrião
+                </p>
+              )}
+            </div>
+
+            {isHost && (
+              <TribunalPanel
+                roomId={roomId}
+                dayStep={dayStep}
+                accusedId={accusedId}
+                turnIndex={turnIndex}
+              />
+            )}
+
+            {!isHost && (
+              <div className="pb-8 text-center">
+                <p className="text-neutral-700 text-xs">
+                  Discussão em andamento...
+                </p>
+              </div>
+            )}
+          </>
+        )}
+
+        {dayStep === 'trial' && (
+          <div className="flex flex-1 flex-col items-center justify-center px-6 gap-4">
+            <p className="text-neutral-500 text-xs uppercase tracking-widest text-center">
+              🎤 Alguém foi acusado!
             </p>
-          )}
-        </div>
-
-        {isHost && (
-          <div className="pb-8">
-            <HostControls
-              roomId={roomId}
-              mode="advance"
-              advanceLabel="Iniciar Votação"
-            />
+            <div className="rounded-xl border border-red-800/60 bg-red-950/20 px-4 py-3 text-center">
+              <p className="text-neutral-500 text-[10px] uppercase tracking-widest">Acusado</p>
+              <p className="text-red-400 text-lg font-bold mt-1">
+                {players.find((p) => p.id === accusedId)?.name ?? '...'}
+              </p>
+            </div>
+            <p className="text-neutral-700 text-xs text-center">
+              O anfitrião conduzirá o julgamento...
+            </p>
           </div>
         )}
 
-        {!isHost && (
-          <div className="pb-8 text-center">
-            <p className="text-neutral-700 text-xs">
-              O anfitrião iniciará a votação em breve
-            </p>
-          </div>
-        )}
-      </div>
-    )
-  }
-
-  // ── Phase: vote ──────────────────────────────────────────────────
-  if (phase === 'vote') {
-    return (
-      <div className="flex flex-1 flex-col items-center min-h-dvh">
-        <VotingPanel
-          roomId={roomId}
-          playerId={player.id}
-          isAlive={isAlive}
-          turnIndex={turnIndex}
-          votingOpen={votingOpen}
-        />
-
-        {isHost && (
-          <HostControls
+        {dayStep === 'voting' && (
+          <TribunalVoting
             roomId={roomId}
-            mode="resolve_vote"
-            turnIndex={turnIndex}
+            playerId={player.id}
+            isAlive={isAlive}
+            isAccused={player.id === accusedId}
           />
+        )}
+
+        {dayStep === 'reveal' && (
+          <TribunalReveal roomId={roomId} turnIndex={turnIndex} />
         )}
       </div>
     )
