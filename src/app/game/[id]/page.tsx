@@ -100,7 +100,7 @@ export default function GameScreen() {
       .eq('id', player.id)
   }
 
-  const allViewed = players.length > 0 && players.every((p) => p.isHost || p.hasViewedCard)
+  const allViewed = players.length > 0 && players.every((p) => p.isHost || !p.isAlive || p.hasViewedCard)
 
   if (playerLoading || playersLoading || stateLoading) {
     return (

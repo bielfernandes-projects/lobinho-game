@@ -21,6 +21,7 @@ export default function LobbyScreen() {
   const [roomPin, setRoomPin] = useState('')
   const [transferError, setTransferError] = useState('')
   const [transferBusy, setTransferBusy] = useState(false)
+  const [expelled, setExpelled] = useState(false)
   const redirectedRef = useRef(false)
   const accessTokenRef = useRef<string | undefined>(undefined)
   const playerIdRef = useRef<string | undefined>(undefined)
@@ -38,6 +39,20 @@ export default function LobbyScreen() {
       playerIdRef.current = player.id
     }
   }, [player])
+
+  // Watch for expulsion (player record deleted by host)
+  useEffect(() => {
+    if (!player) return
+    const channel = supabase
+      .channel(`self-delete:${roomId}`)
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'players', filter: `id=eq.${player.id}` },
+        () => setExpelled(true)
+      )
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [roomId, player])
 
   // beforeunload — best-effort removal from lobby
   useEffect(() => {
@@ -170,6 +185,20 @@ export default function LobbyScreen() {
     return (
       <div className="flex flex-1 items-center justify-center min-h-dvh">
         <div className="w-8 h-8 border-2 border-red-700 border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  if (expelled) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center px-6 min-h-dvh gap-4">
+        <p className="text-neutral-400 text-sm">🚫 Você foi expulso da sala pelo Host</p>
+        <button
+          onClick={() => router.push('/')}
+          className="text-red-500 text-sm underline cursor-pointer"
+        >
+          Voltar ao início
+        </button>
       </div>
     )
   }

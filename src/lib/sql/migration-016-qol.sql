@@ -48,3 +48,31 @@ BEGIN
   RETURN jsonb_build_object('success', true, 'game_over', v_game_over);
 END;
 $$;
+
+-- 5. Trigger: reseta tudo quando rooms.status volta para 'waiting'
+CREATE OR REPLACE FUNCTION public.reset_game()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  DELETE FROM public.votes WHERE room_id = NEW.id;
+  DELETE FROM public.night_actions WHERE room_id = NEW.id;
+  DELETE FROM public.game_state WHERE room_id = NEW.id;
+  UPDATE public.players SET
+    is_alive = true,
+    has_viewed_card = false,
+    viewed_card_at = NULL,
+    role = NULL
+  WHERE room_id = NEW.id;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_reset_game ON public.rooms;
+CREATE TRIGGER trg_reset_game
+  AFTER UPDATE OF status ON public.rooms
+  FOR EACH ROW
+  WHEN (NEW.status = 'waiting' AND OLD.status IS DISTINCT FROM 'waiting')
+  EXECUTE FUNCTION public.reset_game();
