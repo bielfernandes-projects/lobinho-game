@@ -16,7 +16,7 @@ export function DayAnnouncement({ victims, turnIndex, isHost = false, onStartDis
   const ninguemMorreu = victims.length === 0
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center px-6 gap-8">
+    <div className="flex flex-1 flex-col items-center justify-center px-6 gap-8 mb-8">
       <p className="text-neutral-600 text-xs uppercase tracking-widest">
         Dia {turnIndex + 1}
       </p>

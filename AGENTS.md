@@ -4,6 +4,9 @@
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
+## Pre-flight check
+**No início de cada sessão ou tarefa, verifique se a Supabase CLI está instalada e atualizada. Se não estiver, instale/atualize antes de rodar qualquer migração ou código.**
+
 ## Documentation imperative
 **Before any change**: read `docs/architecture.md` to understand the full context, business rules, and existing patterns.
 **Before every commit**: update `docs/architecture.md` with what changed (new feature, bugfix, refactor — include commit hash, rationale, files touched).

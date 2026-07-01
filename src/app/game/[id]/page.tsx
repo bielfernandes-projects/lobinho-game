@@ -122,19 +122,47 @@ export default function GameScreen() {
   const gameEnded =
     roomStatus === 'finished_villagers_win' || roomStatus === 'finished_wolves_win' || roomStatus === 'finished_tanner_win'
 
-  // Fetch winner player names when game ends (Task 2)
+  // Fetch winner player names when game ends
   useEffect(() => {
     if (!gameEnded) return
     async function poll() {
       const status = roomStatus
       const w = lastEvent?.winner ?? (status === 'finished_wolves_win' ? 'wolves_win' : status === 'finished_tanner_win' ? 'tanner_win' : 'villagers_win')
-      if (w === 'wolves_win') {
-        const { data } = await supabase.from('players').select('name, role').eq('room_id', roomId).eq('role', 'werewolf')
-        if (data) setWinnerPlayers(data as { name: string; role: string }[])
-      } else if (w === 'tanner_win') {
-        const { data } = await supabase.from('players').select('name, role').eq('room_id', roomId).eq('role', 'tanner')
-        if (data) setWinnerPlayers(data as { name: string; role: string }[])
+
+      let roleFilter: string | null = null
+      if (w === 'wolves_win') roleFilter = 'werewolf'
+      else if (w === 'tanner_win') roleFilter = 'tanner'
+
+      if (!roleFilter) return
+
+      const { data: playersData } = await supabase
+        .from('players')
+        .select('id, role')
+        .eq('room_id', roomId)
+        .eq('role', roleFilter)
+
+      if (!playersData || playersData.length === 0) return
+
+      const playerIds = (playersData as { id: string; role: string }[]).map((p) => p.id)
+
+      const { data: profiles } = await supabase
+        .from('player_profiles')
+        .select('id, name')
+        .in('id', playerIds)
+
+      const nameMap = new Map<string, string>()
+      if (profiles) {
+        for (const p of profiles as { id: string; name: string }[]) {
+          nameMap.set(p.id, p.name)
+        }
       }
+
+      const result = (playersData as { id: string; role: string }[]).map((p) => ({
+        name: nameMap.get(p.id) ?? 'Desconhecido',
+        role: p.role,
+      }))
+
+      setWinnerPlayers(result)
     }
     poll()
     const iv = setInterval(poll, 2000)
@@ -557,7 +585,7 @@ export default function GameScreen() {
 
     return (
       <div className="flex flex-1 flex-col items-center min-h-dvh">
-        {(dayStep === 'announcement' || dayStep === 'discussion') && (
+        {dayStep === 'announcement' && (
           <DayAnnouncement
             victims={victims}
             turnIndex={turnIndex}
@@ -565,49 +593,34 @@ export default function GameScreen() {
           />
         )}
 
-        {dayStep !== 'announcement' && dayStep === 'discussion' && (
+        {dayStep === 'discussion' && (
           <>
-            <div className="w-full max-w-sm mx-auto py-4 flex flex-col items-center gap-3">
+            <div className="flex flex-1 flex-col items-center justify-center px-6 gap-4">
+              <p className="text-neutral-600 text-xs uppercase tracking-widest">
+                Dia {turnIndex + 1}
+              </p>
+              <p className="text-4xl">📣</p>
+              <p className="text-neutral-200 text-xl font-black tracking-wider text-center">
+                Hora da Discussão
+              </p>
+              <p className="text-neutral-500 text-sm text-center max-w-xs">
+                Comunique-se com a vila para entender o que está acontecendo durante a noite.
+              </p>
+            </div>
+
+            <div className="w-full max-w-sm mx-auto px-6 pb-8 flex flex-col items-center gap-3">
               <TimerDisplay
                 remaining={timerRemaining}
                 isRunning={isTimerRunning}
                 startedAt={timerStartedAt}
               />
 
-              {isHost && (
-                <HostTimerControls
-                  roomId={roomId}
-                  isRunning={isTimerRunning}
-                  hasTimer={hasTimer}
-                />
-              )}
-
-              {!isHost && hasTimer && !isTimerRunning && timerRemaining != null && timerRemaining > 0 && (
+              {hasTimer && !isTimerRunning && timerRemaining != null && timerRemaining > 0 && (
                 <p className="text-neutral-600 text-[10px] uppercase tracking-widest">
                   ⏸️ Pausado pelo anfitrião
                 </p>
               )}
             </div>
-
-            {isHost && (
-              <TribunalPanel
-                roomId={roomId}
-                dayStep={dayStep}
-                accusedId={accusedId}
-                turnIndex={turnIndex}
-              />
-            )}
-
-            {!isHost && (
-              <div className="pb-8 text-center">
-                <p className="text-neutral-300 text-lg font-bold tracking-wider">
-                  Hora da Discussão
-                </p>
-                <p className="text-neutral-500 text-sm mt-2 max-w-xs">
-                  Comunique-se com a vila para entender o que está acontecendo durante a noite.
-                </p>
-              </div>
-            )}
           </>
         )}
 
