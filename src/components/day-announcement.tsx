@@ -8,9 +8,10 @@ interface VictimInfo {
 interface DayAnnouncementProps {
   victims: VictimInfo[]
   turnIndex: number
+  isHost?: boolean
 }
 
-export function DayAnnouncement({ victims, turnIndex }: DayAnnouncementProps) {
+export function DayAnnouncement({ victims, turnIndex, isHost = false }: DayAnnouncementProps) {
   const ninguemMorreu = victims.length === 0
 
   return (
@@ -37,10 +38,12 @@ export function DayAnnouncement({ victims, turnIndex }: DayAnnouncementProps) {
               <p className="text-red-500 text-2xl font-black tracking-widest uppercase drop-shadow-[0_0_15px_rgba(220,38,38,0.5)]">
                 {v.name}
               </p>
-              <p className="text-neutral-500 text-sm mt-2">
-                {v.cause === 'wolf' && 'foi morto pelos lobisomens'}
-                {v.cause === 'poison' && 'foi envenenado'}
-              </p>
+              {isHost && (
+                <p className="text-neutral-500 text-sm mt-2">
+                  {v.cause === 'lobisomem' && 'morto pelos lobisomens'}
+                  {v.cause === 'veneno' && 'envenenado'}
+                </p>
+              )}
             </div>
           ))}
         </div>

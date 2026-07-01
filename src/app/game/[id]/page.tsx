@@ -20,6 +20,7 @@ import { DeadPlayerScreen } from '@/components/dead-player-screen'
 import { TribunalPanel } from '@/components/tribunal-panel'
 import { TribunalVoting } from '@/components/tribunal-voting'
 import { TribunalReveal } from '@/components/tribunal-reveal'
+import { HostActionLog } from '@/components/host-action-log'
 
 export default function GameScreen() {
   const params = useParams()
@@ -44,6 +45,7 @@ export default function GameScreen() {
   const votingOpen = gameState?.voting_open ?? false
   const dayStep = gameState?.day_step ?? 'discussion'
   const accusedId = gameState?.current_accused_id ?? null
+  const gameWinner = gameState?.winner ?? null
   const lastEvent = gameState?.last_event ?? null
   const lastVoteResult = gameState?.last_vote_result ?? null
   const timerRemaining = gameState?.timer_remaining ?? null
@@ -151,6 +153,10 @@ export default function GameScreen() {
     router.push(`/lobby/${roomId}`)
   }
 
+  async function handleEndGame() {
+    await supabase.rpc('host_end_game', { p_room_id: roomId })
+  }
+
   // ── Moderator / Host Dashboard ──────────────────────────
   // Omniscient view — NEVER shows the "close your eyes" screen
   if (isHost || isModerator) {
@@ -196,12 +202,29 @@ export default function GameScreen() {
           <DayAnnouncement
             victims={lastEvent.victims as { name: string; cause: string }[]}
             turnIndex={turnIndex}
+            isHost={true}
           />
         )}
 
         <div className="w-full px-6 pb-4">
           <HostRolePanel roomId={roomId} isHost={true} />
         </div>
+
+        {gameWinner && (
+          <div className="w-full max-w-sm mx-auto px-6 pb-4">
+            <div className="rounded-xl border border-yellow-900/30 bg-yellow-950/10 px-4 py-3 text-center space-y-2">
+              <p className="text-yellow-500 text-xs font-bold tracking-wide uppercase">
+                🏁 Fim de Jogo
+              </p>
+              <button
+                onClick={handleEndGame}
+                className="px-5 py-2 rounded-lg text-sm font-bold bg-yellow-900/30 border border-yellow-700/50 text-yellow-400 hover:bg-yellow-800/40 transition-all duration-200 cursor-pointer"
+              >
+                Finalizar Partida — Revelar Vencedor
+              </button>
+            </div>
+          </div>
+        )}
 
         {phase === 'card_reveal' && (
           <HostControls
@@ -262,6 +285,8 @@ export default function GameScreen() {
                 mode="resolve_night"
               />
             )}
+
+            <HostActionLog roomId={roomId} turnIndex={turnIndex} />
           </div>
         )}
 
@@ -426,6 +451,7 @@ export default function GameScreen() {
         <DayAnnouncement
           victims={victims}
           turnIndex={turnIndex}
+          isHost={false}
         />
 
         {dayStep === 'discussion' && (
@@ -596,7 +622,11 @@ export default function GameScreen() {
         <p className="text-neutral-400 text-xs uppercase tracking-widest">
           Fim de Jogo
         </p>
-        <p className="text-3xl font-black tracking-widest uppercase text-yellow-500 drop-shadow-[0_0_20px_rgba(234,179,8,0.4)] text-center">
+        <p
+          className={`text-3xl font-black tracking-widest uppercase drop-shadow-[0_0_20px_rgba(234,179,8,0.4)] text-center ${
+            winner === 'wolves_win' ? 'text-red-700 drop-shadow-[0_0_20px_rgba(185,28,28,0.5)]' : 'text-yellow-500'
+          }`}
+        >
           {winner === 'wolves_win' ? '🐺 Lobisomens Venceram' : '🌿 Aldeões Venceram'}
         </p>
 

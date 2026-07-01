@@ -23,6 +23,7 @@ export default function LobbyScreen() {
   const [transferBusy, setTransferBusy] = useState(false)
   const [expelled, setExpelled] = useState(false)
   const redirectedRef = useRef(false)
+  const leavingRef = useRef(false)
   const accessTokenRef = useRef<string | undefined>(undefined)
   const playerIdRef = useRef<string | undefined>(undefined)
 
@@ -48,7 +49,7 @@ export default function LobbyScreen() {
       .on(
         'postgres_changes',
         { event: 'DELETE', schema: 'public', table: 'players', filter: `id=eq.${player.id}` },
-        () => setExpelled(true)
+        () => { if (!leavingRef.current) setExpelled(true) }
       )
       .subscribe()
     return () => { supabase.removeChannel(channel) }
@@ -57,6 +58,7 @@ export default function LobbyScreen() {
   // beforeunload — best-effort removal from lobby
   useEffect(() => {
     function handleBeforeUnload() {
+      leavingRef.current = true
       const token = accessTokenRef.current
       const pid = playerIdRef.current
       if (!token || !pid) return
@@ -92,6 +94,7 @@ export default function LobbyScreen() {
 
   async function handleLeaveRoom() {
     if (player) {
+      leavingRef.current = true
       await supabase.from('players').delete().eq('id', player.id)
     }
     router.push('/')
