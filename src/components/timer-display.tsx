@@ -17,6 +17,16 @@ function fmt(sec: number): string {
 export function TimerDisplay({ remaining, isRunning, startedAt }: TimerDisplayProps) {
   const [localSec, setLocalSec] = useState<number | null>(remaining)
   const prevRemainingRef = useRef(remaining)
+  const clientStartRef = useRef<number | null>(null)
+
+  // Capturar timestamp local quando o timer iniciar/retomar
+  useEffect(() => {
+    if (isRunning && startedAt) {
+      clientStartRef.current = Date.now()
+    } else {
+      clientStartRef.current = null
+    }
+  }, [isRunning, startedAt])
 
   // Sincronizar com valor fresco do DB
   useEffect(() => {
@@ -31,13 +41,13 @@ export function TimerDisplay({ remaining, isRunning, startedAt }: TimerDisplayPr
 
   // Loop local quando estiver rodando
   useEffect(() => {
-    if (!isRunning || remaining === null || !startedAt) {
+    if (!isRunning || remaining === null || !startedAt || clientStartRef.current === null) {
       setLocalSec(remaining)
       return
     }
 
     const calc = () => {
-      const elapsed = Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000)
+      const elapsed = Math.floor((Date.now() - clientStartRef.current!) / 1000)
       return Math.max(0, (remaining ?? 0) - elapsed)
     }
 
