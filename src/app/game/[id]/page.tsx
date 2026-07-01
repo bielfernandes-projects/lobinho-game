@@ -35,6 +35,7 @@ export default function GameScreen() {
   const [roomStatus, setRoomStatus] = useState<string | null>(null)
   const [showExitModal, setShowExitModal] = useState(false)
   const [actedRoles, setActedRoles] = useState<Set<string>>(new Set())
+  const [availableNightRoles, setAvailableNightRoles] = useState<Set<string>>(new Set(['werewolf']))
   const prevNightStepRef = useRef<string>('sleeping')
   const hasFlippedRef = useRef(false)
 
@@ -60,6 +61,22 @@ export default function GameScreen() {
       router.push('/')
     }
   }, [player, playerLoading, router])
+
+  // Fetch available night roles (roles with night actions present in this game)
+  useEffect(() => {
+    if (!roomId) return
+    supabase
+      .from('players')
+      .select('role')
+      .eq('room_id', roomId)
+      .neq('role', 'moderator')
+      .in('role', ['werewolf', 'seer', 'witch'])
+      .then(({ data }) => {
+        if (data) {
+          setAvailableNightRoles(new Set((data as any[]).map((r) => r.role)))
+        }
+      })
+  }, [roomId, gameState?.turn_index])
 
   // Watch rooms.status for game over (fallback para Realtime)
   useEffect(() => {
@@ -248,27 +265,20 @@ export default function GameScreen() {
               >
                 😴 Todos Dormindo
               </button>
-              <button
-                onClick={() => handleSetNightStep('wolves')}
-                disabled={nightStep === 'wolves' || wolvesResolved}
-                className="px-3 py-2 rounded-lg text-xs font-bold tracking-wider bg-neutral-900 border border-red-900/30 text-red-400 hover:bg-red-900/20 disabled:opacity-30 cursor-pointer transition-all duration-200"
-              >
-                🐺 Acordar Lobos
-              </button>
-              <button
-                onClick={() => handleSetNightStep('seer')}
-                disabled={nightStep === 'seer'}
-                className="px-3 py-2 rounded-lg text-xs font-bold tracking-wider bg-neutral-900 border border-purple-900/30 text-purple-400 hover:bg-purple-900/20 disabled:opacity-30 cursor-pointer transition-all duration-200"
-              >
-                🔮 Acordar Vidente
-              </button>
-              <button
-                onClick={() => handleSetNightStep('witch')}
-                disabled={nightStep === 'witch'}
-                className="px-3 py-2 rounded-lg text-xs font-bold tracking-wider bg-neutral-900 border border-emerald-900/30 text-emerald-400 hover:bg-emerald-900/20 disabled:opacity-30 cursor-pointer transition-all duration-200"
-              >
-                🧪 Acordar Bruxa
-              </button>
+              {[
+                { step: 'wolves', role: 'werewolf', label: '🐺 Acordar Lobos', color: 'text-red-400 border-red-900/30 hover:bg-red-900/20', disabled: nightStep === 'wolves' || wolvesResolved },
+                { step: 'seer', role: 'seer', label: '🔮 Acordar Vidente', color: 'text-purple-400 border-purple-900/30 hover:bg-purple-900/20', disabled: nightStep === 'seer' },
+                { step: 'witch', role: 'witch', label: '🧪 Acordar Bruxa', color: 'text-emerald-400 border-emerald-900/30 hover:bg-emerald-900/20', disabled: nightStep === 'witch' },
+              ].filter((b) => availableNightRoles.has(b.role)).map((b) => (
+                <button
+                  key={b.step}
+                  onClick={() => handleSetNightStep(b.step)}
+                  disabled={b.disabled}
+                  className={`px-3 py-2 rounded-lg text-xs font-bold tracking-wider bg-neutral-900 border ${b.color} disabled:opacity-30 cursor-pointer transition-all duration-200`}
+                >
+                  {b.label}
+                </button>
+              ))}
             </div>
 
             {!wolvesResolved && (
