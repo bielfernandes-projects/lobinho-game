@@ -38,6 +38,7 @@ export default function GameScreen() {
   const turnIndex = gameState?.turn_index ?? 0
   const nightStep = gameState?.night_step ?? 'sleeping'
   const wolvesResolved = gameState?.wolves_resolved ?? false
+  const votingOpen = gameState?.voting_open ?? false
   const lastEvent = gameState?.last_event ?? null
   const lastVoteResult = gameState?.last_vote_result ?? null
   const timerRemaining = gameState?.timer_remaining ?? null
@@ -274,6 +275,19 @@ export default function GameScreen() {
 
         {phase === 'vote' && (
           <>
+            {!votingOpen && (
+              <button
+                onClick={() => supabase.from('game_state').update({ voting_open: true }).eq('room_id', roomId)}
+                className="w-full max-w-sm mx-auto mt-4 py-4 rounded-2xl font-bold text-lg tracking-wider bg-emerald-900/30 border border-emerald-700/50 text-emerald-400 hover:bg-emerald-800/40 transition-all duration-200 cursor-pointer"
+              >
+                🔓 Liberar Urnas
+              </button>
+            )}
+            {votingOpen && (
+              <p className="w-full max-w-sm mx-auto mt-4 text-center text-neutral-600 text-xs uppercase tracking-widest">
+                🗳️ Votação liberada
+              </p>
+            )}
             <HostControls
               roomId={roomId}
               mode="resolve_vote"
@@ -434,6 +448,7 @@ export default function GameScreen() {
           playerId={player.id}
           isAlive={isAlive}
           turnIndex={turnIndex}
+          votingOpen={votingOpen}
         />
 
         {isHost && (
@@ -519,6 +534,20 @@ export default function GameScreen() {
 
   function renderEnded() {
     const winner = lastEvent?.winner ?? (roomStatus === 'finished_wolves_win' ? 'wolves_win' : 'unknown')
+    const isHost = player?.isHost ?? false
+
+    async function handleReturnToLobby() {
+      await supabase.from('rooms').update({ status: 'waiting' }).eq('id', roomId)
+      router.push(`/lobby/${roomId}`)
+    }
+
+    async function handleLeaveGame() {
+      if (player) {
+        await supabase.from('players').delete().eq('id', player.id)
+      }
+      router.push('/')
+    }
+
     return (
       <div className="flex flex-1 flex-col items-center justify-center min-h-dvh px-6 gap-6">
         <p className="text-6xl">🏆</p>
@@ -528,11 +557,21 @@ export default function GameScreen() {
         <p className="text-3xl font-black tracking-widest uppercase text-yellow-500 drop-shadow-[0_0_20px_rgba(234,179,8,0.4)] text-center">
           {winner === 'wolves_win' ? '🐺 Lobisomens Venceram' : '🌿 Aldeões Venceram'}
         </p>
-        <button onClick={() => router.push('/')}
-          className="mt-4 px-8 py-3 rounded-2xl font-bold text-sm tracking-wider bg-neutral-900 text-neutral-400 border border-neutral-800 hover:bg-neutral-800 cursor-pointer transition-all duration-200"
-        >
-          Voltar ao Início
-        </button>
+
+        <div className="flex flex-col gap-3 w-full max-w-xs mt-4">
+          {isHost && (
+            <button onClick={handleReturnToLobby}
+              className="w-full py-3.5 rounded-2xl font-bold text-sm tracking-wider bg-neutral-900 text-neutral-400 border border-neutral-800 hover:bg-neutral-800 cursor-pointer transition-all duration-200"
+            >
+              Voltar para o Lobby
+            </button>
+          )}
+          <button onClick={handleLeaveGame}
+            className="w-full py-3.5 rounded-2xl font-bold text-sm tracking-wider border border-neutral-800 text-neutral-600 hover:text-red-500 hover:border-red-900/50 cursor-pointer transition-all duration-200 bg-transparent"
+          >
+            Sair da Sala
+          </button>
+        </div>
       </div>
     )
   }

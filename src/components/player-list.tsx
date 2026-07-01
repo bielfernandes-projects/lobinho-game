@@ -10,6 +10,7 @@ interface PlayerListProps {
   currentPlayerId?: string
   showViewedIndicators?: boolean
   onTransferHost?: (playerId: string) => void
+  onKickPlayer?: (playerId: string) => void
 }
 
 export function PlayerList({
@@ -17,6 +18,7 @@ export function PlayerList({
   currentPlayerId,
   showViewedIndicators,
   onTransferHost,
+  onKickPlayer,
 }: PlayerListProps) {
   const total = players.length
   const viewed = players.filter((p) => p.hasViewedCard).length
@@ -96,6 +98,15 @@ export function PlayerList({
                   className="text-[10px] uppercase tracking-wider bg-neutral-800 hover:bg-yellow-900/40 text-neutral-500 hover:text-yellow-400 px-2 py-0.5 rounded-full font-semibold transition-colors cursor-pointer"
                 >
                   👑 Passar
+                </button>
+              )}
+
+              {onKickPlayer && !player.isHost && !showViewedIndicators && (
+                <button
+                  onClick={() => onKickPlayer(player.id)}
+                  className="text-[10px] uppercase tracking-wider bg-neutral-800 hover:bg-red-900/40 text-neutral-500 hover:text-red-400 px-2 py-0.5 rounded-full font-semibold transition-colors cursor-pointer"
+                >
+                  🚫 Expulsar
                 </button>
               )}
             </div>

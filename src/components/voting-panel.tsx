@@ -8,9 +8,10 @@ interface VotingPanelProps {
   playerId: string
   isAlive: boolean
   turnIndex: number
+  votingOpen: boolean
 }
 
-export function VotingPanel({ roomId, playerId, isAlive, turnIndex }: VotingPanelProps) {
+export function VotingPanel({ roomId, playerId, isAlive, turnIndex, votingOpen }: VotingPanelProps) {
   const [targets, setTargets] = useState<{ id: string; name: string }[]>([])
   const [votedFor, setVotedFor] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -80,16 +81,24 @@ export function VotingPanel({ roomId, playerId, isAlive, turnIndex }: VotingPane
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-6 gap-6">
-      <p className="text-neutral-500 text-xs uppercase tracking-widest text-center">
-        🗳️ Vote em quem deve ser linchado
-      </p>
+      {!votingOpen && (
+        <p className="text-neutral-500 text-xs uppercase tracking-widest text-center">
+          🗣️ Aguarde os discursos de defesa...
+        </p>
+      )}
+
+      {votingOpen && (
+        <p className="text-neutral-500 text-xs uppercase tracking-widest text-center">
+          🗳️ Vote em quem deve ser linchado
+        </p>
+      )}
 
       <div className="w-full max-w-sm space-y-2">
         {targets.map((t) => (
           <button
             key={t.id}
             onClick={() => handleVote(t.id)}
-            disabled={busy}
+            disabled={busy || !votingOpen}
             className="
               w-full py-3 px-4 rounded-xl text-sm font-medium
               bg-neutral-900 border border-neutral-800 text-neutral-300

@@ -22,6 +22,44 @@ export default function LobbyScreen() {
   const [transferError, setTransferError] = useState('')
   const [transferBusy, setTransferBusy] = useState(false)
   const redirectedRef = useRef(false)
+  const accessTokenRef = useRef<string | undefined>(undefined)
+  const playerIdRef = useRef<string | undefined>(undefined)
+
+  // Store access token for beforeunload
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      accessTokenRef.current = data.session?.access_token
+    })
+  }, [])
+
+  // Keep player id in sync
+  useEffect(() => {
+    if (player) {
+      playerIdRef.current = player.id
+    }
+  }, [player])
+
+  // beforeunload — best-effort removal from lobby
+  useEffect(() => {
+    function handleBeforeUnload() {
+      const token = accessTokenRef.current
+      const pid = playerIdRef.current
+      if (!token || !pid) return
+      fetch(
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/players?id=eq.${pid}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+          },
+          keepalive: true,
+        }
+      )
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [])
 
   async function handleTransferHost(newHostPlayerId: string) {
     setTransferBusy(true); setTransferError('')
@@ -31,6 +69,17 @@ export default function LobbyScreen() {
     })
     if (e) { setTransferError(e.message); setTransferBusy(false); return }
     setTransferBusy(false)
+  }
+
+  async function handleKickPlayer(targetPlayerId: string) {
+    await supabase.from('players').delete().eq('id', targetPlayerId)
+  }
+
+  async function handleLeaveRoom() {
+    if (player) {
+      await supabase.from('players').delete().eq('id', player.id)
+    }
+    router.push('/')
   }
 
   /*
@@ -157,6 +206,7 @@ export default function LobbyScreen() {
           players={players}
           currentPlayerId={player.id}
           onTransferHost={player.isHost ? handleTransferHost : undefined}
+          onKickPlayer={player.isHost ? handleKickPlayer : undefined}
         />
 
         {transferError && (
@@ -175,7 +225,7 @@ export default function LobbyScreen() {
 
         <div className="mt-8">
           <button
-            onClick={() => router.push('/')}
+            onClick={handleLeaveRoom}
             className="w-full py-2.5 rounded-xl text-xs font-medium tracking-wider text-neutral-600 border border-neutral-800 hover:border-neutral-700 hover:text-neutral-400 transition-all duration-200 cursor-pointer bg-transparent"
           >
             Sair da Sala
