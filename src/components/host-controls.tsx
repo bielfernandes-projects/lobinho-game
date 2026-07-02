@@ -81,8 +81,13 @@ export function HostControls({ roomId, mode, allViewed = true, advanceLabel = 'A
 
   async function handleResolveNightWolves() {
     setBusy(true); setError('')
-    const { error: e } = await supabase.rpc('resolve_night_wolves', { p_room_id: roomId })
+    const { data, error: e } = await supabase.rpc('resolve_night_wolves', { p_room_id: roomId })
     if (e) { setError(e.message); setBusy(false); return }
+    if (data && data.consensus === false) {
+      setError(data.message ?? 'Os lobos não chegaram a um consenso');
+      setBusy(false);
+      return;
+    }
     setBusy(false)
   }
 
