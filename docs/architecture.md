@@ -3,6 +3,17 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — PWA, Home refactor, resolve_night sequential fix
+- **PWA infra**: `@serwist/next` configurado em `next.config.ts`; `sw.ts` service worker com precache + runtime caching; `manifest.json` com ícones SVG 192/512; `metadata.manifest` no layout.
+- **Install button**: `use-install-prompt.ts` hook escuta `beforeinstallprompt`; `InstallButton` renderiza "📲 Instalar App" na Home apenas quando instalável.
+- **Home simplificada**: Input "Nome do Jogador" + "Código da Sala" sempre visíveis; dois botões lado a lado (`flex flex-row gap-4`): **Criar Sala** (gera PIN novo automaticamente) e **Entrar** (usa PIN digitado). Remove alternador de modo.
+- **resolve_night 3-passos**: Nova migration `20260702182612_fix_priest_poison_order.sql`. Ordem sequencial dentro da RPC:
+  1. **Padre**: lê `priest_bless` da night_actions → `UPDATE is_blessed = TRUE`
+  2. **Lobisomens**: lê alvo → verifica `is_blessed` (pós-Passo1) + bodyguard → consome bênção se salvar
+  3. **Bruxa (veneno)**: lê alvo → **re-lê** `is_blessed` (pós-Passo1 e Passo2) + bodyguard → consome bênção se salvar
+  - `last_event` setado diretamente nos UPDATEs de morte para `lobisomem`/`veneno`.
+- **Files**: `next.config.ts`, `src/app/sw.ts`, `public/manifest.json`, `public/icon-*.svg`, `src/hooks/use-install-prompt.ts`, `src/components/install-button.tsx`, `src/app/page.tsx`, `src/app/layout.tsx`, `supabase/migrations/20260702182612_fix_priest_poison_order.sql`, `src/lib/sql/migration-022-fix-priest-poison-order.sql`, `docs/architecture.md`.
+
 ## Game Flow (State Machine)
 
 ```
@@ -176,6 +187,7 @@ lobby → card_reveal → night → day → (tribunal or night) → game_over
 | PriestPanel | `src/components/priest-panel.tsx` | Priest night action: bless a player (1 use per game) |
 | BodyguardPanel | `src/components/bodyguard-panel.tsx` | Bodyguard night action: protect a player (no repeat last target) |
 | AuraSeerPanel | `src/components/aura-seer-panel.tsx` | Aura Seer night action: detect if target has special role |
+| InstallButton | `src/components/install-button.tsx` | PWA install button (visible only when `beforeinstallprompt` captured) |
 | SeerPanel | `src/components/seer-panel.tsx` | Seer night action: investigate player, see is_werewolf |
 | WerewolfPanel | `src/components/werewolf-panel.tsx` | Werewolf night action: see teammates, choose victim |
 | WitchPanel | `src/components/witch-panel.tsx` | Witch night action: save (first kill) + poison (once each) |
@@ -193,6 +205,7 @@ lobby → card_reveal → night → day → (tribunal or night) → game_over
 | Hook | File | Role |
 |------|------|------|
 | `use-room` | `src/hooks/use-room.ts` | Fetches room, player, game state; `GameStateRow` includes `winner`, `day_step`, `current_accused_id` |
+| `use-install-prompt` | `src/hooks/use-install-prompt.ts` | Listens to `beforeinstallprompt` event; returns `{ isInstallable, promptInstall }` |
 
 ---
 
@@ -213,6 +226,7 @@ lobby → card_reveal → night → day → (tribunal or night) → game_over
 | `20260701130400_lot2_priest_bodyguard_aura.sql` | Lote 2: `is_blessed`, `priest_bless`/`bodyguard_protect`/`aura_investigate`, bodyguard+blessing resolve_night | Applied via CLI (db push) |
 | `20260702044318_fix_wolf_consensus_no_exception.sql` | `resolve_night_wolves` returns `{consensus: false}` instead of `RAISE EXCEPTION` to avoid DELETE rollback | Applied via CLI (db push) |
 | `20260702050008_reveal_players_rpc.sql` | `get_revealed_players(p_room_id)` — SECURITY DEFINER RPC to bypass RLS and return `{id, name, role}` for all players in a room. Used by Game Over to show winner roles to all clients. | Applied via CLI (db push) |
+| `20260702182612_fix_priest_poison_order.sql` | **Fix resolve_night**: ordem sequencial Padre → Lobos → Bruxa. Passo 1 seta `is_blessed`, Passo 2 lobos checam blessing+bodyguard, Passo 3 veneno re-lê `is_blessed` pós-passos 1-2. | Applied via CLI (db push) |
 
 **Important**: All migrations have `CREATE OR REPLACE FUNCTION` blocks removed (neutered). The actual DB schema is maintained through Supabase SQL Editor. These files are reference copies only.
 

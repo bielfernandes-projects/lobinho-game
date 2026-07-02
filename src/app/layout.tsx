@@ -17,6 +17,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Lobinho",
   description: "A Werewolf Game Based — Jogo de dedução social multiplayer",
+  manifest: "/manifest.json",
 };
 
 export const viewport = {

@@ -3,8 +3,7 @@
 import { useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-
-type Mode = 'criar' | 'entrar'
+import { InstallButton } from '@/components/install-button'
 
 function gerarPin(): string {
   return String(Math.floor(1000 + Math.random() * 9000))
@@ -12,7 +11,6 @@ function gerarPin(): string {
 
 export default function EntryScreen() {
   const router = useRouter()
-  const [mode, setMode] = useState<Mode>('criar')
   const [name, setName] = useState('')
   const [pin, setPin] = useState('')
   const [error, setError] = useState('')
@@ -28,8 +26,7 @@ export default function EntryScreen() {
     return data.user
   }
 
-  async function handleCriarSala(e: FormEvent) {
-    e.preventDefault()
+  async function handleCriarSala() {
     const trimmed = name.trim()
     if (!trimmed) { setError('Digite seu nome'); return }
 
@@ -85,8 +82,7 @@ export default function EntryScreen() {
     setBusy(false)
   }
 
-  async function handleEntrar(e: FormEvent) {
-    e.preventDefault()
+  async function handleEntrar() {
     const trimmed = name.trim()
     if (!trimmed) { setError('Digite seu nome'); return }
     if (!/^\d{4}$/.test(pin)) { setError('PIN deve ter 4 dígitos'); return }
@@ -153,10 +149,19 @@ export default function EntryScreen() {
     }
   }
 
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Enter') {
+      if (pin.trim() && /^\d{4}$/.test(pin)) {
+        handleEntrar()
+      } else {
+        handleCriarSala()
+      }
+    }
+  }
+
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-6 min-h-dvh">
       <div className="w-full max-w-xs flex flex-col items-center gap-10">
-        {/* Título */}
         <div className="text-center">
           <h1 className="text-5xl font-black tracking-widest text-red-600 drop-shadow-[0_0_20px_rgba(220,38,38,0.3)]">
             LOBINHO
@@ -166,14 +171,14 @@ export default function EntryScreen() {
           </p>
         </div>
 
-        {/* Formulário */}
-        <form className="w-full flex flex-col gap-4">
+        <div className="w-full flex flex-col gap-4">
           <input
             type="text"
-            placeholder="Seu nome"
+            placeholder="Nome do Jogador"
             maxLength={30}
             value={name}
             onChange={(e) => { setName(e.target.value); setError('') }}
+            onKeyDown={handleKeyDown}
             className="
               w-full px-4 py-3 rounded-xl text-sm
               bg-neutral-900 border border-neutral-800
@@ -183,92 +188,64 @@ export default function EntryScreen() {
             "
           />
 
-          {/* PIN — só aparece no modo "entrar" */}
-          {mode === 'entrar' && (
-            <input
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]{4}"
-              placeholder="PIN da sala (4 dígitos)"
-              maxLength={4}
-              value={pin}
-              onChange={(e) => { setPin(e.target.value.replace(/\D/g, '')); setError('') }}
-              className="
-                w-full px-4 py-3 rounded-xl text-sm tracking-widest text-center
-                bg-neutral-900 border border-neutral-800
-                text-neutral-200 placeholder-neutral-600
-                focus:outline-none focus:ring-2 focus:ring-red-700 focus:border-red-800
-                transition-all
-              "
-            />
-          )}
+          <input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]{4}"
+            placeholder="Código da Sala (4 dígitos)"
+            maxLength={4}
+            value={pin}
+            onChange={(e) => { setPin(e.target.value.replace(/\D/g, '')); setError('') }}
+            onKeyDown={handleKeyDown}
+            className="
+              w-full px-4 py-3 rounded-xl text-sm tracking-widest text-center
+              bg-neutral-900 border border-neutral-800
+              text-neutral-200 placeholder-neutral-600
+              focus:outline-none focus:ring-2 focus:ring-red-700 focus:border-red-800
+              transition-all
+            "
+          />
 
           {error && (
             <p className="text-red-500 text-xs text-center">{error}</p>
           )}
 
-          {/* Alternador criar / entrar */}
-          <div className="flex rounded-xl border border-neutral-800 overflow-hidden">
-            <button
-              type="button"
-              onClick={() => { setMode('criar'); setError('') }}
-              className={`flex-1 py-2.5 text-xs font-medium tracking-wider transition-colors cursor-pointer ${
-                mode === 'criar'
-                  ? 'bg-red-900/40 text-red-400 border-r border-neutral-800'
-                  : 'bg-neutral-900 text-neutral-500 hover:text-neutral-400'
-              }`}
-            >
-              Criar Sala
-            </button>
-            <button
-              type="button"
-              onClick={() => { setMode('entrar'); setError('') }}
-              className={`flex-1 py-2.5 text-xs font-medium tracking-wider transition-colors cursor-pointer ${
-                mode === 'entrar'
-                  ? 'bg-red-900/40 text-red-400'
-                  : 'bg-neutral-900 text-neutral-500 hover:text-neutral-400'
-              }`}
-            >
-              Entrar
-            </button>
-          </div>
-
-          {/* Botão de ação */}
-          {mode === 'criar' ? (
+          <div className="flex flex-row gap-4">
             <button
               type="button"
               onClick={handleCriarSala}
               disabled={busy}
               className="
-                w-full py-3.5 rounded-2xl font-bold text-sm tracking-wider
+                flex-1 py-3.5 rounded-2xl font-bold text-sm tracking-wider
                 bg-red-700 text-white
                 hover:bg-red-600 active:bg-red-800
                 disabled:opacity-40 disabled:cursor-not-allowed
                 shadow-lg shadow-red-900/30
-                transition-all duration-200
-                cursor-pointer
+                transition-all duration-200 cursor-pointer
               "
             >
               {busy ? 'Criando...' : 'Criar Sala'}
             </button>
-          ) : (
             <button
               type="button"
               onClick={handleEntrar}
               disabled={busy}
               className="
-                w-full py-3.5 rounded-2xl font-bold text-sm tracking-wider
+                flex-1 py-3.5 rounded-2xl font-bold text-sm tracking-wider
                 border border-red-700 text-red-400
                 hover:bg-red-950/30 active:bg-red-950/50
                 disabled:opacity-40 disabled:cursor-not-allowed
-                transition-all duration-200
-                cursor-pointer
+                transition-all duration-200 cursor-pointer
               "
             >
               {busy ? 'Entrando...' : 'Entrar'}
             </button>
-          )}
-        </form>
+          </div>
+
+          <div className="flex justify-center mt-2">
+            <InstallButton />
+          </div>
+        </div>
       </div>
     </div>
   )
