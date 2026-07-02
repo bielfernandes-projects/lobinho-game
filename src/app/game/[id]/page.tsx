@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useCurrentPlayer } from '@/hooks/use-player'
 import { useRoomPlayers, useGameState } from '@/hooks/use-room'
 import { FlipCard } from '@/components/flip-card'
-import { CARD_CATALOG } from '@/lib/cards'
+import { CARD_CATALOG, ROLE_STYLE } from '@/lib/cards'
 import { HostControls } from '@/components/host-controls'
 import { WerewolfPanel } from '@/components/werewolf-panel'
 import { SeerPanel } from '@/components/seer-panel'
@@ -298,22 +298,6 @@ export default function GameScreen() {
           </p>
         </div>
 
-        {lastVoteResult?.type === 'vote_tie' && (
-          <div className="w-full bg-orange-950/40 border-b border-orange-900/30 px-6 py-4 text-center">
-            <p className="text-orange-400 text-sm font-bold tracking-wide">
-              🤝 A vila não chegou a um consenso. Ninguém foi linchado.
-            </p>
-          </div>
-        )}
-
-        {lastVoteResult?.type === 'lynch' && lastVoteResult.victim_name && (
-          <div className="w-full bg-red-950/40 border-b border-red-900/30 px-6 py-4 text-center">
-            <p className="text-red-400 text-sm font-bold tracking-wide">
-              ☠️ {lastVoteResult.victim_name} foi linchado pela vila.
-            </p>
-          </div>
-        )}
-
         {phase === 'day' && dayStep === 'announcement' && (
           <DayAnnouncement
             victims={(lastEvent?.victims ?? []) as { name: string; cause: string }[]}
@@ -394,22 +378,28 @@ export default function GameScreen() {
                 😴 Todos Dormindo
               </button>
               {[
-                { step: 'priest', role: 'priest', label: '🙏 Acordar Padre', color: 'text-sky-400 border-sky-900/30 hover:bg-sky-900/20', disabled: nightStep === 'priest' },
-                { step: 'bodyguard', role: 'bodyguard', label: '🛡️ Acordar Guarda-costas', color: 'text-amber-400 border-amber-900/30 hover:bg-amber-900/20', disabled: nightStep === 'bodyguard' },
-                { step: 'wolves', role: 'werewolf', label: '🐺 Acordar Lobos', color: 'text-red-400 border-red-900/30 hover:bg-red-900/20', disabled: nightStep === 'wolves' || wolvesResolved },
-                { step: 'seer', role: 'seer', label: '🔮 Acordar Vidente', color: 'text-purple-400 border-purple-900/30 hover:bg-purple-900/20', disabled: nightStep === 'seer' },
-                { step: 'witch', role: 'witch', label: '🧪 Acordar Bruxa', color: 'text-emerald-400 border-emerald-900/30 hover:bg-emerald-900/20', disabled: nightStep === 'witch' },
-                { step: 'aura_seer', role: 'aura_seer', label: '👁️ Acordar Vidente de Aura', color: 'text-pink-400 border-pink-900/30 hover:bg-pink-900/20', disabled: nightStep === 'aura_seer' },
-              ].filter((b) => availableNightRoles.has(b.role)).map((b) => (
-                <button
-                  key={b.step}
-                  onClick={() => handleSetNightStep(b.step)}
-                  disabled={b.disabled}
-                  className={`px-3 py-2 rounded-lg text-xs font-bold tracking-wider bg-neutral-900 border ${b.color} disabled:opacity-30 cursor-pointer transition-all duration-200`}
-                >
-                  {b.label}
-                </button>
-              ))}
+                { step: 'priest', role: 'priest', label: '🙏 Acordar Padre' },
+                { step: 'bodyguard', role: 'bodyguard', label: '🛡️ Acordar Guarda-costas' },
+                { step: 'wolves', role: 'werewolf', label: '🐺 Acordar Lobos' },
+                { step: 'seer', role: 'seer', label: '🔮 Acordar Vidente' },
+                { step: 'witch', role: 'witch', label: '🧪 Acordar Bruxa' },
+                { step: 'aura_seer', role: 'aura_seer', label: '👁️ Acordar Vidente de Aura' },
+              ].filter((b) => availableNightRoles.has(b.role)).map((b) => {
+                const disabled =
+                  b.step === 'wolves'
+                    ? nightStep === 'wolves' || wolvesResolved
+                    : nightStep === b.step
+                return (
+                  <button
+                    key={b.step}
+                    onClick={() => handleSetNightStep(b.step)}
+                    disabled={disabled}
+                    className={`px-3 py-2 rounded-lg text-xs font-bold tracking-wider border ${ROLE_STYLE[b.role] ?? 'text-neutral-500 border-neutral-700'} disabled:opacity-30 cursor-pointer transition-all duration-200`}
+                  >
+                    {b.label}
+                  </button>
+                )
+              })}
             </div>
 
             {!wolvesResolved && (
@@ -484,6 +474,16 @@ export default function GameScreen() {
 
             {dayStep === 'reveal' && (
               <>
+                {lastVoteResult?.type === 'lynch' && lastVoteResult.victim_name && (
+                  <div className="fixed inset-0 z-40 flex items-center justify-center pointer-events-none">
+                    <div className="bg-red-950/80 border border-red-700/50 rounded-2xl px-8 py-6 text-center shadow-2xl backdrop-blur-sm">
+                      <p className="text-5xl mb-3">⚖️</p>
+                      <p className="text-red-400 text-xl font-black tracking-wider">
+                        O acusado foi linchado pela vila!
+                      </p>
+                    </div>
+                  </div>
+                )}
                 <TribunalPanel
                   roomId={roomId}
                   dayStep={dayStep}
@@ -567,22 +567,6 @@ export default function GameScreen() {
   if (phase === 'night') {
     return (
       <div className="flex flex-1 flex-col items-center min-h-dvh">
-        {lastVoteResult?.type === 'vote_tie' && (
-          <div className="w-full bg-orange-950/40 border-b border-orange-900/30 px-6 py-4 text-center">
-            <p className="text-orange-400 text-sm font-bold tracking-wide">
-              🤝 A vila não chegou a um consenso. Ninguém foi linchado.
-            </p>
-          </div>
-        )}
-
-        {lastVoteResult?.type === 'lynch' && lastVoteResult.victim_name && (
-          <div className="w-full bg-red-950/40 border-b border-red-900/30 px-6 py-4 text-center">
-            <p className="text-red-400 text-sm font-bold tracking-wide">
-              ☠️ {lastVoteResult.victim_name} foi linchado pela vila.
-            </p>
-          </div>
-        )}
-
         {renderNightPanel()}
       </div>
     )
@@ -660,7 +644,19 @@ export default function GameScreen() {
         )}
 
         {dayStep !== 'announcement' && dayStep === 'reveal' && (
-          <TribunalReveal roomId={roomId} turnIndex={turnIndex} />
+          <>
+            {lastVoteResult?.type === 'lynch' && lastVoteResult.victim_name && (
+              <div className="fixed inset-0 z-40 flex items-center justify-center pointer-events-none">
+                <div className="bg-red-950/80 border border-red-700/50 rounded-2xl px-8 py-6 text-center shadow-2xl backdrop-blur-sm">
+                  <p className="text-5xl mb-3">⚖️</p>
+                  <p className="text-red-400 text-xl font-black tracking-wider">
+                    O acusado foi linchado pela vila!
+                  </p>
+                </div>
+              </div>
+            )}
+            <TribunalReveal roomId={roomId} turnIndex={turnIndex} />
+          </>
         )}
       </div>
     )

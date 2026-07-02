@@ -5,6 +5,36 @@ export interface CardDefinition {
   description: string
 }
 
+export const ROLE_STYLE: Record<string, string> = {
+  werewolf: 'bg-red-100 text-red-700 border-red-300',
+  wolf_cub: 'bg-red-100 text-red-700 border-red-300',
+  seer: 'bg-purple-100 text-purple-700 border-purple-300',
+  aura_seer: 'bg-purple-100 text-purple-700 border-purple-300',
+  witch: 'bg-pink-100 text-pink-700 border-pink-300',
+  villager: 'bg-blue-100 text-blue-700 border-blue-300',
+  lycan: 'bg-blue-100 text-blue-700 border-blue-300',
+  mayor: 'bg-amber-100 text-amber-700 border-amber-300',
+  prince: 'bg-cyan-100 text-cyan-700 border-cyan-300',
+  tanner: 'bg-gray-200 text-gray-700 border-gray-400',
+  priest: 'bg-emerald-100 text-emerald-700 border-emerald-300',
+  bodyguard: 'bg-slate-100 text-slate-700 border-slate-300',
+}
+
+export const ROLE_LABEL: Record<string, string> = {
+  werewolf: '🐺 Lobisomem',
+  seer: '🔮 Vidente',
+  aura_seer: '👁️ Vidente de Aura',
+  witch: '🧙 Bruxa',
+  villager: '🌿 Aldeão',
+  lycan: '🌿 Licano',
+  mayor: '👑 Prefeito',
+  prince: '🤴 Príncipe',
+  tanner: '👔 Curtidor',
+  priest: '🙏 Padre',
+  bodyguard: '🛡️ Guarda-costas',
+  moderator: '🎙️ Mestre',
+}
+
 export const CARD_CATALOG: CardDefinition[] = [
   {
     id: 'werewolf',

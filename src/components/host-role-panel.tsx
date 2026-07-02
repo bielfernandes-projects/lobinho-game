@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { CARD_CATALOG, ROLE_STYLE, ROLE_LABEL } from '@/lib/cards'
 
 interface RoleRow {
   id: string
@@ -16,18 +17,11 @@ interface HostRolePanelProps {
   isHost: boolean
 }
 
-const ROLE_LABEL: Record<string, string> = {
-  werewolf: '🐺 Lobisomem',
-  seer: '🔮 Vidente',
-  witch: '🧙 Bruxa',
-  villager: '🌿 Aldeão',
-  moderator: '🎙️ Mestre',
-}
-
 export function HostRolePanel({ roomId, isHost }: HostRolePanelProps) {
   const [rows, setRows] = useState<RoleRow[]>([])
   const [collapsed, setCollapsed] = useState(false)
   const [error, setError] = useState('')
+  const [tooltipRole, setTooltipRole] = useState<string | null>(null)
   const supabase = createClient()
 
   const fetchPlayers = useCallback(async () => {
@@ -115,8 +109,28 @@ export function HostRolePanel({ roomId, isHost }: HostRolePanelProps) {
                   {r.has_viewed_card && <span className="mr-1 opacity-70">👁</span>}
                   {r.name}
                 </span>
-                <span className={`text-xs tracking-wider shrink-0 ${r.role === 'moderator' ? 'text-yellow-500' : r.role === 'werewolf' ? 'text-red-400' : r.role === 'seer' ? 'text-sky-400' : r.role === 'witch' ? 'text-emerald-400' : 'text-neutral-500'}`}>
+                <span className={`text-xs tracking-wider shrink-0 px-2 py-0.5 rounded-full border ${ROLE_STYLE[r.role] ?? 'text-neutral-500 border-neutral-700'}`}>
                   {ROLE_LABEL[r.role] ?? r.role}
+                </span>
+                <span className="relative shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setTooltipRole(tooltipRole === r.role ? null : r.role)}
+                    className="text-neutral-600 hover:text-neutral-400 text-xs transition-colors cursor-pointer"
+                  >
+                    ⓘ
+                  </button>
+                  {tooltipRole === r.role && (() => {
+                    const card = CARD_CATALOG.find((c) => c.id === r.role)
+                    if (!card) return null
+                    return (
+                      <div className="absolute bottom-full right-0 mb-2 w-56 rounded-xl border border-neutral-700 bg-neutral-900 p-3 shadow-xl z-10">
+                        <p className="text-neutral-300 text-xs leading-relaxed">
+                          {card.description}
+                        </p>
+                      </div>
+                    )
+                  })()}
                 </span>
                 {r.is_alive && r.role !== 'moderator' && (
                   <button

@@ -117,6 +117,13 @@ lobby → card_reveal → night → day → (tribunal or night) → game_over
 - `migration-021-fix-role-constraint.sql`: single ALTER TABLE to drop and recreate constraint.
 - Start game was failing with "violates check constraint players_role_check" for any scenario using new roles.
 
+### `<current+1>` — 4 UI/UX fixes (beta testing)
+- **AuraSeerPanel result**: Added `showResult` state; result stays visible until player clicks "Fechar Olhos" button (calls `onDone`). Fixes panel closing before showing aura result.
+- **Role color standardisation**: `ROLE_STYLE` (`src/lib/cards.ts`) — unified Tailwind classes for all 11 roles (werewolf, wolf_cub, seer, aura_seer, witch, villager, lycan, mayor, prince, tanner, priest, bodyguard). Used identically in `HostRolePanel` badges and night wake-up buttons. `ROLE_LABEL` expanded for all roles, replacing per-role inline classes.
+- **Tooltips for Host**: `HostRolePanel` and `TribunalPanel` accuse modal now show ⓘ icon next to each player role; clicking toggles a tooltip with `card.description` from `CARD_CATALOG`. Moderator still excluded from both panels.
+- **Lynch banner → floating overlay**: Removed the persistent top red bar (`w-full bg-red-950/40`) showing lynch deaths. Replaced with a centered floating overlay (`⚖️ O acusado foi linchado pela vila!`) during `dayStep === 'reveal'` only. Disappears automatically when host advances past reveal.
+- **Files touched**: `src/components/aura-seer-panel.tsx`, `src/lib/cards.ts`, `src/components/host-role-panel.tsx`, `src/components/tribunal-panel.tsx`, `src/app/game/[id]/page.tsx`, `docs/architecture.md`.
+
 ### `<current>` — Lote 2: Padre, Guarda-costas, Vidente de Aura
 - **Migration `20260701130400_lot2_priest_bodyguard_aura.sql`**: `players.is_blessed BOOLEAN DEFAULT FALSE`; `night_actions_action_type_check` atualizado com `priest_bless`, `bodyguard_protect`, `aura_investigate`.
 - **`execute_night_action`**: 3 novos branches — `priest_bless` (seta `is_blessed = true`), `bodyguard_protect` (registra em `night_actions`), `aura_investigate` (retorna `has_special_role` se role ∉ {'villager', 'werewolf'}).

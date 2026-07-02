@@ -15,7 +15,7 @@ export function AuraSeerPanel({ roomId, playerId, turnIndex, onDone }: AuraSeerP
   const [resultText, setResultText] = useState('')
   const [targetName, setTargetName] = useState('')
   const [busy, setBusy] = useState(false)
-  const [hasActed, setHasActed] = useState(false)
+  const [showResult, setShowResult] = useState(false)
   const [error, setError] = useState('')
   const supabase = createClient()
 
@@ -53,8 +53,7 @@ export function AuraSeerPanel({ roomId, playerId, turnIndex, onDone }: AuraSeerP
       }
       if (res.data) {
         setResultText(res.data.has_special_role ? 'Tem um Papel Especial!' : 'É um cidadão comum')
-        setHasActed(true)
-        onDone?.()
+        setShowResult(true)
       }
     } catch (err) {
       console.error('[AuraSeerPanel] Unexpected:', err)
@@ -63,7 +62,7 @@ export function AuraSeerPanel({ roomId, playerId, turnIndex, onDone }: AuraSeerP
     setBusy(false)
   }
 
-  if (hasActed) {
+  if (showResult) {
     return (
       <div className="w-full max-w-sm text-center space-y-4">
         <p className="text-pink-500 text-sm uppercase tracking-widest font-bold">
@@ -85,6 +84,12 @@ export function AuraSeerPanel({ roomId, playerId, turnIndex, onDone }: AuraSeerP
             {resultText === 'Tem um Papel Especial!' ? '✨ TEM UM PAPEL ESPECIAL' : '✅ É UM CIDADÃO COMUM'}
           </p>
         </div>
+        <button
+          onClick={() => onDone?.()}
+          className="px-6 py-3 rounded-xl text-sm font-bold tracking-wider bg-neutral-800 text-neutral-300 border border-neutral-700 hover:bg-neutral-700 transition-all duration-200 cursor-pointer"
+        >
+          Fechar Olhos
+        </button>
       </div>
     )
   }
@@ -100,7 +105,7 @@ export function AuraSeerPanel({ roomId, playerId, turnIndex, onDone }: AuraSeerP
           <button
             key={t.id}
             onClick={() => handleInvestigate(t.id, t.name)}
-            disabled={busy || hasActed}
+            disabled={busy || showResult}
             className="
               w-full py-3 px-4 rounded-xl text-sm font-medium
               bg-neutral-900 border border-neutral-800 text-neutral-300

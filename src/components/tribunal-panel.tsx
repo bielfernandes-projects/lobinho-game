@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { CARD_CATALOG } from '@/lib/cards'
 
 interface TribunalPanelProps {
   roomId: string
@@ -12,10 +13,11 @@ interface TribunalPanelProps {
 
 export function TribunalPanel({ roomId, dayStep, accusedId, turnIndex }: TribunalPanelProps) {
   const [accuseModal, setAccuseModal] = useState(false)
-  const [players, setPlayers] = useState<{ id: string; name: string }[]>([])
+  const [players, setPlayers] = useState<{ id: string; name: string; role: string }[]>([])
   const [accusedName, setAccusedName] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [voteCount, setVoteCount] = useState(0)
+  const [tooltipRole, setTooltipRole] = useState<string | null>(null)
   const supabase = createClient()
   const accusedFetchCountRef = useRef(0)
 
@@ -37,12 +39,12 @@ export function TribunalPanel({ roomId, dayStep, accusedId, turnIndex }: Tribuna
   async function openAccuseModal() {
     const { data } = await supabase
       .from('players')
-      .select('id, name')
+      .select('id, name, role')
       .eq('room_id', roomId)
       .neq('role', 'moderator')
       .eq('is_alive', true)
     if (data) {
-      setPlayers(data as { id: string; name: string }[])
+      setPlayers(data as { id: string; name: string; role: string }[])
     }
     setAccuseModal(true)
   }
@@ -124,14 +126,35 @@ export function TribunalPanel({ roomId, dayStep, accusedId, turnIndex }: Tribuna
             <p className="text-neutral-300 text-sm font-medium">Selecione o Acusado</p>
             <div className="space-y-2 max-h-60 overflow-y-auto">
               {players.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => handleAccuse(p.id)}
-                  disabled={busy}
-                  className="w-full py-2.5 px-4 rounded-xl text-sm font-medium bg-neutral-900 border border-neutral-800 text-neutral-300 hover:border-red-700 hover:text-red-400 disabled:opacity-40 transition-all duration-200 cursor-pointer"
-                >
-                  {p.name}
-                </button>
+                <div key={p.id} className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleAccuse(p.id)}
+                    disabled={busy}
+                    className="flex-1 py-2.5 px-4 rounded-xl text-sm font-medium bg-neutral-900 border border-neutral-800 text-neutral-300 hover:border-red-700 hover:text-red-400 disabled:opacity-40 transition-all duration-200 cursor-pointer text-left"
+                  >
+                    {p.name}
+                  </button>
+                  <span className="relative shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setTooltipRole(tooltipRole === p.role ? null : p.role)}
+                      className="text-neutral-600 hover:text-neutral-400 text-xs transition-colors cursor-pointer"
+                    >
+                      ⓘ
+                    </button>
+                    {tooltipRole === p.role && (() => {
+                      const card = CARD_CATALOG.find((c) => c.id === p.role)
+                      if (!card) return null
+                      return (
+                        <div className="absolute bottom-full right-0 mb-2 w-56 rounded-xl border border-neutral-700 bg-neutral-900 p-3 shadow-xl z-10">
+                          <p className="text-neutral-300 text-xs leading-relaxed">
+                            {card.description}
+                          </p>
+                        </div>
+                      )
+                    })()}
+                  </span>
+                </div>
               ))}
             </div>
             <button
