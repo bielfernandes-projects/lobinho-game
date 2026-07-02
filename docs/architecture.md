@@ -3,20 +3,26 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
-### `<current>` — ScenarioBuilder: Catálogo agrupado por time + pontos coloridos
+### `<current>` — Bugfix: Botão cupido não aparecia na 1ª noite (turnIndex off-by-one)
+- **Problema**: `advance_phase` incrementa `turn_index` ao sair de `card_reveal` → `night`. Na primeira noite `turnIndex === 1`, não `0`. O filtro `turnIndex > 0` escondia o botão do cupido. E o texto preditivo (`Vez de acordar: Cupido`) não tinha filtro de turno, então aparecia em todas as noites sem botão correspondente.
+- **Fix**: Filtro do botão mudou de `turnIndex > 0` para `turnIndex !== 1`. Texto preditivo ganhou `if (s === 'cupid' && turnIndex !== 1) return false`.
+- **Commit**: (próximo commit após este)
+- **Files**: `src/app/game/[id]/page.tsx`, `docs/architecture.md`.
+
+### `<current-1>` — ScenarioBuilder: Catálogo agrupado por time + pontos coloridos
 - **`CARD_CATALOG`** (`src/lib/cards.ts`): `CardDefinition` ganhou `team: 'village' | 'wolf' | 'independent'`. Cada carta categorizada: Village (aldeões, vidente, bruxa, etc), Wolf (lobisomem), Independent (curtidor, cupido, líder de culto).
 - **ScenarioBuilder agrupado**: A lista de cartas agora renderiza 3 seções com cabeçalhos coloridos: 🌿 Time da Vila (verde), 🐺 Time dos Lobos (vermelho), ⚖️ Independentes (roxo). Cartas aparecem dentro de sua seção.
 - **Pontos visíveis**: Ao lado do nome de cada carta, badge `[+7]` (verde se >0), `[-6]` (vermelho se <0), `[0]` (amarelo se 0) com formatação de sinal explícito.
 - **Files**: `src/lib/cards.ts`, `src/components/scenario-builder.tsx`, `docs/architecture.md`.
 
-### `<current-1>` — Lote 3: Cupido + Líder de Culto + 1ª Noite Lobos
+### `<current-2>` — Lote 3: Cupido + Líder de Culto + 1ª Noite Lobos
 - **Migrations (4 via CLI)**: `lot3_columns` (soulmate_id, in_cult, constraints), `lot3_cupid_rpc` (submit_cupid_match), `lot3_soulmate_trigger` (death chain), `lot3_game_over` (check_game_over + host_end_game + execute_night_action + get_revealed_players).
 - **Cupido**: RPC dedicada `submit_cupid_match` — cross-update de soulmate_id entre 2 alvos. Só age na 1ª noite. -3 pontos.
 - **Líder de Culto**: `execute_night_action('cult_convert')` → `UPDATE in_cult = true`. Toda noite. 1 ponto.
 - **Soulmate trigger**: `trg_soulmate_death` — se um jogador morre, sua alma gêmea morre de `coracao_partido` (com guarda anti-loop).
 - **check_game_over**: PRIORIDADE 1: `soulmates_win` (exatos 2 vivos não-moderador com soulmate_id mútuo). PRIORIDADE 2: `cult_win` (líder vivo e ninguém com in_cult = false).
 - **Game Over screen**: `soulmates_win` → "O AMOR VENCEU!" (pink). `cult_win` → "O CULTO DOMINOU A VILA!" (violet).
-- **1ª Noite Lobos**: WerewolfPanel detecta `isFirstNight === (turnIndex === 0)` — oculta alvos, mostra texto de reconhecimento, botão Confirmar registra ação nula.
+- **1ª Noite Lobos**: WerewolfPanel detecta `isFirstNight === (turnIndex === 1)` — oculta alvos, mostra texto de reconhecimento, botão Confirmar registra ação nula.
 - **Soulmate banner**: Elemento `fixed bottom-4 right-4 text-[10px] opacity-60` com `💕 Alma Gêmea: {name}` — visível apenas para não-host durante fase day/night.
 - **`get_revealed_players`**: agora retorna também `in_cult` e `soulmate_id`. Frontend filtra localmente para `winnerPlayers`.
 - **Files**: `supabase/migrations/20260702203438_lot3_columns.sql`, `20260702203452_lot3_cupid_rpc.sql`, `20260702203453_lot3_soulmate_trigger.sql`, `20260702203454_lot3_game_over.sql`, `src/lib/cards.ts`, `src/lib/types.ts`, `src/components/werewolf-panel.tsx`, `src/components/cupid-panel.tsx`, `src/components/cult-leader-panel.tsx`, `src/app/game/[id]/page.tsx`, `src/lib/sql/migration-023-lot3.sql`, `docs/architecture.md`.
@@ -51,7 +57,7 @@ lobby → card_reveal → night → day → (tribunal or night) → game_over
 |-------|-------------|
 | `waiting` / lobby | Players join; host configures scenario (role distribution). |
 | `card_reveal` | Each player sees their role card; host advances when all viewed. |
-| `night` | Host wakes roles sequentially (cupid → priest → bodyguard → wolves → witch → seer → aura_seer → cult_leader); each performs action. Cupido only on night 1. Wolves don't kill on night 1 (just recognize each other). |
+| `night` | Host wakes roles sequentially (cupid → priest → bodyguard → wolves → witch → seer → aura_seer → cult_leader); each performs action. Cupido only on night 1 (turnIndex === 1). Wolves don't kill on night 1 (just recognize each other). |
 | `day` | Announcement (victims) → discussion → tribunal phase (trial → voting → reveal). May loop back to night. |
 | `finished_villagers_win` | Game over — villagers win. |
 | `finished_wolves_win` | Game over — wolves win. |

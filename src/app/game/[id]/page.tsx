@@ -403,6 +403,7 @@ export default function GameScreen() {
               const nextRoleToWake = WAKE_ORDER.find((s) => {
                 const role = s === 'wolves' ? 'werewolf' : s
                 if (!availableNightRoles.has(role)) return false
+                if (s === 'cupid' && turnIndex !== 1) return false
                 if (s === 'wolves') return nightStep !== 'wolves' && !wolvesResolved
                 if (nightRolesActedRef.current.has(s)) return false
                 return nightStep !== s
@@ -445,7 +446,7 @@ export default function GameScreen() {
                 { step: 'aura_seer', role: 'aura_seer', label: '👁️ Acordar Vidente de Aura' },
                 { step: 'cult_leader', role: 'cult_leader', label: '🔮 Acordar Líder de Culto' },
               ].filter((b) => {
-                if (b.step === 'cupid' && turnIndex > 0) return false
+                if (b.step === 'cupid' && turnIndex !== 1) return false
                 return availableNightRoles.has(b.role)
               }).map((b) => {
                 const isWolves = b.step === 'wolves'
@@ -798,7 +799,7 @@ export default function GameScreen() {
           <p className="text-neutral-600 text-xs uppercase tracking-widest select-none animate-pulse">
             🌙 Fechem os olhos...
           </p>
-          <WerewolfPanel roomId={roomId} playerId={player.id} turnIndex={turnIndex} isFirstNight={turnIndex === 0} onDone={() => handleRoleDone('werewolf')} />
+          <WerewolfPanel roomId={roomId} playerId={player.id} turnIndex={turnIndex} isFirstNight={turnIndex === 1} onDone={() => handleRoleDone('werewolf')} />
         </div>
       )
     }
