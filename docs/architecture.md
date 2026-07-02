@@ -3,7 +3,8 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
-### `<current>` — 5 UX fixes (RoleInfoModal, bodyguard self-block, night dim, action log labels, game over texts)
+### `<current>` — 5 UX fixes + resolve_night bugfix (players.last_event)
+- **Bugfix**: migration `20260702194405_fix_players_last_event.sql` — remove `last_event = 'lobisomem'/'veneno'` dos `UPDATE players` no `resolve_night` (coluna não existe em players, causa erro). A causa da morte já vai no `game_state.last_event` (JSONB victims).
 - **Bodyguard self-block**: `BodyguardPanel` filtra `r.id !== playerId` — guarda-costas não pode se proteger.
 - **RoleInfoModal**: Novo componente `src/components/role-info-modal.tsx` — modal centralizado (`z-[100]`, `bg-black/50`) com nome, pontos, descrição. Substitui tooltips inline em `ScenarioBuilder`, `HostRolePanel`, `TribunalPanel`.
 - **Night buttons dim**: Polling de `night_actions` a cada 2s (apenas durante `phase === 'night'`). Botões de papéis já resolvidos na rodada atual ficam `opacity-50 cursor-not-allowed`. "😴 Todos Dormindo" permanece 100% visível.
@@ -235,7 +236,8 @@ lobby → card_reveal → night → day → (tribunal or night) → game_over
 | `20260701130400_lot2_priest_bodyguard_aura.sql` | Lote 2: `is_blessed`, `priest_bless`/`bodyguard_protect`/`aura_investigate`, bodyguard+blessing resolve_night | Applied via CLI (db push) |
 | `20260702044318_fix_wolf_consensus_no_exception.sql` | `resolve_night_wolves` returns `{consensus: false}` instead of `RAISE EXCEPTION` to avoid DELETE rollback | Applied via CLI (db push) |
 | `20260702050008_reveal_players_rpc.sql` | `get_revealed_players(p_room_id)` — SECURITY DEFINER RPC to bypass RLS and return `{id, name, role}` for all players in a room. Used by Game Over to show winner roles to all clients. | Applied via CLI (db push) |
-| `20260702182612_fix_priest_poison_order.sql` | **Fix resolve_night**: ordem sequencial Padre → Lobos → Bruxa. Passo 1 seta `is_blessed`, Passo 2 lobos checam blessing+bodyguard, Passo 3 veneno re-lê `is_blessed` pós-passos 1-2. | Applied via CLI (db push) |
+| `20260702182612_fix_priest_poison_order.sql` | **Fix resolve_night**: ordem sequencial Padre → Lobos → Bruxa. Passo 1 seta `is_blessed`, Passo 2 lobos checam blessing+bodyguard, Passo 3 veneno re-lê `is_blessed` pós-passos 1-2. **Bug**: adicionou `last_event` em UPDATEs de players (coluna inexistente). | Applied via CLI (db push) |
+| `20260702194405_fix_players_last_event.sql` | **Correção**: Remove `last_event` dos UPDATEs em `players` no `resolve_night`. `last_event` só existe em `game_state`. | Applied via CLI (db push) |
 
 **Important**: All migrations have `CREATE OR REPLACE FUNCTION` blocks removed (neutered). The actual DB schema is maintained through Supabase SQL Editor. These files are reference copies only.
 

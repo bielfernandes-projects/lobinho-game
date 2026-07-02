@@ -12,4 +12,7 @@
 -- 2. Lê alvo dos lobos, verifica is_blessed + bodyguard (PASSO 2)
 -- 3. Lê alvo do veneno, re-lê is_blessed (pós passos 1-2) + bodyguard (PASSO 3)
 -- 4. Consome is_blessed ao salvar em cada passo
--- 5. last_event setado para lobisomem/veneno nos UPDATEs de morte
+--
+-- ⚠️ CORREÇÃO (20260702194405): Removeu `last_event` dos UPDATEs em players
+--    (coluna não existe em players — causa da morte vai em game_state.last_event).
+--    Migration corretiva já aplicada via CLI (db push).
