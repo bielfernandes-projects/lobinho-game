@@ -134,6 +134,14 @@ lobby → card_reveal → night → day → (tribunal or night) → game_over
 - **Host controls**: Botões dinâmicos para acordar Padre, Guarda-costas, Vidente de Aura — filtrados por `availableNightRoles`.
 - **Arquivos tocados**: `supabase/migrations/20260701130400_lot2_priest_bodyguard_aura.sql`, `src/lib/cards.ts`, `src/app/game/[id]/page.tsx`, `src/components/priest-panel.tsx`, `src/components/bodyguard-panel.tsx`, `src/components/aura-seer-panel.tsx`, `docs/architecture.md`.
 
+### `<current+1>` — Critical rules fixes (consensus, shield, priest power)
+- **Wolf consensus**: `resolve_night` now checks `COUNT(DISTINCT target_id)` for werewolf actions. If >1 distinct target, wolves disagree — `v_wolf_target_id = NULL` and nobody dies by wolf attack that night. Applied via migration `20260702041954_fix_wolf_consensus_bodyguard_priest.sql`.
+- **Bodyguard shield vs poison**: `resolve_night` now also protects poison target if `bodyguard_protect` action targets the same player. Poison kill is skipped when `v_poison_target_id = v_bodyguard_target_id`. Applied in same migration.
+- **Priest `has_used_power`**: New `players.has_used_power BOOLEAN DEFAULT FALSE` column. `execute_night_action` for `priest_bless` now sets `has_used_power = true` on the priest player. `PriestPanel` has "Não abençoar ninguém esta noite" skip button. `availableNightRoles` query filters out priest when `has_used_power = true`.
+- **Card descriptions**: `priest` and `bodyguard` descriptions updated for clarity.
+- **Game Over para todos**: `winnerPlayers` polling triggers on `gameWinner` (from `game_state.winner`) in addition to `gameEnded`. `renderEnded` uses `gameWinner` as primary source. No `isHost` guard on names display.
+- **Files touched**: `supabase/migrations/20260702041954_fix_wolf_consensus_bodyguard_priest.sql`, `src/lib/cards.ts`, `src/components/priest-panel.tsx`, `src/app/game/[id]/page.tsx`, `docs/architecture.md`.
+
 ### `fc79acc` — DayAnnouncement spacing, discussion banner, Game Over names fix
 - **DayAnnouncement `mb-8`**: container ganha `mb-8` pra evitar colisão do botão "Iniciar Debate" com `HostRolePanel` quando não há vítimas.
 - **Discussion banner**: DayAnnouncement removido do player view durante `discussion`. Substituído por banner `📣 Hora da Discussão` no centro-superior (mesma posição do DayAnnouncement) com timer abaixo.

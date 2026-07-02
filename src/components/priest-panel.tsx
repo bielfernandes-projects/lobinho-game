@@ -92,6 +92,13 @@ export function PriestPanel({ roomId, playerId, turnIndex, onDone }: PriestPanel
           </button>
         ))}
       </div>
+      <button
+        onClick={() => onDone?.()}
+        disabled={busy}
+        className="w-full py-2.5 rounded-xl text-xs font-medium tracking-wider text-neutral-500 border border-dashed border-neutral-700 hover:text-neutral-400 hover:border-neutral-600 transition-all duration-200 cursor-pointer"
+      >
+        Não abençoar ninguém esta noite
+      </button>
       {error && (
         <p className="text-red-500 text-xs text-center">{error}</p>
       )}

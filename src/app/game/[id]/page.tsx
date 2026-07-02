@@ -85,13 +85,16 @@ export default function GameScreen() {
     if (!roomId) return
     supabase
       .from('players')
-      .select('role')
+      .select('role, has_used_power')
       .eq('room_id', roomId)
       .neq('role', 'moderator')
       .in('role', ['werewolf', 'seer', 'witch', 'priest', 'bodyguard', 'aura_seer'])
       .then(({ data }) => {
         if (data) {
-          setAvailableNightRoles(new Set((data as any[]).map((r) => r.role)))
+          const roles = (data as any[])
+            .filter((r) => !(r.role === 'priest' && r.has_used_power))
+            .map((r) => r.role)
+          setAvailableNightRoles(new Set(roles))
         }
       })
   }, [roomId, gameState?.turn_index])
@@ -128,12 +131,12 @@ export default function GameScreen() {
   const gameEnded =
     roomStatus === 'finished_villagers_win' || roomStatus === 'finished_wolves_win' || roomStatus === 'finished_tanner_win'
 
-  // Fetch winner player names when game ends
+  // Fetch winner player names when game ends (for ALL players, no isHost guard)
   useEffect(() => {
-    if (!gameEnded) return
+    if (!gameEnded && !gameWinner) return
     async function poll() {
       const status = roomStatus
-      const w = lastEvent?.winner ?? (status === 'finished_wolves_win' ? 'wolves_win' : status === 'finished_tanner_win' ? 'tanner_win' : 'villagers_win')
+      const w = gameWinner ?? lastEvent?.winner ?? (status === 'finished_wolves_win' ? 'wolves_win' : status === 'finished_tanner_win' ? 'tanner_win' : 'villagers_win')
 
       let roleFilter: string | null = null
       if (w === 'wolves_win') roleFilter = 'werewolf'
@@ -173,7 +176,7 @@ export default function GameScreen() {
     poll()
     const iv = setInterval(poll, 2000)
     return () => clearInterval(iv)
-  }, [gameEnded])
+    }, [gameEnded, gameWinner])
 
   // Poll vote count during voting phase (Task 3)
   useEffect(() => {
@@ -772,7 +775,7 @@ export default function GameScreen() {
   }
 
   function renderEnded() {
-    const winner = lastEvent?.winner ?? (roomStatus === 'finished_wolves_win' ? 'wolves_win' : roomStatus === 'finished_tanner_win' ? 'tanner_win' : 'villagers_win')
+    const winner = gameWinner ?? lastEvent?.winner ?? (roomStatus === 'finished_wolves_win' ? 'wolves_win' : roomStatus === 'finished_tanner_win' ? 'tanner_win' : 'villagers_win')
     const isHost = player?.isHost ?? false
 
     async function handleReturnToLobby() {

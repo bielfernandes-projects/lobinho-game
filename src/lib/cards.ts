@@ -95,14 +95,14 @@ export const CARD_CATALOG: CardDefinition[] = [
     name: 'Padre',
     points: 3,
     description:
-      'Uma noite por jogo, abençoe um jogador. A próxima tentativa de matá-lo falhará.',
+      'Uma vez por jogo, escolha alguém para receber um escudo permanente. A próxima tentativa de matar essa pessoa (por lobos, bruxa ou tribunal) falhará e gastará a bênção.',
   },
   {
     id: 'bodyguard',
     name: 'Guarda-costas',
     points: 3,
     description:
-      'Toda noite, proteja um jogador. Não pode ser a mesma pessoa duas vezes seguidas.',
+      'Toda noite, proteja um jogador. O escudo dura SÓ AQUELA NOITE e bloqueia lobos e poções. Não proteja o mesmo alvo 2x seguidas.',
   },
   {
     id: 'aura_seer',
