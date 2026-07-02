@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { CARD_CATALOG, type CardDefinition } from '@/lib/cards'
+import { RoleInfoModal } from '@/components/role-info-modal'
 
 interface ScenarioBuilderProps {
   roomId: string
@@ -26,7 +27,7 @@ function getInitialCounts(): Record<string, number> {
 
 export function ScenarioBuilder({ roomId, playerCount }: ScenarioBuilderProps) {
   const [counts, setCounts] = useState<Record<string, number>>(getInitialCounts)
-  const [tooltipId, setTooltipId] = useState<string | null>(null)
+  const [modalCard, setModalCard] = useState<CardDefinition | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const supabase = createClient()
@@ -137,26 +138,13 @@ export function ScenarioBuilder({ roomId, playerCount }: ScenarioBuilderProps) {
                 {card.name}
               </span>
 
-              {/* Tooltip */}
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setTooltipId(tooltipId === card.id ? null : card.id)}
-                  className="text-neutral-600 hover:text-neutral-400 text-xs transition-colors cursor-pointer"
-                >
-                  ⓘ
-                </button>
-                {tooltipId === card.id && (
-                  <div className="absolute bottom-full right-0 mb-2 w-56 rounded-xl border border-neutral-700 bg-neutral-900 p-3 shadow-xl z-10">
-                    <p className="text-neutral-300 text-xs leading-relaxed">
-                      {card.description}
-                    </p>
-                    <p className="text-neutral-500 text-[10px] mt-1.5 font-mono">
-                      Pontos: {card.points > 0 ? `+${card.points}` : card.points}
-                    </p>
-                  </div>
-                )}
-              </div>
+              <button
+                type="button"
+                onClick={() => setModalCard(card)}
+                className="text-neutral-600 hover:text-neutral-400 text-xs transition-colors cursor-pointer"
+              >
+                ⓘ
+              </button>
 
               {/* Controles +/- */}
               <div className="flex items-center gap-1.5">
@@ -213,6 +201,8 @@ export function ScenarioBuilder({ roomId, playerCount }: ScenarioBuilderProps) {
       {error && (
         <p className="text-red-500 text-xs text-center">{error}</p>
       )}
+
+      <RoleInfoModal open={modalCard !== null} onClose={() => setModalCard(null)} card={modalCard} />
     </div>
   )
 }

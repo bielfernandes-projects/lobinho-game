@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { CARD_CATALOG } from '@/lib/cards'
+import { CARD_CATALOG, type CardDefinition } from '@/lib/cards'
+import { RoleInfoModal } from '@/components/role-info-modal'
 
 interface TribunalPanelProps {
   roomId: string
@@ -17,7 +18,7 @@ export function TribunalPanel({ roomId, dayStep, accusedId, turnIndex }: Tribuna
   const [accusedName, setAccusedName] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [voteCount, setVoteCount] = useState(0)
-  const [tooltipRole, setTooltipRole] = useState<string | null>(null)
+  const [modalCard, setModalCard] = useState<CardDefinition | null>(null)
   const supabase = createClient()
   const accusedFetchCountRef = useRef(0)
 
@@ -134,25 +135,17 @@ export function TribunalPanel({ roomId, dayStep, accusedId, turnIndex }: Tribuna
                   >
                     {p.name}
                   </button>
-                  <span className="relative shrink-0">
+                  <span className="shrink-0">
                     <button
                       type="button"
-                      onClick={() => setTooltipRole(tooltipRole === p.role ? null : p.role)}
+                      onClick={() => {
+                        const card = CARD_CATALOG.find((c) => c.id === p.role)
+                        if (card) setModalCard(card)
+                      }}
                       className="text-neutral-600 hover:text-neutral-400 text-xs transition-colors cursor-pointer"
                     >
                       ⓘ
                     </button>
-                    {tooltipRole === p.role && (() => {
-                      const card = CARD_CATALOG.find((c) => c.id === p.role)
-                      if (!card) return null
-                      return (
-                        <div className="absolute bottom-full right-0 mb-2 w-56 rounded-xl border border-neutral-700 bg-neutral-900 p-3 shadow-xl z-10">
-                          <p className="text-neutral-300 text-xs leading-relaxed">
-                            {card.description}
-                          </p>
-                        </div>
-                      )
-                    })()}
                   </span>
                 </div>
               ))}
@@ -221,6 +214,7 @@ export function TribunalPanel({ roomId, dayStep, accusedId, turnIndex }: Tribuna
           </button>
         </div>
       )}
+      <RoleInfoModal open={modalCard !== null} onClose={() => setModalCard(null)} card={modalCard} />
     </div>
   )
 }

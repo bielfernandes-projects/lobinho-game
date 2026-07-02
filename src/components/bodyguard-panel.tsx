@@ -29,7 +29,7 @@ export function BodyguardPanel({ roomId, playerId, turnIndex, onDone }: Bodyguar
         if (data) {
           setTargets(
             (data as any[])
-              .filter((r) => r.is_alive && !r.is_host)
+              .filter((r) => r.id !== playerId && r.is_alive && !r.is_host)
               .map((r) => ({ id: r.id, name: r.name }))
           )
         }

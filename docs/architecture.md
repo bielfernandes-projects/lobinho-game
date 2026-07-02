@@ -3,7 +3,15 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
-### `<current>` — PWA, Home refactor, resolve_night sequential fix
+### `<current>` — 5 UX fixes (RoleInfoModal, bodyguard self-block, night dim, action log labels, game over texts)
+- **Bodyguard self-block**: `BodyguardPanel` filtra `r.id !== playerId` — guarda-costas não pode se proteger.
+- **RoleInfoModal**: Novo componente `src/components/role-info-modal.tsx` — modal centralizado (`z-[100]`, `bg-black/50`) com nome, pontos, descrição. Substitui tooltips inline em `ScenarioBuilder`, `HostRolePanel`, `TribunalPanel`.
+- **Night buttons dim**: Polling de `night_actions` a cada 2s (apenas durante `phase === 'night'`). Botões de papéis já resolvidos na rodada atual ficam `opacity-50 cursor-not-allowed`. "😴 Todos Dormindo" permanece 100% visível.
+- **Action log labels**: `host-action-log.tsx` agora tem labels para `priest_bless → 🙏 abençoou`, `bodyguard_protect → 🛡️ protegeu`, `aura_investigate → 👁️ investigou aura de`.
+- **Game Over**: Títulos mudaram para `VITÓRIA DO TIME DA VILA` / `VITÓRIA DO TIME DOS LOBOS` / `O CURTIDOR VENCEU`. Lista de vencedores exibe apenas nomes (sem role entre parênteses).
+- **Files**: `src/components/bodyguard-panel.tsx`, `src/components/role-info-modal.tsx`, `src/components/scenario-builder.tsx`, `src/components/host-role-panel.tsx`, `src/components/tribunal-panel.tsx`, `src/components/host-action-log.tsx`, `src/app/game/[id]/page.tsx`, `docs/architecture.md`.
+
+### `<current+1>` — PWA, Home refactor, resolve_night sequential fix
 - **PWA infra**: `@serwist/next` configurado em `next.config.ts`; `sw.ts` service worker com precache + runtime caching; `manifest.json` com ícones SVG 192/512; `metadata.manifest` no layout.
 - **Install button**: `use-install-prompt.ts` hook escuta `beforeinstallprompt`; `InstallButton` renderiza "📲 Instalar App" na Home apenas quando instalável.
 - **Home simplificada**: Input "Nome do Jogador" + "Código da Sala" sempre visíveis; dois botões lado a lado (`flex flex-row gap-4`): **Criar Sala** (gera PIN novo automaticamente) e **Entrar** (usa PIN digitado). Remove alternador de modo.
@@ -188,6 +196,7 @@ lobby → card_reveal → night → day → (tribunal or night) → game_over
 | BodyguardPanel | `src/components/bodyguard-panel.tsx` | Bodyguard night action: protect a player (no repeat last target) |
 | AuraSeerPanel | `src/components/aura-seer-panel.tsx` | Aura Seer night action: detect if target has special role |
 | InstallButton | `src/components/install-button.tsx` | PWA install button (visible only when `beforeinstallprompt` captured) |
+| RoleInfoModal | `src/components/role-info-modal.tsx` | Centralized modal with role name, points, description (z-[100], bg-black/50). Replaces tooltips in ScenarioBuilder, HostRolePanel, TribunalPanel. |
 | SeerPanel | `src/components/seer-panel.tsx` | Seer night action: investigate player, see is_werewolf |
 | WerewolfPanel | `src/components/werewolf-panel.tsx` | Werewolf night action: see teammates, choose victim |
 | WitchPanel | `src/components/witch-panel.tsx` | Witch night action: save (first kill) + poison (once each) |

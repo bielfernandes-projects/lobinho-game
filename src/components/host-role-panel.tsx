@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { CARD_CATALOG, ROLE_STYLE, ROLE_LABEL } from '@/lib/cards'
+import { CARD_CATALOG, ROLE_STYLE, ROLE_LABEL, type CardDefinition } from '@/lib/cards'
+import { RoleInfoModal } from '@/components/role-info-modal'
 
 interface RoleRow {
   id: string
@@ -21,7 +22,7 @@ export function HostRolePanel({ roomId, isHost }: HostRolePanelProps) {
   const [rows, setRows] = useState<RoleRow[]>([])
   const [collapsed, setCollapsed] = useState(false)
   const [error, setError] = useState('')
-  const [tooltipRole, setTooltipRole] = useState<string | null>(null)
+  const [modalCard, setModalCard] = useState<CardDefinition | null>(null)
   const supabase = createClient()
 
   const fetchPlayers = useCallback(async () => {
@@ -112,25 +113,17 @@ export function HostRolePanel({ roomId, isHost }: HostRolePanelProps) {
                 <span className={`text-xs tracking-wider shrink-0 px-2 py-0.5 rounded-full border ${ROLE_STYLE[r.role] ?? 'text-neutral-500 border-neutral-700'}`}>
                   {ROLE_LABEL[r.role] ?? r.role}
                 </span>
-                <span className="relative shrink-0">
+                <span className="shrink-0">
                   <button
                     type="button"
-                    onClick={() => setTooltipRole(tooltipRole === r.role ? null : r.role)}
+                    onClick={() => {
+                      const card = CARD_CATALOG.find((c) => c.id === r.role)
+                      if (card) setModalCard(card)
+                    }}
                     className="text-neutral-600 hover:text-neutral-400 text-xs transition-colors cursor-pointer"
                   >
                     ⓘ
                   </button>
-                  {tooltipRole === r.role && (() => {
-                    const card = CARD_CATALOG.find((c) => c.id === r.role)
-                    if (!card) return null
-                    return (
-                      <div className="absolute bottom-full right-0 mb-2 w-56 rounded-xl border border-neutral-700 bg-neutral-900 p-3 shadow-xl z-10">
-                        <p className="text-neutral-300 text-xs leading-relaxed">
-                          {card.description}
-                        </p>
-                      </div>
-                    )
-                  })()}
                 </span>
                 {r.is_alive && r.role !== 'moderator' && (
                   <button
@@ -180,6 +173,8 @@ export function HostRolePanel({ roomId, isHost }: HostRolePanelProps) {
           </div>
         </div>
       )}
+
+      <RoleInfoModal open={modalCard !== null} onClose={() => setModalCard(null)} card={modalCard} />
     </div>
   )
 }

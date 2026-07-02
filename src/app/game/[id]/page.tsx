@@ -40,10 +40,19 @@ export default function GameScreen() {
   const [actedRoles, setActedRoles] = useState<Set<string>>(new Set())
   const [winnerPlayers, setWinnerPlayers] = useState<{ name: string; role: string }[]>([])
   const [availableNightRoles, setAvailableNightRoles] = useState<Set<string>>(new Set(['werewolf']))
+  const [resolvedActions, setResolvedActions] = useState<Set<string>>(new Set())
   const [voteCount, setVoteCount] = useState(0)
   const [eligibleVoters, setEligibleVoters] = useState(0)
 
   const WAKE_ORDER = ['priest', 'bodyguard', 'wolves', 'seer', 'witch', 'aura_seer'] as const
+  const STEP_TO_ACTION_TYPES: Record<string, string[]> = {
+    priest: ['priest_bless'],
+    bodyguard: ['bodyguard_protect'],
+    wolves: ['werewolf_kill'],
+    seer: ['seer_investigate'],
+    witch: ['witch_save', 'witch_poison'],
+    aura_seer: ['aura_investigate'],
+  }
   const NIGHT_ROLE_LABELS: Record<string, string> = {
     priest: '🙏 Padre',
     bodyguard: '🛡️ Guarda-costas',
@@ -180,6 +189,31 @@ export default function GameScreen() {
     const iv = setInterval(poll, 2000)
     return () => clearInterval(iv)
   }, [dayStep, roomId, turnIndex, accusedId])
+
+  // Poll night_actions to mark which night roles have already acted
+  useEffect(() => {
+    if (phase !== 'night' || !roomId) return
+    async function poll() {
+      const { data } = await supabase
+        .from('night_actions')
+        .select('action_type')
+        .eq('room_id', roomId)
+        .eq('turn_index', turnIndex)
+      if (data) {
+        const types = new Set(data.map((r: any) => r.action_type))
+        const resolved = new Set<string>()
+        for (const [step, actionTypes] of Object.entries(STEP_TO_ACTION_TYPES)) {
+          if (actionTypes.some((at) => types.has(at))) {
+            resolved.add(step)
+          }
+        }
+        setResolvedActions(resolved)
+      }
+    }
+    poll()
+    const iv = setInterval(poll, 2000)
+    return () => clearInterval(iv)
+  }, [phase, roomId, turnIndex])
 
   // Mark has_viewed_card on first flip
   async function handleFirstFlip() {
@@ -360,7 +394,7 @@ export default function GameScreen() {
               <button
                 onClick={() => handleSetNightStep('sleeping')}
                 disabled={nightStep === 'sleeping'}
-                className="px-3 py-2 rounded-lg text-xs font-bold tracking-wider bg-neutral-900 border border-neutral-800 text-neutral-500 hover:text-neutral-400 disabled:opacity-30 cursor-pointer transition-all duration-200"
+                className="px-3 py-2 rounded-lg text-xs font-bold tracking-wider bg-neutral-900 border border-neutral-800 text-neutral-500 hover:text-neutral-400 cursor-pointer transition-all duration-200"
               >
                 😴 Todos Dormindo
               </button>
@@ -372,16 +406,17 @@ export default function GameScreen() {
                 { step: 'witch', role: 'witch', label: '🧪 Acordar Bruxa' },
                 { step: 'aura_seer', role: 'aura_seer', label: '👁️ Acordar Vidente de Aura' },
               ].filter((b) => availableNightRoles.has(b.role)).map((b) => {
-                const disabled =
-                  b.step === 'wolves'
-                    ? nightStep === 'wolves' || wolvesResolved
-                    : nightStep === b.step
+                const isWolves = b.step === 'wolves'
+                const actionDone = !isWolves && resolvedActions.has(b.step)
+                const disabled = isWolves
+                  ? nightStep === 'wolves' || wolvesResolved
+                  : nightStep === b.step || actionDone
                 return (
                   <button
                     key={b.step}
                     onClick={() => handleSetNightStep(b.step)}
                     disabled={disabled}
-                    className={`px-3 py-2 rounded-lg text-xs font-bold tracking-wider border ${ROLE_STYLE[b.role] ?? 'text-neutral-500 border-neutral-700'} disabled:opacity-30 cursor-pointer transition-all duration-200`}
+                    className={`px-3 py-2 rounded-lg text-xs font-bold tracking-wider border ${ROLE_STYLE[b.role] ?? 'text-neutral-500 border-neutral-700'} disabled:opacity-30 transition-all duration-200 ${actionDone ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                   >
                     {b.label}
                   </button>
@@ -783,9 +818,9 @@ export default function GameScreen() {
         : villagerStyle
 
     const displayText =
-      winner === 'tanner_win' ? '👔 Curtidor Venceu'
-        : winner === 'wolves_win' ? '🐺 Lobisomens Venceram'
-        : '🌿 Aldeões Venceram'
+      winner === 'tanner_win' ? 'O CURTIDOR VENCEU'
+        : winner === 'wolves_win' ? 'VITÓRIA DO TIME DOS LOBOS'
+        : 'VITÓRIA DO TIME DA VILA'
 
     return (
       <div className="flex flex-1 flex-col items-center justify-center min-h-dvh px-6 gap-6">
@@ -808,9 +843,6 @@ export default function GameScreen() {
             {winnerPlayers.map((p, i) => (
               <p key={i} className="text-neutral-300 text-sm font-medium">
                 {p.name}
-                <span className="text-neutral-600 ml-1.5 text-xs">
-                  ({p.role === 'werewolf' ? 'Lobisomem' : p.role})
-                </span>
               </p>
             ))}
           </div>

@@ -22,6 +22,9 @@ const ACTION_LABEL: Record<string, string> = {
   seer_investigate: '🔮 investigou',
   witch_save: '💚 salvou',
   witch_poison: '☠️ envenenou',
+  priest_bless: '🙏 abençoou',
+  bodyguard_protect: '🛡️ protegeu',
+  aura_investigate: '👁️ investigou aura de',
 }
 
 export function HostActionLog({ roomId, turnIndex }: HostActionLogProps) {
