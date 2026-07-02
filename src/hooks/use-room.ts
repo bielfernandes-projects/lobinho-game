@@ -41,6 +41,7 @@ export interface GameStateRow {
   last_vote_result: {
     type: string
     victim_name?: string | null
+    soulmate_name?: string | null
   } | null
   timer_duration: number | null
   timer_remaining: number | null

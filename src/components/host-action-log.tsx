@@ -10,6 +10,7 @@ interface ActionEntry {
   target_name: string | null
   result: boolean | null
   created_at: string
+  turn_index: number
 }
 
 interface HostActionLogProps {
@@ -37,30 +38,45 @@ export function HostActionLog({ roomId, turnIndex }: HostActionLogProps) {
     async function fetchActions() {
       const { data: raw } = await supabase
         .from('night_actions')
-        .select('id, action_type, actor_id, target_id, result, created_at')
+        .select('id, action_type, actor_id, target_id, result, created_at, turn_index')
         .eq('room_id', roomId)
-        .eq('turn_index', turnIndex)
+        .order('turn_index', { ascending: true })
         .order('created_at', { ascending: true })
 
       if (!raw) return
 
-      const entries: ActionEntry[] = []
+      const actorNames: Record<string, string> = {}
+      const targetNames: Record<string, string> = {}
+      const missingIds = new Set<string>()
 
-      for (const a of raw as { id: string; action_type: string; actor_id: string; target_id: string | null; result: boolean | null; created_at: string }[]) {
-        const [actorRes, targetRes] = await Promise.all([
-          supabase.from('player_profiles').select('name').eq('id', a.actor_id).single(),
-          a.target_id ? supabase.from('player_profiles').select('name').eq('id', a.target_id).single() : Promise.resolve({ data: null }),
-        ])
-
-        entries.push({
-          id: a.id,
-          action_type: a.action_type,
-          actor_name: (actorRes.data as any)?.name ?? '???',
-          target_name: (targetRes.data as any)?.name ?? null,
-          result: a.result,
-          created_at: a.created_at,
-        })
+      for (const a of raw as { id: string; action_type: string; actor_id: string; target_id: string | null; result: boolean | null; created_at: string; turn_index: number }[]) {
+        missingIds.add(a.actor_id)
+        if (a.target_id) missingIds.add(a.target_id)
       }
+
+      if (missingIds.size > 0) {
+        const { data: profiles } = await supabase
+          .from('player_profiles')
+          .select('id, name')
+          .in('id', [...missingIds])
+
+        if (profiles) {
+          for (const p of profiles as { id: string; name: string }[]) {
+            actorNames[p.id] = p.name
+            targetNames[p.id] = p.name
+          }
+        }
+      }
+
+      const entries: ActionEntry[] = raw.map((a: { id: string; action_type: string; actor_id: string; target_id: string | null; result: boolean | null; created_at: string; turn_index: number }) => ({
+        id: a.id,
+        action_type: a.action_type,
+        actor_name: actorNames[a.actor_id] ?? '???',
+        target_name: a.target_id ? (targetNames[a.target_id] ?? '???') : null,
+        result: a.result,
+        created_at: a.created_at,
+        turn_index: a.turn_index,
+      }))
 
       setActions(entries)
     }
@@ -82,40 +98,88 @@ export function HostActionLog({ roomId, turnIndex }: HostActionLogProps) {
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [roomId, turnIndex])
+  }, [roomId])
 
   if (actions.length === 0) return null
 
+  const grouped = new Map<number, ActionEntry[]>()
+  for (const a of actions) {
+    const list = grouped.get(a.turn_index) ?? []
+    list.push(a)
+    grouped.set(a.turn_index, list)
+  }
+
+  const sortedTurns = [...grouped.keys()].sort((a, b) => a - b)
+
   return (
-    <div className="w-full max-w-sm mx-auto space-y-2 py-4 border-t border-neutral-800">
+    <div className="w-full max-w-sm mx-auto space-y-4 py-4 border-t border-neutral-800">
       <p className="text-neutral-600 text-[10px] uppercase tracking-widest text-center">
         📜 Histórico Noturno
       </p>
-      <div className="space-y-1">
-        {actions.map((a) => (
-          <div
-            key={a.id}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-neutral-900/60 border border-neutral-800 text-xs"
-          >
-            <span className="text-neutral-300 font-medium truncate">
-              {a.actor_name}
-            </span>
-            <span className="text-neutral-500 shrink-0">
-              {ACTION_LABEL[a.action_type] ?? a.action_type}
-            </span>
-            {a.target_name && (
-              <span className="text-neutral-300 font-medium truncate">
-                {a.target_name}
-              </span>
+      {sortedTurns.map((turn) => {
+        const turnActions = grouped.get(turn)!
+        const cupidEntry = findCupidPair(turnActions)
+        const otherActions = turnActions.filter(a => a.action_type !== 'cupid_match')
+
+        return (
+          <div key={turn} className="space-y-1">
+            {sortedTurns.length > 1 && (
+              <p className="text-neutral-700 text-[10px] uppercase tracking-widest px-2">
+                Noite {turn + 1}
+              </p>
             )}
-            {a.result !== null && (
-              <span className={`shrink-0 font-bold ${a.result ? 'text-red-400' : 'text-green-400'}`}>
-                {a.result ? '🐺' : '👤'}
-              </span>
-            )}
+            <div className="space-y-1">
+              {cupidEntry && (
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-neutral-900/60 border border-neutral-800 text-xs">
+                  <span className="text-neutral-300 font-medium truncate">
+                    {cupidEntry.actor_name}
+                  </span>
+                  <span className="text-neutral-500 shrink-0">
+                    {ACTION_LABEL.cupid_match}
+                  </span>
+                  <span className="text-neutral-300 font-medium truncate">
+                    {cupidEntry.targets[0]}
+                  </span>
+                  <span className="text-neutral-500">e</span>
+                  <span className="text-neutral-300 font-medium truncate">
+                    {cupidEntry.targets[1]}
+                  </span>
+                </div>
+              )}
+              {otherActions.map((a) => (
+                <div
+                  key={a.id}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-neutral-900/60 border border-neutral-800 text-xs"
+                >
+                  <span className="text-neutral-300 font-medium truncate">
+                    {a.actor_name}
+                  </span>
+                  <span className="text-neutral-500 shrink-0">
+                    {ACTION_LABEL[a.action_type] ?? a.action_type}
+                  </span>
+                  {a.target_name && (
+                    <span className="text-neutral-300 font-medium truncate">
+                      {a.target_name}
+                    </span>
+                  )}
+                  {a.result !== null && (
+                    <span className={`shrink-0 font-bold ${a.result ? 'text-red-400' : 'text-green-400'}`}>
+                      {a.result ? '🐺' : '👤'}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-        ))}
-      </div>
+        )
+      })}
     </div>
   )
+}
+
+function findCupidPair(actions: ActionEntry[]): { actor_name: string; targets: [string, string] } | null {
+  const cupids = actions.filter(a => a.action_type === 'cupid_match')
+  if (cupids.length < 2) return null
+  const targets = [cupids[0].target_name!, cupids[1].target_name!]
+  return { actor_name: cupids[0].actor_name, targets: targets as [string, string] }
 }

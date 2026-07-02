@@ -44,6 +44,7 @@ export function DayAnnouncement({ victims, turnIndex, isHost = false, onStartDis
                   <p className="text-neutral-500 text-sm">
                     {v.cause === 'lobisomem' && 'morto pelos lobisomens'}
                     {v.cause === 'veneno' && 'envenenado'}
+                    {v.cause === 'soulmate' && 'coração partido por amor'}
                   </p>
                 )}
               </div>

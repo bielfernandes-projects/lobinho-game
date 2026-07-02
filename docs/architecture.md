@@ -3,13 +3,15 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
-### `<current>` — Lote 3.5: Cupido log, Culto Panel ícones, Príncipe UI, Soulmate trigger fix
-- **Cupido**: `submit_cupid_match` agora insere em `night_actions` (`action_type = 'cupid_match'`). Aparece no histórico do mestre como "💘 uniu". `HostRolePanel` exibe 💕 ao lado de almas gêmeas. HostActionLog ganhou label `cupid_match`.
-- **Líder de Culto**: `HostRolePanel` exibe 🔮 ao lado de convertidos (`in_cult`). `fetch_roles_for_host` agora retorna `soulmate_id` e `in_cult`. HostActionLog ganhou label `cult_convert: 🔮 converteu`.
-- **Príncipe**: Modais de `prince_reveal` e linchamento reduzidos (`px-5 py-4`, `text-3xl` emoji, `text-sm` texto, `max-w-[85vw]`) para caber em celular.
-- **Soulmate trigger**: Removeu `last_event = 'coracao_partido'` do `after_player_death_soulmate` (coluna `last_event` não existe em `players` — causava erro SQL).
-- **Migration**: `20260702220202_fix_cupid_log_soulmate_trigger.sql` (via CLI).
-- **Files**: `supabase/migrations/20260702220202_fix_cupid_log_soulmate_trigger.sql`, `src/lib/sql/migration-027-fix-cupid-log-soulmate-trigger.sql`, `src/components/host-action-log.tsx`, `src/components/host-role-panel.tsx`, `src/app/game/[id]/page.tsx`, `docs/architecture.md`.
+### `<current>` — 4 fixes: Cupido log dupla, História persistente, Alma gêmea no anúncio, Modal de linchamento
+- **Cupido log dupla**: `submit_cupid_match` insere 2 linhas em `night_actions` (uma por alvo). `UNIQUE constraint` alterada para `(room_id, turn_index, actor_id, action_type, target_id)`. `HostActionLog` agrupa por `actor_id` e exibe "X uniu A e B".
+- **História persistente**: `HostActionLog` agora busca TODAS as ações da sala (sem filtro `turnIndex`), agrupa por `turn_index`, exibe "Noite 1", "Noite 2", etc em jogos com múltiplos turnos.
+- **Alma gêmea no anúncio diurno**: `resolve_night` checa soulmate de vítima lobisomem e veneno PÓS trigger, inclui no array `victims` (causa `soulmate`). `resolve_day_vote` e `host_execute_accused` registram `soulmate_name` em `last_event`/`last_vote_result`. `DayAnnouncement` mostra "coração partido por amor" (host only, causa `soulmate`).
+- **Modal de linchamento**: `resolve_day_vote` e `host_execute_accused` setam `current_phase = 'day', day_step = 'lynch_reveal'` em vez de ir direto para `'night'`. Novo RPC `advance_to_night` (substitui `advance_after_prince`). Host vê banner + "Avançar para Noite"; jogadores veem banner + "A noite está chegando...".
+- **Migration**: `20260702224500_fix_4_issues.sql` (aplicar no SQL Editor).
+- **Files**: `supabase/migrations/20260702224500_fix_4_issues.sql`, `src/hooks/use-room.ts`, `src/components/host-action-log.tsx`, `src/components/day-announcement.tsx`, `src/app/game/[id]/page.tsx`, `docs/architecture.md`.
+
+### `<current-1>` — Lote 3.5: Cupido log, Culto Panel ícones, Príncipe UI, Soulmate trigger fix
 
 ### `<current-1>` — 3 bugfixes: Cupido/Culto/Príncipe
 - **Cupido**: Corrigido off-by-one no `page.tsx` linha 782. Painel não renderizava na primeira noite.
@@ -63,8 +65,8 @@ A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, S
 
 ```
 lobby → card_reveal → night → day (announcement → discussion → trial → voting → reveal)
-                                    ↓ (se príncipe)
-                               prince_reveal → night → ...
+                                    ↓ (se príncipe)          ↓ (se maioria SIM)
+                                prince_reveal → night →   lynch_reveal → night → ...
 ```
 
 | Phase | Description |
@@ -81,7 +83,7 @@ lobby → card_reveal → night → day (announcement → discussion → trial �
 
 **`current_phase`** values: `waiting`, `card_reveal`, `night`, `day`, `ended`.
 
-**`day_step`** (when `current_phase = 'day'`): `announcement`, `discussion`, `trial`, `voting`, `reveal`.
+**`day_step`** (when `current_phase = 'day'`): `announcement`, `discussion`, `trial`, `voting`, `reveal`, `prince_reveal`, `lynch_reveal`.
 
 **`night_step`** (when `current_phase = 'night'`): `sleeping`, `cupid`, `priest`, `bodyguard`, `wolves`, `witch`, `seer`, `aura_seer`, `cult_leader`.
 
@@ -311,9 +313,9 @@ lobby → card_reveal → night → day (announcement → discussion → trial �
 - Present only in player list for lobby management.
 
 ### Cause of Death
-- Stored in `last_event` column on `players` table.
+- Stored in `last_event.victims` array on `game_state`.
 - Visible only to host via `DayAnnouncement isHost` prop.
-- Possible values: `lobisomem` (wolf kill), `veneno` (witch poison), `linchamento` (tribunal execution).
+- Possible values: `lobisomem` (wolf kill), `veneno` (witch poison), `linchamento` (tribunal execution), `soulmate` (heartbreak).
 
 ### Timer
 - Uses `clientStartRef` (not server `timer_started_at`) to avoid clock skew.

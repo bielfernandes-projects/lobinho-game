@@ -331,7 +331,7 @@ export default function GameScreen() {
   }
 
   async function handleAdvanceAfterPrince() {
-    await supabase.rpc('advance_after_prince', { p_room_id: roomId })
+    await supabase.rpc('advance_to_night', { p_room_id: roomId })
   }
 
   // ── Moderator / Host Dashboard ──────────────────────────
@@ -376,6 +376,29 @@ export default function GameScreen() {
                 <p className="text-3xl mb-2">🤴</p>
                 <p className="text-cyan-400 text-sm font-black tracking-wider">
                   O Príncipe revelou sua identidade e impediu a execução!
+                </p>
+              </div>
+            </div>
+            <div className="pt-24">
+              <button
+                onClick={handleAdvanceAfterPrince}
+                className="w-full py-4 rounded-2xl font-bold text-lg tracking-wider bg-red-700 text-white hover:bg-red-600 active:bg-red-800 shadow-lg shadow-red-900/40 transition-all duration-200 cursor-pointer"
+              >
+                🌙 Avançar para Noite
+              </button>
+            </div>
+          </div>
+        )}
+
+        {phase === 'day' && dayStep === 'lynch_reveal' && lastVoteResult?.type === 'lynch' && (
+          <div className="w-full max-w-sm mx-auto space-y-4 px-6 py-4">
+            <div className="fixed inset-0 z-40 flex items-center justify-center pointer-events-none">
+              <div className="bg-red-950/80 border border-red-700/50 rounded-2xl px-5 py-4 text-center shadow-2xl backdrop-blur-sm max-w-[85vw]">
+                <p className="text-3xl mb-2">⚖️</p>
+                <p className="text-red-400 text-sm font-black tracking-wider">
+                  {lastVoteResult.soulmate_name
+                    ? `${lastVoteResult.victim_name} foi linchado(a) pela vila! ${lastVoteResult.soulmate_name} morreu de coração partido.`
+                    : `O acusado foi linchado pela vila!`}
                 </p>
               </div>
             </div>
@@ -689,6 +712,24 @@ export default function GameScreen() {
             </div>
             <p className="text-neutral-500 text-sm text-center mt-32">
               O dia foi cancelado pela autoridade do Príncipe. Todos vão dormir.
+            </p>
+          </div>
+        )}
+
+        {dayStep === 'lynch_reveal' && lastVoteResult?.type === 'lynch' && (
+          <div className="flex flex-1 flex-col items-center justify-center px-6 gap-4">
+            <div className="fixed inset-0 z-40 flex items-center justify-center pointer-events-none">
+              <div className="bg-red-950/80 border border-red-700/50 rounded-2xl px-5 py-4 text-center shadow-2xl backdrop-blur-sm max-w-[85vw]">
+                <p className="text-3xl mb-2">⚖️</p>
+                <p className="text-red-400 text-sm font-black tracking-wider">
+                  {lastVoteResult.soulmate_name
+                    ? `${lastVoteResult.victim_name} foi linchado(a) pela vila! ${lastVoteResult.soulmate_name} morreu de coração partido.`
+                    : `O acusado foi linchado pela vila!`}
+                </p>
+              </div>
+            </div>
+            <p className="text-neutral-500 text-sm text-center mt-32">
+              A noite está chegando...
             </p>
           </div>
         )}
