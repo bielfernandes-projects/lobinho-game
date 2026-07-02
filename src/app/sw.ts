@@ -16,11 +16,6 @@ const serwist = new Serwist({
   clientsClaim: true,
   navigationPreload: true,
   runtimeCaching: defaultCache,
-  fallbacks: {
-    entries: {
-      document: '/~offline',
-    },
-  },
 })
 
 serwist.addEventListeners()
