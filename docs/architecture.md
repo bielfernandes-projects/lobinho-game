@@ -3,7 +3,13 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
-### `<current>` — Lote 3: Cupido + Líder de Culto + 1ª Noite Lobos
+### `<current>` — ScenarioBuilder: Catálogo agrupado por time + pontos coloridos
+- **`CARD_CATALOG`** (`src/lib/cards.ts`): `CardDefinition` ganhou `team: 'village' | 'wolf' | 'independent'`. Cada carta categorizada: Village (aldeões, vidente, bruxa, etc), Wolf (lobisomem), Independent (curtidor, cupido, líder de culto).
+- **ScenarioBuilder agrupado**: A lista de cartas agora renderiza 3 seções com cabeçalhos coloridos: 🌿 Time da Vila (verde), 🐺 Time dos Lobos (vermelho), ⚖️ Independentes (roxo). Cartas aparecem dentro de sua seção.
+- **Pontos visíveis**: Ao lado do nome de cada carta, badge `[+7]` (verde se >0), `[-6]` (vermelho se <0), `[0]` (amarelo se 0) com formatação de sinal explícito.
+- **Files**: `src/lib/cards.ts`, `src/components/scenario-builder.tsx`, `docs/architecture.md`.
+
+### `<current-1>` — Lote 3: Cupido + Líder de Culto + 1ª Noite Lobos
 - **Migrations (4 via CLI)**: `lot3_columns` (soulmate_id, in_cult, constraints), `lot3_cupid_rpc` (submit_cupid_match), `lot3_soulmate_trigger` (death chain), `lot3_game_over` (check_game_over + host_end_game + execute_night_action + get_revealed_players).
 - **Cupido**: RPC dedicada `submit_cupid_match` — cross-update de soulmate_id entre 2 alvos. Só age na 1ª noite. -3 pontos.
 - **Líder de Culto**: `execute_night_action('cult_convert')` → `UPDATE in_cult = true`. Toda noite. 1 ponto.

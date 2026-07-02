@@ -124,53 +124,75 @@ export function ScenarioBuilder({ roomId, playerCount }: ScenarioBuilderProps) {
         </div>
       </div>
 
-      {/* Lista de cartas */}
-      <div className="space-y-2">
-        {CARD_CATALOG.map((card) => {
-          const count = counts[card.id] ?? 0
-          return (
-            <div
-              key={card.id}
-              className="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-neutral-800 bg-neutral-900/50"
-            >
-              {/* Nome */}
-              <span className="flex-1 text-sm font-medium text-neutral-300 truncate">
-                {card.name}
-              </span>
-
-              <button
-                type="button"
-                onClick={() => setModalCard(card)}
-                className="text-neutral-600 hover:text-neutral-400 text-xs transition-colors cursor-pointer"
-              >
-                ⓘ
-              </button>
-
-              {/* Controles +/- */}
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => dec(card.id)}
-                  disabled={count === 0}
-                  className="w-6 h-6 rounded-md bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-neutral-200 disabled:opacity-30 disabled:cursor-not-allowed text-sm font-bold transition-all cursor-pointer flex items-center justify-center"
-                >
-                  −
-                </button>
-                <span className="w-6 text-center text-sm font-mono text-neutral-200">
-                  {count}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => inc(card.id)}
-                  className="w-6 h-6 rounded-md bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-neutral-200 text-sm font-bold transition-all cursor-pointer flex items-center justify-center"
-                >
-                  +
-                </button>
-              </div>
+      {/* Lista de cartas agrupada por time */}
+      {([
+        { key: 'village', label: '🌿 Time da Vila', color: 'text-emerald-500', border: 'border-emerald-800/30' },
+        { key: 'wolf', label: '🐺 Time dos Lobos', color: 'text-red-500', border: 'border-red-800/30' },
+        { key: 'independent', label: '⚖️ Independentes', color: 'text-purple-500', border: 'border-purple-800/30' },
+      ] as const).map((group) => {
+        const cards = CARD_CATALOG.filter((c) => c.team === group.key)
+        if (cards.length === 0) return null
+        return (
+          <div key={group.key}>
+            <div className={`px-1 py-2 text-xs font-bold tracking-wider uppercase ${group.color}`}>
+              {group.label}
             </div>
-          )
-        })}
-      </div>
+            <div className="space-y-2">
+              {cards.map((card) => {
+                const count = counts[card.id] ?? 0
+                return (
+                  <div
+                    key={card.id}
+                    className="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-neutral-800 bg-neutral-900/50"
+                  >
+                    {/* Nome + pontos */}
+                    <span className="flex-1 text-sm font-medium text-neutral-300 truncate flex items-center gap-2">
+                      {card.name}
+                      <span className={`text-xs font-mono ${
+                        card.points > 0 ? 'text-emerald-500'
+                          : card.points < 0 ? 'text-red-500'
+                          : 'text-yellow-500'
+                      }`}>
+                        [{card.points > 0 ? '+' : ''}{card.points}]
+                      </span>
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={() => setModalCard(card)}
+                      className="text-neutral-600 hover:text-neutral-400 text-xs transition-colors cursor-pointer"
+                    >
+                      ⓘ
+                    </button>
+
+                    {/* Controles +/- */}
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => dec(card.id)}
+                        disabled={count === 0}
+                        className="w-6 h-6 rounded-md bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-neutral-200 disabled:opacity-30 disabled:cursor-not-allowed text-sm font-bold transition-all cursor-pointer flex items-center justify-center"
+                      >
+                        −
+                      </button>
+                      <span className="w-6 text-center text-sm font-mono text-neutral-200">
+                        {count}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => inc(card.id)}
+                        className="w-6 h-6 rounded-md bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-neutral-200 text-sm font-bold transition-all cursor-pointer flex items-center justify-center"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })}
 
       {/* Validação */}
       <div className="flex items-center justify-between px-1">

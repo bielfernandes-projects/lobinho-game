@@ -1,8 +1,11 @@
+export type Team = 'village' | 'wolf' | 'independent'
+
 export interface CardDefinition {
   id: string
   name: string
   points: number
   description: string
+  team: Team
 }
 
 export const ROLE_STYLE: Record<string, string> = {
@@ -44,6 +47,7 @@ export const CARD_CATALOG: CardDefinition[] = [
     id: 'werewolf',
     name: 'Lobisomem',
     points: -6,
+    team: 'wolf',
     description:
       'Toda noite, acorde com os lobos e escolham em conjunto alguém para eliminar.',
   },
@@ -51,12 +55,14 @@ export const CARD_CATALOG: CardDefinition[] = [
     id: 'seer',
     name: 'Vidente',
     points: 7,
+    team: 'village',
     description: 'Toda noite, escolha alguém para saber se é vila ou lobo.',
   },
   {
     id: 'witch',
     name: 'Bruxa',
     points: 4,
+    team: 'village',
     description:
       'Uma vez por jogo, durante a noite, você pode usar poção da vida ou da morte.',
   },
@@ -64,12 +70,14 @@ export const CARD_CATALOG: CardDefinition[] = [
     id: 'villager',
     name: 'Aldeão',
     points: 1,
+    team: 'village',
     description: 'Encontre os lobisomens e elimine-os.',
   },
   {
     id: 'mayor',
     name: 'Prefeito',
     points: 2,
+    team: 'village',
     description:
       'Seu voto no tribunal conta dobrado.',
   },
@@ -77,6 +85,7 @@ export const CARD_CATALOG: CardDefinition[] = [
     id: 'prince',
     name: 'Príncipe',
     points: 3,
+    team: 'village',
     description:
       'Se a vila decidir te linchar, você revela sua identidade e sobrevive.',
   },
@@ -84,6 +93,7 @@ export const CARD_CATALOG: CardDefinition[] = [
     id: 'tanner',
     name: 'Curtidor',
     points: -2,
+    team: 'independent',
     description:
       'Você odeia seu trabalho. Você ganha o jogo se conseguir ser linchado pela vila.',
   },
@@ -91,6 +101,7 @@ export const CARD_CATALOG: CardDefinition[] = [
     id: 'lycan',
     name: 'Licano',
     points: -1,
+    team: 'village',
     description:
       'Você é da vila, mas tem sangue de lobo. A Vidente te enxerga como Lobisomem.',
   },
@@ -98,6 +109,7 @@ export const CARD_CATALOG: CardDefinition[] = [
     id: 'priest',
     name: 'Padre',
     points: 3,
+    team: 'village',
     description:
       'Uma vez por jogo, escolha alguém para receber um escudo permanente. A próxima tentativa de matar essa pessoa (por lobos, bruxa ou tribunal) falhará e gastará a bênção.',
   },
@@ -105,6 +117,7 @@ export const CARD_CATALOG: CardDefinition[] = [
     id: 'bodyguard',
     name: 'Guarda-costas',
     points: 3,
+    team: 'village',
     description:
       'Toda noite, proteja um jogador. O escudo dura SÓ AQUELA NOITE e bloqueia lobos e poções. Não proteja o mesmo alvo 2x seguidas.',
   },
@@ -112,6 +125,7 @@ export const CARD_CATALOG: CardDefinition[] = [
     id: 'aura_seer',
     name: 'Vidente de Aura',
     points: 3,
+    team: 'village',
     description:
       'Toda noite, descubra se um jogador tem um papel especial (não é Aldeão nem Lobisomem).',
   },
@@ -119,6 +133,7 @@ export const CARD_CATALOG: CardDefinition[] = [
     id: 'cupid',
     name: 'Cupido',
     points: -3,
+    team: 'independent',
     description:
       'Na 1ª noite, escolha dois jogadores para serem almas gêmeas. Se um morrer, o outro morre de coração partido.',
   },
@@ -126,6 +141,7 @@ export const CARD_CATALOG: CardDefinition[] = [
     id: 'cult_leader',
     name: 'Líder de Culto',
     points: 1,
+    team: 'independent',
     description:
       'Toda noite, converta um jogador para o culto. Se todos os vivos estiverem no culto, você vence!',
   },
