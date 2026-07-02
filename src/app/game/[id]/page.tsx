@@ -760,7 +760,6 @@ export default function GameScreen() {
 
     if (player.role === 'aura_seer') {
       if (nightStep !== 'aura_seer') return sleepScreen()
-      if (actedRoles.has('aura_seer')) return sleepScreen()
       return (
         <div className="flex flex-1 flex-col items-center justify-center px-6 gap-6">
           <p className="text-neutral-600 text-xs uppercase tracking-widest select-none animate-pulse">

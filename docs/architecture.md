@@ -134,7 +134,11 @@ lobby → card_reveal → night → day → (tribunal or night) → game_over
 - **Host controls**: Botões dinâmicos para acordar Padre, Guarda-costas, Vidente de Aura — filtrados por `availableNightRoles`.
 - **Arquivos tocados**: `supabase/migrations/20260701130400_lot2_priest_bodyguard_aura.sql`, `src/lib/cards.ts`, `src/app/game/[id]/page.tsx`, `src/components/priest-panel.tsx`, `src/components/bodyguard-panel.tsx`, `src/components/aura-seer-panel.tsx`, `docs/architecture.md`.
 
-### `<current+1>` — Critical rules fixes (consensus, shield, priest power)
+### `<current+1>` — Wolf consensus retry, AuraSeer matches Seer behavior
+- **Wolf consensus retry**: `resolve_night_wolves` now checks `COUNT(DISTINCT target_id)` BEFORE setting `wolves_resolved`. If >1 distinct target: deletes all wolf `night_actions` + raises exception. Host sees error message; wolves retry until they agree. Applied via migration `20260702043153_fix_wolf_consensus_retry.sql`.
+- **AuraSeerPanel**: Removed "Fechar Olhos" button. `onDone` called immediately after result (like common Seer). Removed `actedRoles.has('aura_seer')` guard in page.tsx — panel stays visible until host advances `nightStep`.
+
+### `<current>` — Critical rules fixes (consensus, shield, priest power)
 - **Wolf consensus**: `resolve_night` now checks `COUNT(DISTINCT target_id)` for werewolf actions. If >1 distinct target, wolves disagree — `v_wolf_target_id = NULL` and nobody dies by wolf attack that night. Applied via migration `20260702041954_fix_wolf_consensus_bodyguard_priest.sql`.
 - **Bodyguard shield vs poison**: `resolve_night` now also protects poison target if `bodyguard_protect` action targets the same player. Poison kill is skipped when `v_poison_target_id = v_bodyguard_target_id`. Applied in same migration.
 - **Priest `has_used_power`**: New `players.has_used_power BOOLEAN DEFAULT FALSE` column. `execute_night_action` for `priest_bless` now sets `has_used_power = true` on the priest player. `PriestPanel` has "Não abençoar ninguém esta noite" skip button. `availableNightRoles` query filters out priest when `has_used_power = true`.

@@ -54,6 +54,7 @@ export function AuraSeerPanel({ roomId, playerId, turnIndex, onDone }: AuraSeerP
       if (res.data) {
         setResultText(res.data.has_special_role ? 'Tem um Papel Especial!' : 'É um cidadão comum')
         setShowResult(true)
+        onDone?.()
       }
     } catch (err) {
       console.error('[AuraSeerPanel] Unexpected:', err)
@@ -84,12 +85,6 @@ export function AuraSeerPanel({ roomId, playerId, turnIndex, onDone }: AuraSeerP
             {resultText === 'Tem um Papel Especial!' ? '✨ TEM UM PAPEL ESPECIAL' : '✅ É UM CIDADÃO COMUM'}
           </p>
         </div>
-        <button
-          onClick={() => onDone?.()}
-          className="px-6 py-3 rounded-xl text-sm font-bold tracking-wider bg-neutral-800 text-neutral-300 border border-neutral-700 hover:bg-neutral-700 transition-all duration-200 cursor-pointer"
-        >
-          Fechar Olhos
-        </button>
       </div>
     )
   }
