@@ -3,31 +3,39 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
-### `<current>` — Bugfix: Botão cupido não aparecia na 1ª noite (turnIndex off-by-one)
-- **Problema**: `advance_phase` incrementa `turn_index` ao sair de `card_reveal` → `night`. Na primeira noite `turnIndex === 1`, não `0`. O filtro `turnIndex > 0` escondia o botão do cupido. E o texto preditivo (`Vez de acordar: Cupido`) não tinha filtro de turno, então aparecia em todas as noites sem botão correspondente.
-- **Fix**: Filtro do botão mudou de `turnIndex > 0` para `turnIndex !== 1`. Texto preditivo ganhou `if (s === 'cupid' && turnIndex !== 1) return false`.
-- **Commit**: (próximo commit após este)
+### `<current>` — 3 bugfixes: Cupido/Culto/Príncipe
+- **Cupido**: Corrigido off-by-one no `page.tsx` linha 782 (`turnIndex > 0` → `turnIndex !== 1`). O painel do cupido não renderizava porque `turnIndex === 1` na primeira noite, mas a condição exigia `turnIndex === 0`.
+- **Líder de Culto**: Criada RPC `get_cult_targets` (bypassa RLS da tabela `players`). `CultLeaderPanel` agora chama a RPC em vez de consultar `players` diretamente, que sempre retornava vazio por RLS.
+- **Príncipe**: Mecânica completa de sobrevivência ao linchamento:
+  - `resolve_day_vote` verifica `role = 'prince'` — não mata, seta `day_step = 'prince_reveal'`
+  - RPC `advance_after_prince` avança para noite após revelação
+  - Frontend: banner `🤴 O Príncipe revelou sua identidade e impediu a execução!` + botão "Avançar para Noite" (host) / mensagem "O dia foi cancelado" (jogadores)
+- **Migrations**: `20260702213720_cult_targets.sql`, `20260702213742_prince_mechanic.sql`, `20260702214222_prince_host_execute.sql` (via `supabase db push`).
+- **Commit**: (próximo commit)
+- **Files**: `supabase/migrations/20260702213720_cult_targets.sql`, `supabase/migrations/20260702213742_prince_mechanic.sql`, `20260702214222_prince_host_execute.sql`, `src/lib/sql/migration-024-cult-targets.sql`, `src/lib/sql/migration-025-prince.sql`, `src/lib/sql/migration-026-prince-host-execute.sql`, `src/components/cult-leader-panel.tsx`, `src/app/game/[id]/page.tsx`, `docs/architecture.md`.
+
+### `<current-1>` — Bugfix: Botão cupido turnIndex off-by-one (primeira correção)
+- **Problema**: `advance_phase` incrementa `turn_index` ao sair de `card_reveal` → `night`. Na primeira noite `turnIndex === 1`, não `0`. O filtro `turnIndex > 0` escondia o botão do cupido.
+- **Fix**: Filtro do botão mudou de `turnIndex > 0` para `turnIndex !== 1`. Texto preditivo ganhou `if (s === 'cupid' && turnIndex !== 1) return false`. `isFirstNight` do WerewolfPanel corrigido de `turnIndex === 0` para `turnIndex === 1`.
+- **Commit**: `76efc12`
 - **Files**: `src/app/game/[id]/page.tsx`, `docs/architecture.md`.
 
-### `<current-1>` — ScenarioBuilder: Catálogo agrupado por time + pontos coloridos
+### `<current-2>` — ScenarioBuilder: Catálogo agrupado por time + pontos coloridos
 - **`CARD_CATALOG`** (`src/lib/cards.ts`): `CardDefinition` ganhou `team: 'village' | 'wolf' | 'independent'`. Cada carta categorizada: Village (aldeões, vidente, bruxa, etc), Wolf (lobisomem), Independent (curtidor, cupido, líder de culto).
 - **ScenarioBuilder agrupado**: A lista de cartas agora renderiza 3 seções com cabeçalhos coloridos: 🌿 Time da Vila (verde), 🐺 Time dos Lobos (vermelho), ⚖️ Independentes (roxo). Cartas aparecem dentro de sua seção.
 - **Pontos visíveis**: Ao lado do nome de cada carta, badge `[+7]` (verde se >0), `[-6]` (vermelho se <0), `[0]` (amarelo se 0) com formatação de sinal explícito.
 - **Files**: `src/lib/cards.ts`, `src/components/scenario-builder.tsx`, `docs/architecture.md`.
 
-### `<current-2>` — Lote 3: Cupido + Líder de Culto + 1ª Noite Lobos
-- **Migrations (4 via CLI)**: `lot3_columns` (soulmate_id, in_cult, constraints), `lot3_cupid_rpc` (submit_cupid_match), `lot3_soulmate_trigger` (death chain), `lot3_game_over` (check_game_over + host_end_game + execute_night_action + get_revealed_players).
+### `<current-3>` — Lote 3: Cupido + Líder de Culto + 1ª Noite Lobos
+- **Migrations (4 via CLI)**: `lot3_columns`, `lot3_cupid_rpc`, `lot3_soulmate_trigger`, `lot3_game_over`.
 - **Cupido**: RPC dedicada `submit_cupid_match` — cross-update de soulmate_id entre 2 alvos. Só age na 1ª noite. -3 pontos.
 - **Líder de Culto**: `execute_night_action('cult_convert')` → `UPDATE in_cult = true`. Toda noite. 1 ponto.
-- **Soulmate trigger**: `trg_soulmate_death` — se um jogador morre, sua alma gêmea morre de `coracao_partido` (com guarda anti-loop).
-- **check_game_over**: PRIORIDADE 1: `soulmates_win` (exatos 2 vivos não-moderador com soulmate_id mútuo). PRIORIDADE 2: `cult_win` (líder vivo e ninguém com in_cult = false).
-- **Game Over screen**: `soulmates_win` → "O AMOR VENCEU!" (pink). `cult_win` → "O CULTO DOMINOU A VILA!" (violet).
-- **1ª Noite Lobos**: WerewolfPanel detecta `isFirstNight === (turnIndex === 1)` — oculta alvos, mostra texto de reconhecimento, botão Confirmar registra ação nula.
-- **Soulmate banner**: Elemento `fixed bottom-4 right-4 text-[10px] opacity-60` com `💕 Alma Gêmea: {name}` — visível apenas para não-host durante fase day/night.
-- **`get_revealed_players`**: agora retorna também `in_cult` e `soulmate_id`. Frontend filtra localmente para `winnerPlayers`.
-- **Files**: `supabase/migrations/20260702203438_lot3_columns.sql`, `20260702203452_lot3_cupid_rpc.sql`, `20260702203453_lot3_soulmate_trigger.sql`, `20260702203454_lot3_game_over.sql`, `src/lib/cards.ts`, `src/lib/types.ts`, `src/components/werewolf-panel.tsx`, `src/components/cupid-panel.tsx`, `src/components/cult-leader-panel.tsx`, `src/app/game/[id]/page.tsx`, `src/lib/sql/migration-023-lot3.sql`, `docs/architecture.md`.
+- **Soulmate trigger**: `trg_soulmate_death` — morte em cadeia com guarda anti-loop.
+- **check_game_over**: PRIORIDADE 1: `soulmates_win`. PRIORIDADE 2: `cult_win`.
+- **1ª Noite Lobos**: `isFirstNight === (turnIndex === 1)` — reconhecimento sem morte.
+- **Files**: `supabase/migrations/20260702203438..54`, `src/lib/cards.ts`, `src/components/werewolf-panel.tsx`, `src/components/cupid-panel.tsx`, `src/components/cult-leader-panel.tsx`, `src/app/game/[id]/page.tsx`, `src/lib/sql/migration-023-lot3.sql`.
 
-### `<current-1>` — 5 UX fixes + resolve_night bugfix (players.last_event)
+### `<current-4>` — 5 UX fixes + resolve_night bugfix (players.last_event)
 - **Bugfix**: migration `20260702194405_fix_players_last_event.sql` — remove `last_event = 'lobisomem'/'veneno'` dos `UPDATE players` no `resolve_night` (coluna não existe em players, causa erro). A causa da morte já vai no `game_state.last_event` (JSONB victims).
 - **Bodyguard self-block**: `BodyguardPanel` filtra `r.id !== playerId` — guarda-costas não pode se proteger.
 - **RoleInfoModal**: Novo componente `src/components/role-info-modal.tsx` — modal centralizado (`z-[100]`, `bg-black/50`) com nome, pontos, descrição. Substitui tooltips inline em `ScenarioBuilder`, `HostRolePanel`, `TribunalPanel`.
@@ -50,7 +58,9 @@ A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, S
 ## Game Flow (State Machine)
 
 ```
-lobby → card_reveal → night → day → (tribunal or night) → game_over
+lobby → card_reveal → night → day (announcement → discussion → trial → voting → reveal)
+                                    ↓ (se príncipe)
+                               prince_reveal → night → ...
 ```
 
 | Phase | Description |
@@ -58,7 +68,7 @@ lobby → card_reveal → night → day → (tribunal or night) → game_over
 | `waiting` / lobby | Players join; host configures scenario (role distribution). |
 | `card_reveal` | Each player sees their role card; host advances when all viewed. |
 | `night` | Host wakes roles sequentially (cupid → priest → bodyguard → wolves → witch → seer → aura_seer → cult_leader); each performs action. Cupido only on night 1 (turnIndex === 1). Wolves don't kill on night 1 (just recognize each other). |
-| `day` | Announcement (victims) → discussion → tribunal phase (trial → voting → reveal). May loop back to night. |
+| `day` | Announcement (victims) → discussion → tribunal phase (trial → voting → reveal). Se o alvo do linchamento for o Príncipe, entra em `prince_reveal` e avança direto para night. |
 | `finished_villagers_win` | Game over — villagers win. |
 | `finished_wolves_win` | Game over — wolves win. |
 | `finished_tanner_win` | Game over — tanner wins. |

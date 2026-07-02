@@ -330,6 +330,10 @@ export default function GameScreen() {
     await supabase.rpc('host_end_game', { p_room_id: roomId })
   }
 
+  async function handleAdvanceAfterPrince() {
+    await supabase.rpc('advance_after_prince', { p_room_id: roomId })
+  }
+
   // ── Moderator / Host Dashboard ──────────────────────────
   // Omniscient view — NEVER shows the "close your eyes" screen
   if (isHost || isModerator) {
@@ -363,6 +367,27 @@ export default function GameScreen() {
             isHost={true}
             onStartDiscussion={handleStartDiscussion}
           />
+        )}
+
+        {phase === 'day' && dayStep === 'prince_reveal' && lastEvent?.type === 'prince_reveal' && (
+          <div className="w-full max-w-sm mx-auto space-y-4 px-6 py-4">
+            <div className="fixed inset-0 z-40 flex items-center justify-center pointer-events-none">
+              <div className="bg-cyan-950/80 border border-cyan-700/50 rounded-2xl px-8 py-6 text-center shadow-2xl backdrop-blur-sm">
+                <p className="text-5xl mb-3">🤴</p>
+                <p className="text-cyan-400 text-xl font-black tracking-wider">
+                  O Príncipe revelou sua identidade e impediu a execução!
+                </p>
+              </div>
+            </div>
+            <div className="pt-24">
+              <button
+                onClick={handleAdvanceAfterPrince}
+                className="w-full py-4 rounded-2xl font-bold text-lg tracking-wider bg-red-700 text-white hover:bg-red-600 active:bg-red-800 shadow-lg shadow-red-900/40 transition-all duration-200 cursor-pointer"
+              >
+                🌙 Avançar para Noite
+              </button>
+            </div>
+          </div>
         )}
 
         <div className="w-full px-6 pb-4">
@@ -652,6 +677,22 @@ export default function GameScreen() {
           />
         )}
 
+        {dayStep === 'prince_reveal' && lastEvent?.type === 'prince_reveal' && (
+          <div className="flex flex-1 flex-col items-center justify-center px-6 gap-4">
+            <div className="fixed inset-0 z-40 flex items-center justify-center pointer-events-none">
+              <div className="bg-cyan-950/80 border border-cyan-700/50 rounded-2xl px-8 py-6 text-center shadow-2xl backdrop-blur-sm">
+                <p className="text-5xl mb-3">🤴</p>
+                <p className="text-cyan-400 text-xl font-black tracking-wider">
+                  O Príncipe revelou sua identidade e impediu a execução!
+                </p>
+              </div>
+            </div>
+            <p className="text-neutral-500 text-sm text-center mt-32">
+              O dia foi cancelado pela autoridade do Príncipe. Todos vão dormir.
+            </p>
+          </div>
+        )}
+
         {dayStep === 'discussion' && (
           <>
             <div className="flex flex-1 flex-col items-center justify-center px-6 gap-4">
@@ -779,7 +820,7 @@ export default function GameScreen() {
 
     if (player.role === 'cupid') {
       if (nightStep !== 'cupid') return sleepScreen()
-      if (turnIndex > 0) return sleepScreen()
+      if (turnIndex !== 1) return sleepScreen()
       if (actedRoles.has('cupid')) return sleepScreen()
       return (
         <div className="flex flex-1 flex-col items-center justify-center px-6 gap-6">
