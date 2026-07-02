@@ -117,6 +117,16 @@ lobby → card_reveal → night → day → (tribunal or night) → game_over
 - `migration-021-fix-role-constraint.sql`: single ALTER TABLE to drop and recreate constraint.
 - Start game was failing with "violates check constraint players_role_check" for any scenario using new roles.
 
+### `<current>` — Lote 2: Padre, Guarda-costas, Vidente de Aura
+- **Migration `20260701130400_lot2_priest_bodyguard_aura.sql`**: `players.is_blessed BOOLEAN DEFAULT FALSE`; `night_actions_action_type_check` atualizado com `priest_bless`, `bodyguard_protect`, `aura_investigate`.
+- **`execute_night_action`**: 3 novos branches — `priest_bless` (seta `is_blessed = true`), `bodyguard_protect` (registra em `night_actions`), `aura_investigate` (retorna `has_special_role` se role ∉ {'villager', 'werewolf'}).
+- **`resolve_night`**: Morte dos lobos anulada se o alvo tiver `bodyguard_protect` DAQUELA noite OU `is_blessed = true`. Bênção é consumida (`is_blessed = false`) ao salvar.
+- **`CARD_CATALOG`**: 3 novas cartas — `priest` (3 pts), `bodyguard` (3 pts), `aura_seer` (3 pts).
+- **`WAKE_ORDER`**: `['priest', 'bodyguard', 'wolves', 'seer', 'witch', 'aura_seer']` — guia preditivo funciona automaticamente.
+- **Painéis noturnos**: `PriestPanel` (1 uso por jogo via state), `BodyguardPanel` (lastTargetId no localStorage, bloqueia alvo repetido), `AuraSeerPanel` (resultado "Papel Especial" / "Cidadão Comum").
+- **Host controls**: Botões dinâmicos para acordar Padre, Guarda-costas, Vidente de Aura — filtrados por `availableNightRoles`.
+- **Arquivos tocados**: `supabase/migrations/20260701130400_lot2_priest_bodyguard_aura.sql`, `src/lib/cards.ts`, `src/app/game/[id]/page.tsx`, `src/components/priest-panel.tsx`, `src/components/bodyguard-panel.tsx`, `src/components/aura-seer-panel.tsx`, `docs/architecture.md`.
+
 ### `fc79acc` — DayAnnouncement spacing, discussion banner, Game Over names fix
 - **DayAnnouncement `mb-8`**: container ganha `mb-8` pra evitar colisão do botão "Iniciar Debate" com `HostRolePanel` quando não há vítimas.
 - **Discussion banner**: DayAnnouncement removido do player view durante `discussion`. Substituído por banner `📣 Hora da Discussão` no centro-superior (mesma posição do DayAnnouncement) com timer abaixo.
@@ -140,6 +150,9 @@ lobby → card_reveal → night → day → (tribunal or night) → game_over
 | VotingPanel | `src/components/voting-panel.tsx` | Legacy player voting (deprecated by tribunal) |
 | PlayerList | `src/components/player-list.tsx` | Lobby player list with kick button |
 | TimerDisplay | `src/components/timer-display.tsx` | Timer widget using `clientStartRef` to avoid clock skew |
+| PriestPanel | `src/components/priest-panel.tsx` | Priest night action: bless a player (1 use per game) |
+| BodyguardPanel | `src/components/bodyguard-panel.tsx` | Bodyguard night action: protect a player (no repeat last target) |
+| AuraSeerPanel | `src/components/aura-seer-panel.tsx` | Aura Seer night action: detect if target has special role |
 | SeerPanel | `src/components/seer-panel.tsx` | Seer night action: investigate player, see is_werewolf |
 | WerewolfPanel | `src/components/werewolf-panel.tsx` | Werewolf night action: see teammates, choose victim |
 | WitchPanel | `src/components/witch-panel.tsx` | Witch night action: save (first kill) + poison (once each) |
@@ -174,6 +187,7 @@ lobby → card_reveal → night → day → (tribunal or night) → game_over
 | `migration-020-expansion-lot1.sql` | Mayor/Prince/Tanner/Lycan cards, mechanics, tanner win | Apply via CLI (db push) |
 | `migration-021-fix-role-constraint.sql` | Fix `players_role_check` constraint to include new roles | Apply via CLI (db push) |
 | `20260701130300_day_step_announcement.sql` | `resolve_night` sets `day_step = 'announcement'` | Apply via CLI (db push) |
+| `20260701130400_lot2_priest_bodyguard_aura.sql` | Lote 2: `is_blessed`, `priest_bless`/`bodyguard_protect`/`aura_investigate`, bodyguard+blessing resolve_night | Applied via CLI (db push) |
 
 **Important**: All migrations have `CREATE OR REPLACE FUNCTION` blocks removed (neutered). The actual DB schema is maintained through Supabase SQL Editor. These files are reference copies only.
 

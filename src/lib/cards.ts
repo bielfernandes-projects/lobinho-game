@@ -60,4 +60,25 @@ export const CARD_CATALOG: CardDefinition[] = [
     description:
       'Você é da vila, mas tem sangue de lobo. A Vidente te enxerga como Lobisomem.',
   },
+  {
+    id: 'priest',
+    name: 'Padre',
+    points: 3,
+    description:
+      'Uma noite por jogo, abençoe um jogador. A próxima tentativa de matá-lo falhará.',
+  },
+  {
+    id: 'bodyguard',
+    name: 'Guarda-costas',
+    points: 3,
+    description:
+      'Toda noite, proteja um jogador. Não pode ser a mesma pessoa duas vezes seguidas.',
+  },
+  {
+    id: 'aura_seer',
+    name: 'Vidente de Aura',
+    points: 3,
+    description:
+      'Toda noite, descubra se um jogador tem um papel especial (não é Aldeão nem Lobisomem).',
+  },
 ]

@@ -21,6 +21,9 @@ import { TribunalPanel } from '@/components/tribunal-panel'
 import { TribunalVoting } from '@/components/tribunal-voting'
 import { TribunalReveal } from '@/components/tribunal-reveal'
 import { HostActionLog } from '@/components/host-action-log'
+import { PriestPanel } from '@/components/priest-panel'
+import { BodyguardPanel } from '@/components/bodyguard-panel'
+import { AuraSeerPanel } from '@/components/aura-seer-panel'
 
 export default function GameScreen() {
   const params = useParams()
@@ -40,11 +43,14 @@ export default function GameScreen() {
   const [voteCount, setVoteCount] = useState(0)
   const [eligibleVoters, setEligibleVoters] = useState(0)
 
-  const WAKE_ORDER = ['wolves', 'seer', 'witch'] as const
+  const WAKE_ORDER = ['priest', 'bodyguard', 'wolves', 'seer', 'witch', 'aura_seer'] as const
   const NIGHT_ROLE_LABELS: Record<string, string> = {
+    priest: '🙏 Padre',
+    bodyguard: '🛡️ Guarda-costas',
     wolves: '🐺 Lobisomens',
     seer: '🔮 Vidente',
     witch: '🧪 Bruxa',
+    aura_seer: '👁️ Vidente de Aura',
   }
   const prevNightStepRef = useRef<string>('sleeping')
   const nightRolesActedRef = useRef<Set<string>>(new Set())
@@ -82,7 +88,7 @@ export default function GameScreen() {
       .select('role')
       .eq('room_id', roomId)
       .neq('role', 'moderator')
-      .in('role', ['werewolf', 'seer', 'witch'])
+      .in('role', ['werewolf', 'seer', 'witch', 'priest', 'bodyguard', 'aura_seer'])
       .then(({ data }) => {
         if (data) {
           setAvailableNightRoles(new Set((data as any[]).map((r) => r.role)))
@@ -388,9 +394,12 @@ export default function GameScreen() {
                 😴 Todos Dormindo
               </button>
               {[
+                { step: 'priest', role: 'priest', label: '🙏 Acordar Padre', color: 'text-sky-400 border-sky-900/30 hover:bg-sky-900/20', disabled: nightStep === 'priest' },
+                { step: 'bodyguard', role: 'bodyguard', label: '🛡️ Acordar Guarda-costas', color: 'text-amber-400 border-amber-900/30 hover:bg-amber-900/20', disabled: nightStep === 'bodyguard' },
                 { step: 'wolves', role: 'werewolf', label: '🐺 Acordar Lobos', color: 'text-red-400 border-red-900/30 hover:bg-red-900/20', disabled: nightStep === 'wolves' || wolvesResolved },
                 { step: 'seer', role: 'seer', label: '🔮 Acordar Vidente', color: 'text-purple-400 border-purple-900/30 hover:bg-purple-900/20', disabled: nightStep === 'seer' },
                 { step: 'witch', role: 'witch', label: '🧪 Acordar Bruxa', color: 'text-emerald-400 border-emerald-900/30 hover:bg-emerald-900/20', disabled: nightStep === 'witch' },
+                { step: 'aura_seer', role: 'aura_seer', label: '👁️ Acordar Vidente de Aura', color: 'text-pink-400 border-pink-900/30 hover:bg-pink-900/20', disabled: nightStep === 'aura_seer' },
               ].filter((b) => availableNightRoles.has(b.role)).map((b) => (
                 <button
                   key={b.step}
@@ -679,6 +688,32 @@ export default function GameScreen() {
 
     const wolfVictimName = lastEvent?.victim_name ?? null
 
+    if (player.role === 'priest') {
+      if (nightStep !== 'priest') return sleepScreen()
+      if (actedRoles.has('priest')) return sleepScreen()
+      return (
+        <div className="flex flex-1 flex-col items-center justify-center px-6 gap-6">
+          <p className="text-neutral-600 text-xs uppercase tracking-widest select-none animate-pulse">
+            🌙 Fechem os olhos...
+          </p>
+          <PriestPanel roomId={roomId} playerId={player.id} turnIndex={turnIndex} onDone={() => handleRoleDone('priest')} />
+        </div>
+      )
+    }
+
+    if (player.role === 'bodyguard') {
+      if (nightStep !== 'bodyguard') return sleepScreen()
+      if (actedRoles.has('bodyguard')) return sleepScreen()
+      return (
+        <div className="flex flex-1 flex-col items-center justify-center px-6 gap-6">
+          <p className="text-neutral-600 text-xs uppercase tracking-widest select-none animate-pulse">
+            🌙 Fechem os olhos...
+          </p>
+          <BodyguardPanel roomId={roomId} playerId={player.id} turnIndex={turnIndex} onDone={() => handleRoleDone('bodyguard')} />
+        </div>
+      )
+    }
+
     if (player.role === 'werewolf') {
       if (nightStep !== 'wolves') return sleepScreen()
       if (actedRoles.has('werewolf')) return sleepScreen()
@@ -720,6 +755,19 @@ export default function GameScreen() {
             victimName={wolfVictimName}
             onDone={() => handleRoleDone('witch')}
           />
+        </div>
+      )
+    }
+
+    if (player.role === 'aura_seer') {
+      if (nightStep !== 'aura_seer') return sleepScreen()
+      if (actedRoles.has('aura_seer')) return sleepScreen()
+      return (
+        <div className="flex flex-1 flex-col items-center justify-center px-6 gap-6">
+          <p className="text-neutral-600 text-xs uppercase tracking-widest select-none animate-pulse">
+            🌙 Fechem os olhos...
+          </p>
+          <AuraSeerPanel roomId={roomId} playerId={player.id} turnIndex={turnIndex} onDone={() => handleRoleDone('aura_seer')} />
         </div>
       )
     }
