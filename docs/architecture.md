@@ -3,18 +3,22 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
-### `<current>` — 3 bugfixes: Cupido/Culto/Príncipe
-- **Cupido**: Corrigido off-by-one no `page.tsx` linha 782 (`turnIndex > 0` → `turnIndex !== 1`). O painel do cupido não renderizava porque `turnIndex === 1` na primeira noite, mas a condição exigia `turnIndex === 0`.
-- **Líder de Culto**: Criada RPC `get_cult_targets` (bypassa RLS da tabela `players`). `CultLeaderPanel` agora chama a RPC em vez de consultar `players` diretamente, que sempre retornava vazio por RLS.
-- **Príncipe**: Mecânica completa de sobrevivência ao linchamento:
-  - `resolve_day_vote` verifica `role = 'prince'` — não mata, seta `day_step = 'prince_reveal'`
-  - RPC `advance_after_prince` avança para noite após revelação
-  - Frontend: banner `🤴 O Príncipe revelou sua identidade e impediu a execução!` + botão "Avançar para Noite" (host) / mensagem "O dia foi cancelado" (jogadores)
-- **Migrations**: `20260702213720_cult_targets.sql`, `20260702213742_prince_mechanic.sql`, `20260702214222_prince_host_execute.sql` (via `supabase db push`).
-- **Commit**: (próximo commit)
-- **Files**: `supabase/migrations/20260702213720_cult_targets.sql`, `supabase/migrations/20260702213742_prince_mechanic.sql`, `20260702214222_prince_host_execute.sql`, `src/lib/sql/migration-024-cult-targets.sql`, `src/lib/sql/migration-025-prince.sql`, `src/lib/sql/migration-026-prince-host-execute.sql`, `src/components/cult-leader-panel.tsx`, `src/app/game/[id]/page.tsx`, `docs/architecture.md`.
+### `<current>` — Lote 3.5: Cupido log, Culto Panel ícones, Príncipe UI, Soulmate trigger fix
+- **Cupido**: `submit_cupid_match` agora insere em `night_actions` (`action_type = 'cupid_match'`). Aparece no histórico do mestre como "💘 uniu". `HostRolePanel` exibe 💕 ao lado de almas gêmeas. HostActionLog ganhou label `cupid_match`.
+- **Líder de Culto**: `HostRolePanel` exibe 🔮 ao lado de convertidos (`in_cult`). `fetch_roles_for_host` agora retorna `soulmate_id` e `in_cult`. HostActionLog ganhou label `cult_convert: 🔮 converteu`.
+- **Príncipe**: Modais de `prince_reveal` e linchamento reduzidos (`px-5 py-4`, `text-3xl` emoji, `text-sm` texto, `max-w-[85vw]`) para caber em celular.
+- **Soulmate trigger**: Removeu `last_event = 'coracao_partido'` do `after_player_death_soulmate` (coluna `last_event` não existe em `players` — causava erro SQL).
+- **Migration**: `20260702220202_fix_cupid_log_soulmate_trigger.sql` (via CLI).
+- **Files**: `supabase/migrations/20260702220202_fix_cupid_log_soulmate_trigger.sql`, `src/lib/sql/migration-027-fix-cupid-log-soulmate-trigger.sql`, `src/components/host-action-log.tsx`, `src/components/host-role-panel.tsx`, `src/app/game/[id]/page.tsx`, `docs/architecture.md`.
 
-### `<current-1>` — Bugfix: Botão cupido turnIndex off-by-one (primeira correção)
+### `<current-1>` — 3 bugfixes: Cupido/Culto/Príncipe
+- **Cupido**: Corrigido off-by-one no `page.tsx` linha 782. Painel não renderizava na primeira noite.
+- **Líder de Culto**: Criada RPC `get_cult_targets`. `CultLeaderPanel` agora chama a RPC.
+- **Príncipe**: `resolve_day_vote` + `host_execute_accused` verificam `role = 'prince'`. RPC `advance_after_prince`. Frontend banner.
+- **Migrations**: `20260702213720_cult_targets.sql`, `20260702213742_prince_mechanic.sql`, `20260702214222_prince_host_execute.sql`.
+- **Files**: `supabase/migrations/20260702213720..42..22`, `src/components/cult-leader-panel.tsx`, `src/app/game/[id]/page.tsx`, `docs/architecture.md`.
+
+### `<current-2>` — Bugfix: Botão cupido turnIndex off-by-one
 - **Problema**: `advance_phase` incrementa `turn_index` ao sair de `card_reveal` → `night`. Na primeira noite `turnIndex === 1`, não `0`. O filtro `turnIndex > 0` escondia o botão do cupido.
 - **Fix**: Filtro do botão mudou de `turnIndex > 0` para `turnIndex !== 1`. Texto preditivo ganhou `if (s === 'cupid' && turnIndex !== 1) return false`. `isFirstNight` do WerewolfPanel corrigido de `turnIndex === 0` para `turnIndex === 1`.
 - **Commit**: `76efc12`

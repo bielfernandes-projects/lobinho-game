@@ -1,0 +1,10 @@
+-- Fixes: cupid night_actions log, soulmate trigger last_event, host panel columns
+--
+-- ⚠️ NEUTERED: CREATE OR REPLACE FUNCTION removido para evitar overwrite pelo deploy.
+-- Aplique via supabase db push (migration 20260702220202_fix_cupid_log_soulmate_trigger.sql).
+--
+-- Resumo:
+-- 1. ALTER TABLE night_actions ADD 'cupid_match' ao CHECK constraint
+-- 2. submit_cupid_match: agora insere em night_actions (action_type = 'cupid_match')
+-- 3. fetch_roles_for_host: agora retorna soulmate_id e in_cult
+-- 4. after_player_death_soulmate: removeu last_event = 'coracao_partido' (coluna não existe)

@@ -25,6 +25,8 @@ const ACTION_LABEL: Record<string, string> = {
   priest_bless: '🙏 abençoou',
   bodyguard_protect: '🛡️ protegeu',
   aura_investigate: '👁️ investigou aura de',
+  cult_convert: '🔮 converteu',
+  cupid_match: '💘 uniu',
 }
 
 export function HostActionLog({ roomId, turnIndex }: HostActionLogProps) {

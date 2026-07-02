@@ -372,9 +372,9 @@ export default function GameScreen() {
         {phase === 'day' && dayStep === 'prince_reveal' && lastEvent?.type === 'prince_reveal' && (
           <div className="w-full max-w-sm mx-auto space-y-4 px-6 py-4">
             <div className="fixed inset-0 z-40 flex items-center justify-center pointer-events-none">
-              <div className="bg-cyan-950/80 border border-cyan-700/50 rounded-2xl px-8 py-6 text-center shadow-2xl backdrop-blur-sm">
-                <p className="text-5xl mb-3">🤴</p>
-                <p className="text-cyan-400 text-xl font-black tracking-wider">
+              <div className="bg-cyan-950/80 border border-cyan-700/50 rounded-2xl px-5 py-4 text-center shadow-2xl backdrop-blur-sm max-w-[85vw]">
+                <p className="text-3xl mb-2">🤴</p>
+                <p className="text-cyan-400 text-sm font-black tracking-wider">
                   O Príncipe revelou sua identidade e impediu a execução!
                 </p>
               </div>
@@ -566,9 +566,9 @@ export default function GameScreen() {
               <>
                 {lastVoteResult?.type === 'lynch' && lastVoteResult.victim_name && (
                   <div className="fixed inset-0 z-40 flex items-center justify-center pointer-events-none">
-                    <div className="bg-red-950/80 border border-red-700/50 rounded-2xl px-8 py-6 text-center shadow-2xl backdrop-blur-sm">
-                      <p className="text-5xl mb-3">⚖️</p>
-                      <p className="text-red-400 text-xl font-black tracking-wider">
+                    <div className="bg-red-950/80 border border-red-700/50 rounded-2xl px-5 py-4 text-center shadow-2xl backdrop-blur-sm max-w-[85vw]">
+                      <p className="text-3xl mb-2">⚖️</p>
+                      <p className="text-red-400 text-sm font-black tracking-wider">
                         O acusado foi linchado pela vila!
                       </p>
                     </div>
@@ -680,9 +680,9 @@ export default function GameScreen() {
         {dayStep === 'prince_reveal' && lastEvent?.type === 'prince_reveal' && (
           <div className="flex flex-1 flex-col items-center justify-center px-6 gap-4">
             <div className="fixed inset-0 z-40 flex items-center justify-center pointer-events-none">
-              <div className="bg-cyan-950/80 border border-cyan-700/50 rounded-2xl px-8 py-6 text-center shadow-2xl backdrop-blur-sm">
-                <p className="text-5xl mb-3">🤴</p>
-                <p className="text-cyan-400 text-xl font-black tracking-wider">
+              <div className="bg-cyan-950/80 border border-cyan-700/50 rounded-2xl px-5 py-4 text-center shadow-2xl backdrop-blur-sm max-w-[85vw]">
+                <p className="text-3xl mb-2">🤴</p>
+                <p className="text-cyan-400 text-sm font-black tracking-wider">
                   O Príncipe revelou sua identidade e impediu a execução!
                 </p>
               </div>
@@ -754,9 +754,9 @@ export default function GameScreen() {
           <>
             {lastVoteResult?.type === 'lynch' && lastVoteResult.victim_name && (
               <div className="fixed inset-0 z-40 flex items-center justify-center pointer-events-none">
-                <div className="bg-red-950/80 border border-red-700/50 rounded-2xl px-8 py-6 text-center shadow-2xl backdrop-blur-sm">
-                  <p className="text-5xl mb-3">⚖️</p>
-                  <p className="text-red-400 text-xl font-black tracking-wider">
+                <div className="bg-red-950/80 border border-red-700/50 rounded-2xl px-5 py-4 text-center shadow-2xl backdrop-blur-sm max-w-[85vw]">
+                  <p className="text-3xl mb-2">⚖️</p>
+                  <p className="text-red-400 text-sm font-black tracking-wider">
                     O acusado foi linchado pela vila!
                   </p>
                 </div>

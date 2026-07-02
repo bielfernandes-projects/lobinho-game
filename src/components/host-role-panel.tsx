@@ -11,6 +11,8 @@ interface RoleRow {
   role: string
   is_alive: boolean
   has_viewed_card: boolean
+  soulmate_id: string | null
+  in_cult: boolean
 }
 
 interface HostRolePanelProps {
@@ -108,6 +110,8 @@ export function HostRolePanel({ roomId, isHost }: HostRolePanelProps) {
                 />
                 <span className={`flex-1 text-sm font-medium truncate ${r.is_alive ? 'text-neutral-200' : 'text-neutral-600 line-through'}`}>
                   {r.has_viewed_card && <span className="mr-1 opacity-70">👁</span>}
+                  {r.soulmate_id && <span className="mr-1 text-pink-500" title="Alma Gêmea">💕</span>}
+                  {r.in_cult && <span className="mr-1 text-violet-500" title="Membro do Culto">🔮</span>}
                   {r.name}
                 </span>
                 <span className={`text-xs tracking-wider shrink-0 px-2 py-0.5 rounded-full border ${ROLE_STYLE[r.role] ?? 'text-neutral-500 border-neutral-700'}`}>
