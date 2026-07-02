@@ -8,10 +8,11 @@ interface WerewolfPanelProps {
   roomId: string
   playerId: string
   turnIndex: number
+  isFirstNight?: boolean
   onDone?: () => void
 }
 
-export function WerewolfPanel({ roomId, playerId, turnIndex, onDone }: WerewolfPanelProps) {
+export function WerewolfPanel({ roomId, playerId, turnIndex, isFirstNight = false, onDone }: WerewolfPanelProps) {
   const [wolves, setWolves] = useState<RoomProfile[]>([])
   const [targets, setTargets] = useState<RoomProfile[]>([])
   const [hasActed, setHasActed] = useState(false)
@@ -78,11 +79,81 @@ export function WerewolfPanel({ roomId, playerId, turnIndex, onDone }: WerewolfP
     setBusy(false)
   }
 
+  async function handleFirstNightConfirm() {
+    setBusy(true)
+    setError('')
+    try {
+      const { error: rpcErr } = await supabase.rpc('execute_night_action', {
+        p_room_id: roomId,
+        p_action_type: 'werewolf_kill',
+        p_target_id: null,
+      })
+      if (rpcErr) {
+        console.error('[WerewolfPanel] RPC error:', rpcErr)
+        setError(rpcErr.message)
+        setBusy(false)
+        return
+      }
+      setHasActed(true)
+      onDone?.()
+    } catch (err) {
+      console.error('[WerewolfPanel] Unexpected:', err)
+      setError(err instanceof Error ? err.message : 'Erro inesperado')
+    }
+    setBusy(false)
+  }
+
   if (hasActed) {
     return (
       <div className="w-full max-w-sm text-center space-y-2">
         <p className="text-neutral-500 text-sm font-semibold">✅ Ação Registrada</p>
         <p className="text-neutral-700 text-xs">Aguarde a noite passar...</p>
+      </div>
+    )
+  }
+
+  if (isFirstNight) {
+    return (
+      <div className="w-full max-w-sm text-center space-y-4">
+        <p className="text-red-500 text-sm uppercase tracking-widest font-bold">
+          🐺 Lobisomens
+        </p>
+
+        {wolves.length > 1 && (
+          <div>
+            <p className="text-neutral-600 text-[10px] uppercase tracking-wider mb-2">
+              Seus aliados
+            </p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {wolves
+                .filter((w) => w.id !== playerId)
+                .map((w) => (
+                  <span
+                    key={w.id}
+                    className="px-3 py-1 rounded-full bg-red-950/40 border border-red-900/30 text-red-400 text-xs"
+                  >
+                    {w.name}
+                  </span>
+                ))}
+            </div>
+          </div>
+        )}
+
+        <p className="text-neutral-400 text-sm leading-relaxed">
+          🐺 Primeira Noite: Os lobisomens apenas abrem os olhos e se reconhecem em silêncio. Eles não matam ninguém hoje.
+        </p>
+
+        <button
+          onClick={handleFirstNightConfirm}
+          disabled={busy}
+          className="w-full py-3 px-4 rounded-xl text-sm font-medium bg-neutral-900 border border-neutral-800 text-neutral-300 hover:border-red-800 hover:text-red-400 disabled:opacity-40 transition-all duration-200 cursor-pointer"
+        >
+          Confirmar
+        </button>
+
+        {error && (
+          <p className="text-red-500 text-xs text-center">{error}</p>
+        )}
       </div>
     )
   }

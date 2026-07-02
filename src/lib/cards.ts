@@ -18,6 +18,8 @@ export const ROLE_STYLE: Record<string, string> = {
   tanner: 'bg-gray-200 text-gray-700 border-gray-400',
   priest: 'bg-emerald-100 text-emerald-700 border-emerald-300',
   bodyguard: 'bg-slate-100 text-slate-700 border-slate-300',
+  cupid: 'bg-pink-100 text-pink-700 border-pink-300',
+  cult_leader: 'bg-violet-100 text-violet-700 border-violet-300',
 }
 
 export const ROLE_LABEL: Record<string, string> = {
@@ -32,6 +34,8 @@ export const ROLE_LABEL: Record<string, string> = {
   tanner: '👔 Curtidor',
   priest: '🙏 Padre',
   bodyguard: '🛡️ Guarda-costas',
+  cupid: '💘 Cupido',
+  cult_leader: '🔮 Líder de Culto',
   moderator: '🎙️ Mestre',
 }
 
@@ -110,5 +114,19 @@ export const CARD_CATALOG: CardDefinition[] = [
     points: 3,
     description:
       'Toda noite, descubra se um jogador tem um papel especial (não é Aldeão nem Lobisomem).',
+  },
+  {
+    id: 'cupid',
+    name: 'Cupido',
+    points: -3,
+    description:
+      'Na 1ª noite, escolha dois jogadores para serem almas gêmeas. Se um morrer, o outro morre de coração partido.',
+  },
+  {
+    id: 'cult_leader',
+    name: 'Líder de Culto',
+    points: 1,
+    description:
+      'Toda noite, converta um jogador para o culto. Se todos os vivos estiverem no culto, você vence!',
   },
 ]

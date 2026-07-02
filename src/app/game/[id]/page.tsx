@@ -24,6 +24,8 @@ import { HostActionLog } from '@/components/host-action-log'
 import { PriestPanel } from '@/components/priest-panel'
 import { BodyguardPanel } from '@/components/bodyguard-panel'
 import { AuraSeerPanel } from '@/components/aura-seer-panel'
+import { CupidPanel } from '@/components/cupid-panel'
+import { CultLeaderPanel } from '@/components/cult-leader-panel'
 
 export default function GameScreen() {
   const params = useParams()
@@ -43,23 +45,28 @@ export default function GameScreen() {
   const [resolvedActions, setResolvedActions] = useState<Set<string>>(new Set())
   const [voteCount, setVoteCount] = useState(0)
   const [eligibleVoters, setEligibleVoters] = useState(0)
+  const [soulmateName, setSoulmateName] = useState<string | null>(null)
 
-  const WAKE_ORDER = ['priest', 'bodyguard', 'wolves', 'seer', 'witch', 'aura_seer'] as const
+  const WAKE_ORDER = ['cupid', 'priest', 'bodyguard', 'wolves', 'witch', 'seer', 'aura_seer', 'cult_leader'] as const
   const STEP_TO_ACTION_TYPES: Record<string, string[]> = {
+    cupid: [],
     priest: ['priest_bless'],
     bodyguard: ['bodyguard_protect'],
     wolves: ['werewolf_kill'],
-    seer: ['seer_investigate'],
     witch: ['witch_save', 'witch_poison'],
+    seer: ['seer_investigate'],
     aura_seer: ['aura_investigate'],
+    cult_leader: ['cult_convert'],
   }
   const NIGHT_ROLE_LABELS: Record<string, string> = {
+    cupid: '💘 Cupido',
     priest: '🙏 Padre',
     bodyguard: '🛡️ Guarda-costas',
     wolves: '🐺 Lobisomens',
-    seer: '🔮 Vidente',
     witch: '🧪 Bruxa',
+    seer: '🔮 Vidente',
     aura_seer: '👁️ Vidente de Aura',
+    cult_leader: '🔮 Líder de Culto',
   }
   const prevNightStepRef = useRef<string>('sleeping')
   const nightRolesActedRef = useRef<Set<string>>(new Set())
@@ -97,7 +104,7 @@ export default function GameScreen() {
       .select('role, has_used_power')
       .eq('room_id', roomId)
       .neq('role', 'moderator')
-      .in('role', ['werewolf', 'seer', 'witch', 'priest', 'bodyguard', 'aura_seer'])
+      .in('role', ['werewolf', 'seer', 'witch', 'priest', 'bodyguard', 'aura_seer', 'cupid', 'cult_leader'])
       .then(({ data }) => {
         if (data) {
           const roles = (data as any[])
@@ -138,7 +145,8 @@ export default function GameScreen() {
 
   // Derived state: gameEnded is true ONLY when rooms.status says so
   const gameEnded =
-    roomStatus === 'finished_villagers_win' || roomStatus === 'finished_wolves_win' || roomStatus === 'finished_tanner_win'
+    roomStatus === 'finished_villagers_win' || roomStatus === 'finished_wolves_win' || roomStatus === 'finished_tanner_win' ||
+    roomStatus === 'finished_soulmates_win' || roomStatus === 'finished_cult_win'
 
   // Fetch ALL player names and roles when game ends (bypasses RLS via SECURITY DEFINER RPC)
   useEffect(() => {
@@ -147,22 +155,32 @@ export default function GameScreen() {
       const status = roomStatus
       const w = gameWinner ?? lastEvent?.winner ?? (status === 'finished_wolves_win' ? 'wolves_win' : status === 'finished_tanner_win' ? 'tanner_win' : 'villagers_win')
 
-      let roleFilter: string | null = null
-      if (w === 'wolves_win') roleFilter = 'werewolf'
-      else if (w === 'tanner_win') roleFilter = 'tanner'
+      const winnerType = w as string
 
       const { data } = await supabase.rpc('get_revealed_players', { p_room_id: roomId })
 
-      const allPlayers: { id: string; name: string; role: string }[] = (data as any[]) ?? []
+      const allPlayers: { id: string; name: string; role: string; in_cult: boolean; soulmate_id: string | null }[] = (data as any[]) ?? []
 
-      if (!roleFilter) {
-        setWinnerPlayers(allPlayers.map((p) => ({ name: p.name, role: p.role })))
-        return
+      let result: { name: string; role: string }[]
+      if (winnerType === 'soulmates_win') {
+        result = allPlayers
+          .filter((p) => p.soulmate_id != null)
+          .map((p) => ({ name: p.name, role: p.role }))
+      } else if (winnerType === 'cult_win') {
+        result = allPlayers
+          .filter((p) => p.role === 'cult_leader' || p.in_cult)
+          .map((p) => ({ name: p.name, role: p.role }))
+      } else if (winnerType === 'wolves_win') {
+        result = allPlayers
+          .filter((p) => p.role === 'werewolf')
+          .map((p) => ({ name: p.name, role: p.role }))
+      } else if (winnerType === 'tanner_win') {
+        result = allPlayers
+          .filter((p) => p.role === 'tanner')
+          .map((p) => ({ name: p.name, role: p.role }))
+      } else {
+        result = allPlayers.map((p) => ({ name: p.name, role: p.role }))
       }
-
-      const result = allPlayers
-        .filter((p) => p.role === roleFilter)
-        .map((p) => ({ name: p.name, role: p.role }))
 
       setWinnerPlayers(result)
     }
@@ -170,6 +188,19 @@ export default function GameScreen() {
     const iv = setInterval(poll, 2000)
     return () => clearInterval(iv)
   }, [gameEnded, gameWinner])
+
+  // Fetch soulmate name if player has one
+  useEffect(() => {
+    if (!player?.soulmateId) return
+    supabase
+      .from('players')
+      .select('name')
+      .eq('id', player.soulmateId)
+      .single()
+      .then(({ data }) => {
+        if (data) setSoulmateName((data as any).name)
+      })
+  }, [player?.soulmateId])
 
   // Poll vote count during voting phase (Task 3)
   useEffect(() => {
@@ -270,6 +301,12 @@ export default function GameScreen() {
   const isHost = player.isHost
   const isAlive = player.isAlive
   const isModerator = player.role === 'moderator'
+
+  const soulmateBanner = !isHost && soulmateName && (
+    <div className="fixed bottom-4 right-4 text-[10px] text-neutral-600 opacity-60 select-none z-50">
+      💕 Alma Gêmea: {soulmateName}
+    </div>
+  )
 
   function handleRoleDone(role: string) {
     setActedRoles((prev) => new Set([...prev, role]))
@@ -399,13 +436,18 @@ export default function GameScreen() {
                 😴 Todos Dormindo
               </button>
               {[
+                { step: 'cupid', role: 'cupid', label: '💘 Acordar Cupido' },
                 { step: 'priest', role: 'priest', label: '🙏 Acordar Padre' },
                 { step: 'bodyguard', role: 'bodyguard', label: '🛡️ Acordar Guarda-costas' },
                 { step: 'wolves', role: 'werewolf', label: '🐺 Acordar Lobos' },
-                { step: 'seer', role: 'seer', label: '🔮 Acordar Vidente' },
                 { step: 'witch', role: 'witch', label: '🧪 Acordar Bruxa' },
+                { step: 'seer', role: 'seer', label: '🔮 Acordar Vidente' },
                 { step: 'aura_seer', role: 'aura_seer', label: '👁️ Acordar Vidente de Aura' },
-              ].filter((b) => availableNightRoles.has(b.role)).map((b) => {
+                { step: 'cult_leader', role: 'cult_leader', label: '🔮 Acordar Líder de Culto' },
+              ].filter((b) => {
+                if (b.step === 'cupid' && turnIndex > 0) return false
+                return availableNightRoles.has(b.role)
+              }).map((b) => {
                 const isWolves = b.step === 'wolves'
                 const actionDone = !isWolves && resolvedActions.has(b.step)
                 const disabled = isWolves
@@ -590,6 +632,7 @@ export default function GameScreen() {
     return (
       <div className="flex flex-1 flex-col items-center min-h-dvh">
         {renderNightPanel()}
+        {soulmateBanner}
       </div>
     )
   }
@@ -680,6 +723,7 @@ export default function GameScreen() {
             <TribunalReveal roomId={roomId} turnIndex={turnIndex} />
           </>
         )}
+        {soulmateBanner}
       </div>
     )
   }
@@ -732,6 +776,20 @@ export default function GameScreen() {
       )
     }
 
+    if (player.role === 'cupid') {
+      if (nightStep !== 'cupid') return sleepScreen()
+      if (turnIndex > 0) return sleepScreen()
+      if (actedRoles.has('cupid')) return sleepScreen()
+      return (
+        <div className="flex flex-1 flex-col items-center justify-center px-6 gap-6">
+          <p className="text-neutral-600 text-xs uppercase tracking-widest select-none animate-pulse">
+            🌙 Fechem os olhos...
+          </p>
+          <CupidPanel roomId={roomId} playerId={player.id} onDone={() => handleRoleDone('cupid')} />
+        </div>
+      )
+    }
+
     if (player.role === 'werewolf') {
       if (nightStep !== 'wolves') return sleepScreen()
       if (actedRoles.has('werewolf')) return sleepScreen()
@@ -740,7 +798,7 @@ export default function GameScreen() {
           <p className="text-neutral-600 text-xs uppercase tracking-widest select-none animate-pulse">
             🌙 Fechem os olhos...
           </p>
-          <WerewolfPanel roomId={roomId} playerId={player.id} turnIndex={turnIndex} onDone={() => handleRoleDone('werewolf')} />
+          <WerewolfPanel roomId={roomId} playerId={player.id} turnIndex={turnIndex} isFirstNight={turnIndex === 0} onDone={() => handleRoleDone('werewolf')} />
         </div>
       )
     }
@@ -789,6 +847,19 @@ export default function GameScreen() {
       )
     }
 
+    if (player.role === 'cult_leader') {
+      if (nightStep !== 'cult_leader') return sleepScreen()
+      if (actedRoles.has('cult_leader')) return sleepScreen()
+      return (
+        <div className="flex flex-1 flex-col items-center justify-center px-6 gap-6">
+          <p className="text-neutral-600 text-xs uppercase tracking-widest select-none animate-pulse">
+            🌙 Fechem os olhos...
+          </p>
+          <CultLeaderPanel roomId={roomId} playerId={player.id} onDone={() => handleRoleDone('cult_leader')} />
+        </div>
+      )
+    }
+
     return sleepScreen()
   }
 
@@ -808,24 +879,32 @@ export default function GameScreen() {
       router.push('/')
     }
 
+    const soulmateStyle = 'text-pink-400 drop-shadow-[0_0_20px_rgba(236,72,153,0.5)]'
+    const cultStyle = 'text-violet-400 drop-shadow-[0_0_20px_rgba(139,92,246,0.5)]'
     const tannerStyle = 'text-stone-600 drop-shadow-[0_0_20px_rgba(120,100,80,0.5)]'
     const wolfStyle = 'text-red-700 drop-shadow-[0_0_20px_rgba(185,28,28,0.5)]'
     const villagerStyle = 'text-yellow-500 drop-shadow-[0_0_20px_rgba(234,179,8,0.4)]'
 
     const colors =
-      winner === 'tanner_win' ? tannerStyle
+      winner === 'soulmates_win' ? soulmateStyle
+        : winner === 'cult_win' ? cultStyle
+        : winner === 'tanner_win' ? tannerStyle
         : winner === 'wolves_win' ? wolfStyle
         : villagerStyle
 
     const displayText =
-      winner === 'tanner_win' ? 'O CURTIDOR VENCEU'
+      winner === 'soulmates_win' ? 'O AMOR VENCEU!'
+        : winner === 'cult_win' ? 'O CULTO DOMINOU A VILA!'
+        : winner === 'tanner_win' ? 'O CURTIDOR VENCEU'
         : winner === 'wolves_win' ? 'VITÓRIA DO TIME DOS LOBOS'
         : 'VITÓRIA DO TIME DA VILA'
 
     return (
       <div className="flex flex-1 flex-col items-center justify-center min-h-dvh px-6 gap-6">
         <p className="text-6xl">{
-          winner === 'tanner_win' ? '👔'
+          winner === 'soulmates_win' ? '💕'
+            : winner === 'cult_win' ? '🔮'
+            : winner === 'tanner_win' ? '👔'
             : winner === 'wolves_win' ? '🐺'
             : '🏆'
         }</p>

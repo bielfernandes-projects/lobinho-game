@@ -3,7 +3,19 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
-### `<current>` — 5 UX fixes + resolve_night bugfix (players.last_event)
+### `<current>` — Lote 3: Cupido + Líder de Culto + 1ª Noite Lobos
+- **Migrations (4 via CLI)**: `lot3_columns` (soulmate_id, in_cult, constraints), `lot3_cupid_rpc` (submit_cupid_match), `lot3_soulmate_trigger` (death chain), `lot3_game_over` (check_game_over + host_end_game + execute_night_action + get_revealed_players).
+- **Cupido**: RPC dedicada `submit_cupid_match` — cross-update de soulmate_id entre 2 alvos. Só age na 1ª noite. -3 pontos.
+- **Líder de Culto**: `execute_night_action('cult_convert')` → `UPDATE in_cult = true`. Toda noite. 1 ponto.
+- **Soulmate trigger**: `trg_soulmate_death` — se um jogador morre, sua alma gêmea morre de `coracao_partido` (com guarda anti-loop).
+- **check_game_over**: PRIORIDADE 1: `soulmates_win` (exatos 2 vivos não-moderador com soulmate_id mútuo). PRIORIDADE 2: `cult_win` (líder vivo e ninguém com in_cult = false).
+- **Game Over screen**: `soulmates_win` → "O AMOR VENCEU!" (pink). `cult_win` → "O CULTO DOMINOU A VILA!" (violet).
+- **1ª Noite Lobos**: WerewolfPanel detecta `isFirstNight === (turnIndex === 0)` — oculta alvos, mostra texto de reconhecimento, botão Confirmar registra ação nula.
+- **Soulmate banner**: Elemento `fixed bottom-4 right-4 text-[10px] opacity-60` com `💕 Alma Gêmea: {name}` — visível apenas para não-host durante fase day/night.
+- **`get_revealed_players`**: agora retorna também `in_cult` e `soulmate_id`. Frontend filtra localmente para `winnerPlayers`.
+- **Files**: `supabase/migrations/20260702203438_lot3_columns.sql`, `20260702203452_lot3_cupid_rpc.sql`, `20260702203453_lot3_soulmate_trigger.sql`, `20260702203454_lot3_game_over.sql`, `src/lib/cards.ts`, `src/lib/types.ts`, `src/components/werewolf-panel.tsx`, `src/components/cupid-panel.tsx`, `src/components/cult-leader-panel.tsx`, `src/app/game/[id]/page.tsx`, `src/lib/sql/migration-023-lot3.sql`, `docs/architecture.md`.
+
+### `<current-1>` — 5 UX fixes + resolve_night bugfix (players.last_event)
 - **Bugfix**: migration `20260702194405_fix_players_last_event.sql` — remove `last_event = 'lobisomem'/'veneno'` dos `UPDATE players` no `resolve_night` (coluna não existe em players, causa erro). A causa da morte já vai no `game_state.last_event` (JSONB victims).
 - **Bodyguard self-block**: `BodyguardPanel` filtra `r.id !== playerId` — guarda-costas não pode se proteger.
 - **RoleInfoModal**: Novo componente `src/components/role-info-modal.tsx` — modal centralizado (`z-[100]`, `bg-black/50`) com nome, pontos, descrição. Substitui tooltips inline em `ScenarioBuilder`, `HostRolePanel`, `TribunalPanel`.
@@ -33,16 +45,19 @@ lobby → card_reveal → night → day → (tribunal or night) → game_over
 |-------|-------------|
 | `waiting` / lobby | Players join; host configures scenario (role distribution). |
 | `card_reveal` | Each player sees their role card; host advances when all viewed. |
-| `night` | Host wakes roles sequentially (wolves → seer → witch); each performs action. |
+| `night` | Host wakes roles sequentially (cupid → priest → bodyguard → wolves → witch → seer → aura_seer → cult_leader); each performs action. Cupido only on night 1. Wolves don't kill on night 1 (just recognize each other). |
 | `day` | Announcement (victims) → discussion → tribunal phase (trial → voting → reveal). May loop back to night. |
 | `finished_villagers_win` | Game over — villagers win. |
 | `finished_wolves_win` | Game over — wolves win. |
+| `finished_tanner_win` | Game over — tanner wins. |
+| `finished_soulmates_win` | Game over — soulmates win (love conquers all). |
+| `finished_cult_win` | Game over — cult dominates the village. |
 
 **`current_phase`** values: `waiting`, `card_reveal`, `night`, `day`, `ended`.
 
 **`day_step`** (when `current_phase = 'day'`): `announcement`, `discussion`, `trial`, `voting`, `reveal`.
 
-**`night_step`** (when `current_phase = 'night'`): `sleeping`, `wolves`, `seer`, `witch`.
+**`night_step`** (when `current_phase = 'night'`): `sleeping`, `cupid`, `priest`, `bodyguard`, `wolves`, `witch`, `seer`, `aura_seer`, `cult_leader`.
 
 ---
 
@@ -199,7 +214,9 @@ lobby → card_reveal → night → day → (tribunal or night) → game_over
 | InstallButton | `src/components/install-button.tsx` | PWA install button (visible only when `beforeinstallprompt` captured) |
 | RoleInfoModal | `src/components/role-info-modal.tsx` | Centralized modal with role name, points, description (z-[100], bg-black/50). Replaces tooltips in ScenarioBuilder, HostRolePanel, TribunalPanel. |
 | SeerPanel | `src/components/seer-panel.tsx` | Seer night action: investigate player, see is_werewolf |
-| WerewolfPanel | `src/components/werewolf-panel.tsx` | Werewolf night action: see teammates, choose victim |
+| CupidPanel | `src/components/cupid-panel.tsx` | Cupid night action (night 1 only): pick two soulmates |
+| CultLeaderPanel | `src/components/cult-leader-panel.tsx` | Cult Leader night action: convert a player to the cult |
+| WerewolfPanel | `src/components/werewolf-panel.tsx` | Werewolf night action: see teammates, choose victim (night 1: recognition only) |
 | WitchPanel | `src/components/witch-panel.tsx` | Witch night action: save (first kill) + poison (once each) |
 
 ### Pages
@@ -238,6 +255,10 @@ lobby → card_reveal → night → day → (tribunal or night) → game_over
 | `20260702050008_reveal_players_rpc.sql` | `get_revealed_players(p_room_id)` — SECURITY DEFINER RPC to bypass RLS and return `{id, name, role}` for all players in a room. Used by Game Over to show winner roles to all clients. | Applied via CLI (db push) |
 | `20260702182612_fix_priest_poison_order.sql` | **Fix resolve_night**: ordem sequencial Padre → Lobos → Bruxa. Passo 1 seta `is_blessed`, Passo 2 lobos checam blessing+bodyguard, Passo 3 veneno re-lê `is_blessed` pós-passos 1-2. **Bug**: adicionou `last_event` em UPDATEs de players (coluna inexistente). | Applied via CLI (db push) |
 | `20260702194405_fix_players_last_event.sql` | **Correção**: Remove `last_event` dos UPDATEs em `players` no `resolve_night`. `last_event` só existe em `game_state`. | Applied via CLI (db push) |
+| `20260702203438_lot3_columns.sql` | Lote 3: `soulmate_id`, `in_cult`, constraints (roles, night_actions, rooms status) | Apply via CLI (db push) |
+| `20260702203452_lot3_cupid_rpc.sql` | `submit_cupid_match(p_room_id, p_target_a, p_target_b)` — dedicated RPC | Apply via CLI (db push) |
+| `20260702203453_lot3_soulmate_trigger.sql` | `trg_soulmate_death` — death chain for soulmates | Apply via CLI (db push) |
+| `20260702203454_lot3_game_over.sql` | `check_game_over` (+soulmates/+cult), `host_end_game`, `execute_night_action` (+cult_convert), `get_revealed_players` (+in_cult/+soulmate_id) | Apply via CLI (db push) |
 
 **Important**: All migrations have `CREATE OR REPLACE FUNCTION` blocks removed (neutered). The actual DB schema is maintained through Supabase SQL Editor. These files are reference copies only.
 
@@ -247,6 +268,9 @@ lobby → card_reveal → night → day → (tribunal or night) → game_over
 
 ### Win Condition
 - Checked by `check_game_over()` trigger after each death.
+- **Priority 1 (Soulmates)**: If exactly 2 non-moderator players are alive AND they are each other's soulmates → `soulmates_win`.
+- **Priority 2 (Cult)**: If cult_leader is alive AND no non-moderator, non-leader player has `in_cult = false` → `cult_win`.
+- **Priority 3 (Tanner)**: Dead tanner with `last_event.event_type = 'lynch'` → `tanner_win`.
 - **Wolves win** when `v_wolves >= v_non_wolves` (where `v_non_wolves` excludes werewolves AND moderators).
 - **Villagers win** when no werewolves remain alive.
 - Winner is stored in `game_state.winner`; game only visually ends when host clicks "Finalizar Partida" (`host_end_game` RPC).
@@ -314,3 +338,13 @@ lobby → card_reveal → night → day → (tribunal or night) → game_over
 11. **`rooms.status` is `TEXT`** (originally `VARCHAR(20)`) — fixed because `finished_villagers_win` (21 chars) silently broke game over logic.
 
 12. **Game Over role revelation via RPC** — `player_profiles` view (auto-generated by Supabase) exposes only public columns; `role` is sensitive. Regular players cannot see other players' roles even after game ends. Solution: `get_revealed_players()` SECURITY DEFINER RPC in `20260702050008_reveal_players_rpc.sql` bypasses RLS and returns `{id, name, role}` for all room players. Game Over component calls this RPC instead of direct table queries, ensuring all clients see the full winner list.
+
+13. **Cupid dedicated RPC** — `submit_cupid_match` created instead of adding `cupid_match` to `execute_night_action`. Cupid needs 2 targets (cross-update soulmate_id), which doesn't fit the single-target pattern of `execute_night_action`.
+
+14. **Soulmate death chain via trigger** — `trg_soulmate_death` fires `AFTER UPDATE OF is_alive` (same timing as `trg_check_game_over`). Guard `IF partner is alive` prevents infinite loop. Alphabetically `s` < `t`, so soulmate trigger fires before game over trigger on the same row.
+
+15. **Cult win excludes leader from `in_cult` count** — `check_game_over` checks `role NOT IN ('moderator', 'cult_leader') AND in_cult = false`. The leader is inherently part of the cult and doesn't need `in_cult = true` flag.
+
+16. **Winner players via `get_revealed_players`** — instead of a new RPC, `get_revealed_players` was updated to return `in_cult` and `soulmate_id`. Frontend filters locally for `soulmates_win` (soulmate_id != null) and `cult_win` (in_cult || role === 'cult_leader'). All identities are revealed post-game anyway.
+
+17. **Werewolf first night** — uses `turnIndex === 0` (no `night_number` column). WerewolfPanel receives `isFirstNight` prop. Registers `execute_night_action('werewolf_kill', null)` to advance the action queue without killing anyone.

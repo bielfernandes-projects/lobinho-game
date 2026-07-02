@@ -8,6 +8,7 @@ export interface Player {
   hasViewedCard: boolean
   viewedCardAt?: string | null
   createdAt: string
+  soulmateId?: string | null
 }
 
 export interface Room {
