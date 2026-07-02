@@ -131,7 +131,7 @@ export default function GameScreen() {
   const gameEnded =
     roomStatus === 'finished_villagers_win' || roomStatus === 'finished_wolves_win' || roomStatus === 'finished_tanner_win'
 
-  // Fetch winner player names when game ends (for ALL players, no isHost guard)
+  // Fetch ALL player names and roles when game ends (bypasses RLS via SECURITY DEFINER RPC)
   useEffect(() => {
     if (!gameEnded && !gameWinner) return
     async function poll() {
@@ -142,41 +142,25 @@ export default function GameScreen() {
       if (w === 'wolves_win') roleFilter = 'werewolf'
       else if (w === 'tanner_win') roleFilter = 'tanner'
 
-      if (!roleFilter) return
+      const { data } = await supabase.rpc('get_revealed_players', { p_room_id: roomId })
 
-      const { data: playersData } = await supabase
-        .from('players')
-        .select('id, role')
-        .eq('room_id', roomId)
-        .eq('role', roleFilter)
+      const allPlayers: { id: string; name: string; role: string }[] = (data as any[]) ?? []
 
-      if (!playersData || playersData.length === 0) return
-
-      const playerIds = (playersData as { id: string; role: string }[]).map((p) => p.id)
-
-      const { data: profiles } = await supabase
-        .from('player_profiles')
-        .select('id, name')
-        .in('id', playerIds)
-
-      const nameMap = new Map<string, string>()
-      if (profiles) {
-        for (const p of profiles as { id: string; name: string }[]) {
-          nameMap.set(p.id, p.name)
-        }
+      if (!roleFilter) {
+        setWinnerPlayers(allPlayers.map((p) => ({ name: p.name, role: p.role })))
+        return
       }
 
-      const result = (playersData as { id: string; role: string }[]).map((p) => ({
-        name: nameMap.get(p.id) ?? 'Desconhecido',
-        role: p.role,
-      }))
+      const result = allPlayers
+        .filter((p) => p.role === roleFilter)
+        .map((p) => ({ name: p.name, role: p.role }))
 
       setWinnerPlayers(result)
     }
     poll()
     const iv = setInterval(poll, 2000)
     return () => clearInterval(iv)
-    }, [gameEnded, gameWinner])
+  }, [gameEnded, gameWinner])
 
   // Poll vote count during voting phase (Task 3)
   useEffect(() => {
