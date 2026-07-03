@@ -7,6 +7,7 @@ import { useCurrentPlayer } from '@/hooks/use-player'
 import { useRoomPlayers, useGameState } from '@/hooks/use-room'
 import { FlipCard } from '@/components/flip-card'
 import { CARD_CATALOG, ROLE_STYLE } from '@/lib/cards'
+import { getRevealedRoleText } from '@/lib/reveal'
 import { HostControls } from '@/components/host-controls'
 import { WerewolfPanel } from '@/components/werewolf-panel'
 import { SeerPanel } from '@/components/seer-panel'
@@ -26,6 +27,8 @@ import { BodyguardPanel } from '@/components/bodyguard-panel'
 import { AuraSeerPanel } from '@/components/aura-seer-panel'
 import { CupidPanel } from '@/components/cupid-panel'
 import { CultLeaderPanel } from '@/components/cult-leader-panel'
+import { GraveyardList } from '@/components/graveyard-list'
+import type { RevealMode } from '@/lib/reveal'
 
 export default function GameScreen() {
   const params = useParams()
@@ -46,6 +49,7 @@ export default function GameScreen() {
   const [voteCount, setVoteCount] = useState(0)
   const [eligibleVoters, setEligibleVoters] = useState(0)
   const [soulmateName, setSoulmateName] = useState<string | null>(null)
+  const [revealMode, setRevealMode] = useState<RevealMode>('total')
 
   const WAKE_ORDER = ['cupid', 'priest', 'bodyguard', 'wolves', 'witch', 'seer', 'aura_seer', 'cult_leader'] as const
   const STEP_TO_ACTION_TYPES: Record<string, string[]> = {
@@ -188,6 +192,19 @@ export default function GameScreen() {
     const iv = setInterval(poll, 2000)
     return () => clearInterval(iv)
   }, [gameEnded, gameWinner])
+
+  // Fetch reveal_mode from rooms
+  useEffect(() => {
+    if (!roomId) return
+    supabase
+      .from('rooms')
+      .select('reveal_mode')
+      .eq('id', roomId)
+      .single()
+      .then(({ data }) => {
+        if (data?.reveal_mode) setRevealMode(data.reveal_mode as RevealMode)
+      })
+  }, [roomId])
 
   // Fetch soulmate name if player has one
   useEffect(() => {
@@ -362,9 +379,10 @@ export default function GameScreen() {
 
         {phase === 'day' && dayStep === 'announcement' && (
           <DayAnnouncement
-            victims={(lastEvent?.victims ?? []) as { name: string; cause: string }[]}
+            victims={(lastEvent?.victims ?? []) as { name: string; cause: string; role?: string }[]}
             turnIndex={turnIndex}
             isHost={true}
+            revealMode="total"
             onStartDiscussion={handleStartDiscussion}
           />
         )}
@@ -400,6 +418,11 @@ export default function GameScreen() {
                     ? `${lastVoteResult.victim_name} foi linchado(a) pela vila! ${lastVoteResult.soulmate_name} morreu de coração partido.`
                     : `O acusado foi linchado pela vila!`}
                 </p>
+                {lastVoteResult.victim_role && (
+                  <p className="text-neutral-500 text-[10px] mt-1 uppercase tracking-wider">
+                    {getRevealedRoleText(lastVoteResult.victim_role as string, 'total')}
+                  </p>
+                )}
               </div>
             </div>
             <div className="pt-24">
@@ -594,6 +617,11 @@ export default function GameScreen() {
                       <p className="text-red-400 text-sm font-black tracking-wider">
                         O acusado foi linchado pela vila!
                       </p>
+                      {lastVoteResult.victim_role && (
+                        <p className="text-neutral-500 text-[10px] mt-1 uppercase tracking-wider">
+                          {getRevealedRoleText(lastVoteResult.victim_role as string, 'total')}
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}
@@ -697,6 +725,7 @@ export default function GameScreen() {
             victims={victims}
             turnIndex={turnIndex}
             isHost={false}
+            revealMode={revealMode}
           />
         )}
 
@@ -726,6 +755,11 @@ export default function GameScreen() {
                     ? `${lastVoteResult.victim_name} foi linchado(a) pela vila! ${lastVoteResult.soulmate_name} morreu de coração partido.`
                     : `O acusado foi linchado pela vila!`}
                 </p>
+                {lastVoteResult.victim_role && (
+                  <p className="text-neutral-500 text-[10px] mt-1 uppercase tracking-wider">
+                    {getRevealedRoleText(lastVoteResult.victim_role as string, revealMode)}
+                  </p>
+                )}
               </div>
             </div>
             <p className="text-neutral-500 text-sm text-center mt-32">
@@ -793,20 +827,29 @@ export default function GameScreen() {
 
         {dayStep !== 'announcement' && dayStep === 'reveal' && (
           <>
-            {lastVoteResult?.type === 'lynch' && lastVoteResult.victim_name && (
-              <div className="fixed inset-0 z-40 flex items-center justify-center pointer-events-none">
-                <div className="bg-red-950/80 border border-red-700/50 rounded-2xl px-5 py-4 text-center shadow-2xl backdrop-blur-sm max-w-[85vw]">
-                  <p className="text-3xl mb-2">⚖️</p>
-                  <p className="text-red-400 text-sm font-black tracking-wider">
-                    O acusado foi linchado pela vila!
-                  </p>
-                </div>
-              </div>
-            )}
-            <TribunalReveal roomId={roomId} turnIndex={turnIndex} />
+                {lastVoteResult?.type === 'lynch' && lastVoteResult.victim_name && (
+                  <div className="fixed inset-0 z-40 flex items-center justify-center pointer-events-none">
+                    <div className="bg-red-950/80 border border-red-700/50 rounded-2xl px-5 py-4 text-center shadow-2xl backdrop-blur-sm max-w-[85vw]">
+                      <p className="text-3xl mb-2">⚖️</p>
+                      <p className="text-red-400 text-sm font-black tracking-wider">
+                        O acusado foi linchado pela vila!
+                      </p>
+                      {lastVoteResult.victim_role && (
+                        <p className="text-neutral-500 text-[10px] mt-1 uppercase tracking-wider">
+                          {getRevealedRoleText(lastVoteResult.victim_role as string, revealMode)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+                <TribunalReveal roomId={roomId} turnIndex={turnIndex} />
           </>
         )}
         {soulmateBanner}
+
+        <div className="mt-auto pt-4 pb-6">
+          <GraveyardList roomId={roomId} revealMode={revealMode} />
+        </div>
       </div>
     )
   }

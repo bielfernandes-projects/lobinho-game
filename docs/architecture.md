@@ -3,7 +3,22 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
-### `<current>` — 4 fixes: Cupido log dupla, História persistente, Alma gêmea no anúncio, Modal de linchamento
+### `<current>` — Modos de Revelação (reveal_mode)
+- **Migration `20260703175534_reveal_mode.sql`**: `rooms.reveal_mode TEXT` (check: `'total'`, `'team'`, `'hidden'`). Default `'total'`.
+- **`src/lib/reveal.ts`**: `getRevealedRoleText(roleId, revealMode)` — utility que mascara papel segundo o modo:
+  - `'total'` → nome da carta (ex: "Vidente")
+  - `'team'` → time da carta (ex: "Time da Vila")
+  - `'hidden'` → "Identidade Oculta"
+- **ScenarioBuilder**: Nova seção "Configurações da Partida" com 3 radio buttons. Host escolhe o modo antes de iniciar (`UPDATE rooms.reveal_mode` antes de `start_game`).
+- **RPCs alteradas** (via SQL Editor): `resolve_night`, `resolve_day_vote`, `host_execute_accused` — cada objeto em `last_event.victims` (e `last_vote_result` para linchamento) agora inclui `'role'` do jogador morto.
+- **`get_graveyard_info(p_room_id)`**: Nova RPC SECURITY DEFINER que retorna `[{id, name, role}]` de todos os jogadores mortos (não-moderador). Usada pelo cemitério.
+- **DayAnnouncement**: Recebe `revealMode` prop. Abaixo do nome da vítima exibe o papel mascarado (host vê sempre o original via `'total'`).
+- **Banners de linchamento** (host + player view em `game/[id]/page.tsx`): Agora mostram o papel da vítima (original para host, mascarado para jogadores).
+- **GraveyardList**: Novo componente colapsável listando mortos com papel mascarado, visível para todos os jogadores não-host durante o jogo. Polling a cada 5s via RPC `get_graveyard_info`.
+- **Regra de visibilidade**: O host (`isHost === true`) SEMPRE enxerga o papel original, ignorando o `reveal_mode`. A máscara só se aplica aos jogadores comuns.
+- **Files**: `supabase/migrations/20260703175534_reveal_mode.sql`, `src/lib/reveal.ts`, `src/components/scenario-builder.tsx`, `src/components/day-announcement.tsx`, `src/components/graveyard-list.tsx`, `src/app/game/[id]/page.tsx`, `src/lib/sql/migration-024-reveal-mode.sql`, `docs/architecture.md`.
+
+### `<current-1>` — 4 fixes: Cupido log dupla, História persistente, Alma gêmea no anúncio, Modal de linchamento
 - **Cupido log dupla**: `submit_cupid_match` insere 2 linhas em `night_actions` (uma por alvo). `UNIQUE constraint` alterada para `(room_id, turn_index, actor_id, action_type, target_id)`. `HostActionLog` agrupa por `actor_id` e exibe "X uniu A e B".
 - **História persistente**: `HostActionLog` agora busca TODAS as ações da sala (sem filtro `turnIndex`), agrupa por `turn_index`, exibe "Noite 1", "Noite 2", etc em jogos com múltiplos turnos.
 - **Alma gêmea no anúncio diurno**: `resolve_night` checa soulmate de vítima lobisomem e veneno PÓS trigger, inclui no array `victims` (causa `soulmate`). `resolve_day_vote` e `host_execute_accused` registram `soulmate_name` em `last_event`/`last_vote_result`. `DayAnnouncement` mostra "coração partido por amor" (host only, causa `soulmate`).

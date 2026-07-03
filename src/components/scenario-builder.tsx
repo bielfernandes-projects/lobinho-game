@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { CARD_CATALOG, type CardDefinition } from '@/lib/cards'
 import { RoleInfoModal } from '@/components/role-info-modal'
+import type { RevealMode } from '@/lib/reveal'
 
 interface ScenarioBuilderProps {
   roomId: string
@@ -27,6 +28,7 @@ function getInitialCounts(): Record<string, number> {
 
 export function ScenarioBuilder({ roomId, playerCount }: ScenarioBuilderProps) {
   const [counts, setCounts] = useState<Record<string, number>>(getInitialCounts)
+  const [revealMode, setRevealMode] = useState<RevealMode>('total')
   const [modalCard, setModalCard] = useState<CardDefinition | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -76,6 +78,16 @@ export function ScenarioBuilder({ roomId, playerCount }: ScenarioBuilderProps) {
       }
     }
 
+    const { error: revealError } = await supabase
+      .from('rooms')
+      .update({ reveal_mode: revealMode })
+      .eq('id', roomId)
+    if (revealError) {
+      setError(revealError.message)
+      setBusy(false)
+      return
+    }
+
     const { error: e } = await supabase.rpc('start_game', {
       p_room_id: roomId,
       p_roles: roles,
@@ -121,6 +133,42 @@ export function ScenarioBuilder({ roomId, playerCount }: ScenarioBuilderProps) {
           <span className="text-neutral-500 text-xs font-mono min-w-[4ch] text-right">
             {totalPoints}
           </span>
+        </div>
+      </div>
+
+      {/* Configurações da Partida */}
+      <div className="rounded-xl border border-neutral-800 bg-neutral-900/60 px-4 py-3 space-y-2">
+        <p className="text-neutral-500 text-[10px] uppercase tracking-widest font-bold">
+          Configurações da Partida
+        </p>
+        <div className="space-y-1.5">
+          {[
+            { value: 'total' as const, label: '🃏 Revelação Total', desc: 'Todos os papéis são revelados exatamente como são.' },
+            { value: 'team' as const, label: '👥 Apenas o Time', desc: 'Mostra apenas Time da Vila, Time dos Lobos ou Facção Independente.' },
+            { value: 'hidden' as const, label: '❓ Identidade Oculta', desc: 'Nenhuma informação sobre a identidade é revelada.' },
+          ].map((opt) => (
+            <label
+              key={opt.value}
+              className={`flex items-start gap-3 px-3 py-2 rounded-lg cursor-pointer transition-colors ${
+                revealMode === opt.value
+                  ? 'bg-red-900/20 border border-red-800/40'
+                  : 'bg-neutral-900/40 border border-transparent hover:bg-neutral-800/40'
+              }`}
+            >
+              <input
+                type="radio"
+                name="revealMode"
+                value={opt.value}
+                checked={revealMode === opt.value}
+                onChange={() => setRevealMode(opt.value)}
+                className="mt-0.5 accent-red-600 cursor-pointer"
+              />
+              <div className="flex flex-col">
+                <span className="text-neutral-300 text-sm font-medium">{opt.label}</span>
+                <span className="text-neutral-600 text-[10px] leading-tight">{opt.desc}</span>
+              </div>
+            </label>
+          ))}
         </div>
       </div>
 

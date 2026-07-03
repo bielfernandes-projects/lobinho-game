@@ -35,13 +35,17 @@ export interface GameStateRow {
     victim_id?: string | null
     victim_name?: string | null
     winner?: string | null
-    victims?: { name: string; cause: string }[]
+    victims?: { name: string; cause: string; role?: string }[]
     wolf_votes?: number
+    victim_role?: string | null
+    soulmate_role?: string | null
   } | null
   last_vote_result: {
     type: string
     victim_name?: string | null
+    victim_role?: string | null
     soulmate_name?: string | null
+    soulmate_role?: string | null
   } | null
   timer_duration: number | null
   timer_remaining: number | null

@@ -1,0 +1,24 @@
+import { CARD_CATALOG } from './cards'
+
+export type RevealMode = 'total' | 'team' | 'hidden'
+
+const TEAM_LABELS: Record<string, string> = {
+  village: 'Time da Vila',
+  wolf: 'Time dos Lobos',
+  independent: 'Facção Independente',
+}
+
+export function getRevealedRoleText(roleId: string, revealMode: RevealMode): string {
+  const card = CARD_CATALOG.find((c) => c.id === roleId)
+
+  if (revealMode === 'total') {
+    return card?.name ?? roleId
+  }
+
+  if (revealMode === 'team') {
+    if (!card) return roleId
+    return TEAM_LABELS[card.team] ?? 'Time Desconhecido'
+  }
+
+  return 'Identidade Oculta'
+}
