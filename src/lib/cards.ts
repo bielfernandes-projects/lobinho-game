@@ -11,6 +11,8 @@ export interface CardDefinition {
 export const ROLE_STYLE: Record<string, string> = {
   werewolf: 'bg-red-100 text-red-700 border-red-300',
   wolf_cub: 'bg-red-100 text-red-700 border-red-300',
+  alpha_wolf: 'bg-red-200 text-red-800 border-red-400',
+  lone_wolf: 'bg-orange-100 text-orange-700 border-orange-300',
   seer: 'bg-purple-100 text-purple-700 border-purple-300',
   aura_seer: 'bg-purple-100 text-purple-700 border-purple-300',
   witch: 'bg-pink-100 text-pink-700 border-pink-300',
@@ -37,6 +39,9 @@ export const ROLE_LABEL: Record<string, string> = {
   tanner: '👔 Curtidor',
   priest: '🙏 Padre',
   bodyguard: '🛡️ Guarda-costas',
+  wolf_cub: '🐺 Filhote de Lobo',
+  alpha_wolf: '🐺 Lobo Alfa',
+  lone_wolf: '🐺 Lobo Solitário',
   cupid: '💘 Cupido',
   cult_leader: '🔮 Líder de Culto',
   moderator: '🎙️ Mestre',
@@ -144,5 +149,29 @@ export const CARD_CATALOG: CardDefinition[] = [
     team: 'independent',
     description:
       'Toda noite, converta um jogador para o culto. Se todos os vivos estiverem no culto, você vence!',
+  },
+  {
+    id: 'wolf_cub',
+    name: 'Filhote de Lobo',
+    points: -8,
+    team: 'wolf',
+    description:
+      'Se você morrer, os lobos entram em frenesi e escolhem DUAS vítimas na noite seguinte.',
+  },
+  {
+    id: 'lone_wolf',
+    name: 'Lobo Solitário',
+    points: -5,
+    team: 'independent',
+    description:
+      'Você acorda com os lobos, mas só vence o jogo se for o ÚLTIMO jogador vivo na mesa.',
+  },
+  {
+    id: 'alpha_wolf',
+    name: 'Lobo Alfa',
+    points: -9,
+    team: 'wolf',
+    description:
+      'Uma vez por jogo, você pode transformar a vítima dos lobos em um Lobisomem em vez de matá-la.',
   },
 ]

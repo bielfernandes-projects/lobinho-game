@@ -3,7 +3,32 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
-### `<current>` — Modos de Revelação (reveal_mode)
+### `<current>` — Variações de Lobo (Lote 4)
+- **Migration `migration-026-wolf-variations.sql`** (aplicada via `supabase db query --linked`):
+  - `rooms.wolves_frenzy BOOLEAN DEFAULT FALSE` — ativado via trigger quando o Filhote de Lobo morre
+  - `trigger trg_wolf_cub_death`: AFTER UPDATE OF is_alive, se OLD.role = 'wolf_cub' → `UPDATE rooms SET wolves_frenzy = true`
+  - `players_role_check` atualizado: inclui `wolf_cub, lone_wolf, alpha_wolf`
+  - `night_actions_action_type_check` atualizado: inclui `alpha_infect`
+  - `rooms_status_check` atualizado: inclui `'finished_lone_wolf_win'`
+- **Cartas novas** (`src/lib/cards.ts`):
+  - `wolf_cub` (🐺 Filhote de Lobo, -8 pts, wolf): morre → lobos em frenesi (2 vítimas na próxima noite)
+  - `lone_wolf` (🐺 Lobo Solitário, -5 pts, independent): acorda com lobos, vence só se for o último vivo
+  - `alpha_wolf` (🐺 Lobo Alfa, -9 pts, wolf): 1x/jogo pode infectar a vítima (role → 'werewolf') em vez de matar
+- **`get_werewolf_teammates`**: agora retorna todos com role IN ('werewolf','wolf_cub','alpha_wolf','lone_wolf')
+- **`execute_night_action`**: aceita `alpha_infect` (só alpha_wolf com poder), `werewolf_kill` agora aceita wolf_cub/alpha_wolf/lone_wolf
+- **`resolve_night_wolves`**: lê `wolves_frenzy` de rooms; se true, exige EXATAMENTE 2 alvos distintos; se false, mantém 1 (comportamento anterior)
+- **`resolve_night`**: 
+  - Se `wolves_frenzy = true`: processa ambos os alvos (com saves/proteções), seta `wolves_frenzy = false` ao final
+  - Se existir `alpha_infect` para o alvo: não mata, altera role para 'werewolf', marca `has_used_power = true` do Alfa
+  - Registra `infected_id` e `infected_name` em `last_event`
+- **`check_game_over` + trigger**: Prioridade 0 — se `alive_count = 1` e role = 'lone_wolf', `winner = 'lone_wolf_win'`
+- **Frontend** (`WerewolfPanel`): em frenesi, permite selecionar 2 alvos com confirmação; alpha vê checkbox de infecção; todas as variantes de lobo acordam via step 'wolves'
+- **Infection Banner**: se `lastEvent.infected_id === player.id`, mostra 🐺 "Você foi mordido pelo Lobo Alfa e agora pertence à Alcatéia!" no canto inferior esquerdo
+- **HostRolePanel**: sem mudanças — lê o role do DB, então um infectado automaticamente aparece como 🐺 Lobisomem
+- **Game Over**: `winner === 'lone_wolf_win'` exibe "O LOBO SOLITÁRIO VENCEU!" com nome do vencedor
+- **Files**: `src/lib/cards.ts`, `src/lib/sql/migration-026-wolf-variations.sql`, `src/components/werewolf-panel.tsx`, `src/components/host-action-log.tsx`, `src/app/game/[id]/page.tsx`, `src/hooks/use-player.ts`, `src/lib/types.ts`, `docs/architecture.md`.
+
+### `<current-1>` — Modos de Revelação (reveal_mode)
 - **Migration `20260703175534_reveal_mode.sql`**: `rooms.reveal_mode TEXT` (check: `'total'`, `'team'`, `'hidden'`). Default `'total'`.
 - **`src/lib/reveal.ts`**: `getRevealedRoleText(roleId, revealMode)` — utility que mascara papel segundo o modo:
   - `'total'` → nome da carta (ex: "Vidente")

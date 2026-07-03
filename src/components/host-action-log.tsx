@@ -28,6 +28,7 @@ const ACTION_LABEL: Record<string, string> = {
   aura_investigate: '👁️ investigou aura de',
   cult_convert: '🔮 converteu',
   cupid_match: '💘 uniu',
+  alpha_infect: '🐺 infectou',
 }
 
 export function HostActionLog({ roomId, turnIndex }: HostActionLogProps) {

@@ -50,6 +50,9 @@ export default function GameScreen() {
   const [eligibleVoters, setEligibleVoters] = useState(0)
   const [soulmateName, setSoulmateName] = useState<string | null>(null)
   const [revealMode, setRevealMode] = useState<RevealMode>('total')
+  const [wolvesFrenzy, setWolvesFrenzy] = useState(false)
+  const [infectedId, setInfectedId] = useState<string | null>(null)
+  const [showInfectionBanner, setShowInfectionBanner] = useState(false)
 
   const WAKE_ORDER = ['cupid', 'priest', 'bodyguard', 'wolves', 'witch', 'seer', 'aura_seer', 'cult_leader'] as const
   const STEP_TO_ACTION_TYPES: Record<string, string[]> = {
@@ -108,7 +111,7 @@ export default function GameScreen() {
       .select('role, has_used_power')
       .eq('room_id', roomId)
       .neq('role', 'moderator')
-      .in('role', ['werewolf', 'seer', 'witch', 'priest', 'bodyguard', 'aura_seer', 'cupid', 'cult_leader'])
+      .in('role', ['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf', 'seer', 'witch', 'priest', 'bodyguard', 'aura_seer', 'cupid', 'cult_leader'])
       .then(({ data }) => {
         if (data) {
           const roles = (data as any[])
@@ -140,6 +143,9 @@ export default function GameScreen() {
               return
             }
           }
+          if (payload.new && 'wolves_frenzy' in payload.new) {
+            setWolvesFrenzy(payload.new.wolves_frenzy as boolean)
+          }
         }
       )
       .subscribe()
@@ -150,7 +156,7 @@ export default function GameScreen() {
   // Derived state: gameEnded is true ONLY when rooms.status says so
   const gameEnded =
     roomStatus === 'finished_villagers_win' || roomStatus === 'finished_wolves_win' || roomStatus === 'finished_tanner_win' ||
-    roomStatus === 'finished_soulmates_win' || roomStatus === 'finished_cult_win'
+    roomStatus === 'finished_soulmates_win' || roomStatus === 'finished_cult_win' || roomStatus === 'finished_lone_wolf_win'
 
   // Fetch ALL player names and roles when game ends (bypasses RLS via SECURITY DEFINER RPC)
   useEffect(() => {
@@ -174,9 +180,13 @@ export default function GameScreen() {
         result = allPlayers
           .filter((p) => p.role === 'cult_leader' || p.in_cult)
           .map((p) => ({ name: p.name, role: p.role }))
+      } else if (winnerType === 'lone_wolf_win') {
+        result = allPlayers
+          .filter((p) => p.role === 'lone_wolf')
+          .map((p) => ({ name: p.name, role: p.role }))
       } else if (winnerType === 'wolves_win') {
         result = allPlayers
-          .filter((p) => p.role === 'werewolf')
+          .filter((p) => ['werewolf', 'wolf_cub', 'alpha_wolf'].includes(p.role))
           .map((p) => ({ name: p.name, role: p.role }))
       } else if (winnerType === 'tanner_win') {
         result = allPlayers
@@ -193,16 +203,17 @@ export default function GameScreen() {
     return () => clearInterval(iv)
   }, [gameEnded, gameWinner])
 
-  // Fetch reveal_mode from rooms
+  // Fetch reveal_mode + wolves_frenzy from rooms
   useEffect(() => {
     if (!roomId) return
     supabase
       .from('rooms')
-      .select('reveal_mode')
+      .select('reveal_mode, wolves_frenzy')
       .eq('id', roomId)
       .single()
       .then(({ data }) => {
         if (data?.reveal_mode) setRevealMode(data.reveal_mode as RevealMode)
+        if (data?.wolves_frenzy != null) setWolvesFrenzy(data.wolves_frenzy as boolean)
       })
   }, [roomId])
 
@@ -218,6 +229,15 @@ export default function GameScreen() {
         if (data) setSoulmateName((data as any).name)
       })
   }, [player?.soulmateId])
+
+  // Check if current player was infected by Alpha Wolf
+  useEffect(() => {
+    if (!player || !lastEvent || showInfectionBanner) return
+    const infected = (lastEvent as any)?.infected_id
+    if (infected === player.id) {
+      setShowInfectionBanner(true)
+    }
+  }, [lastEvent, player, showInfectionBanner])
 
   // Poll vote count during voting phase (Task 3)
   useEffect(() => {
@@ -322,6 +342,12 @@ export default function GameScreen() {
   const soulmateBanner = !isHost && soulmateName && (
     <div className="fixed bottom-4 right-4 text-[10px] text-neutral-600 opacity-60 select-none z-50">
       💕 Alma Gêmea: {soulmateName}
+    </div>
+  )
+
+  const infectionBanner = showInfectionBanner && (
+    <div className="fixed bottom-4 left-4 text-[10px] text-red-500/80 select-none z-50 bg-red-950/40 px-3 py-1.5 rounded-lg border border-red-800/30 backdrop-blur-sm">
+      🐺 Você foi mordido pelo Lobo Alfa e agora pertence à Alcatéia!
     </div>
   )
 
@@ -471,11 +497,14 @@ export default function GameScreen() {
               Controle da Noite
             </p>
             {(() => {
+              const WOLF_ROLES = ['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf']
               const nextRoleToWake = WAKE_ORDER.find((s) => {
-                const role = s === 'wolves' ? 'werewolf' : s
-                if (!availableNightRoles.has(role)) return false
+                if (s === 'wolves') {
+                  if (!WOLF_ROLES.some((r) => availableNightRoles.has(r))) return false
+                  return nightStep !== 'wolves' && !wolvesResolved
+                }
+                if (!availableNightRoles.has(s)) return false
                 if (s === 'cupid' && turnIndex !== 1) return false
-                if (s === 'wolves') return nightStep !== 'wolves' && !wolvesResolved
                 if (nightRolesActedRef.current.has(s)) return false
                 return nightStep !== s
               })
@@ -518,6 +547,9 @@ export default function GameScreen() {
                 { step: 'cult_leader', role: 'cult_leader', label: '🔮 Acordar Líder de Culto' },
               ].filter((b) => {
                 if (b.step === 'cupid' && turnIndex !== 1) return false
+                if (b.step === 'wolves') {
+                  return ['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf'].some((r) => availableNightRoles.has(r))
+                }
                 return availableNightRoles.has(b.role)
               }).map((b) => {
                 const isWolves = b.step === 'wolves'
@@ -695,6 +727,7 @@ export default function GameScreen() {
       <div className="flex flex-1 flex-col items-center min-h-dvh">
         {renderNightPanel()}
         {soulmateBanner}
+        {infectionBanner}
       </div>
     )
   }
@@ -816,6 +849,7 @@ export default function GameScreen() {
           </>
         )}
         {soulmateBanner}
+        {infectionBanner}
 
         <div className="mt-auto pt-4 pb-6">
           <GraveyardList roomId={roomId} revealMode={revealMode} />
@@ -845,6 +879,7 @@ export default function GameScreen() {
     if (!isAlive) return sleepScreen()
 
     const wolfVictimName = lastEvent?.victim_name ?? null
+  const wolfVictimName2 = (lastEvent as any)?.victims?.[1]?.victim_name ?? null
 
     if (player.role === 'priest') {
       if (nightStep !== 'priest') return sleepScreen()
@@ -886,7 +921,7 @@ export default function GameScreen() {
       )
     }
 
-    if (player.role === 'werewolf') {
+    if (['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf'].includes(player.role ?? '')) {
       if (nightStep !== 'wolves') return sleepScreen()
       if (actedRoles.has('werewolf')) return sleepScreen()
       return (
@@ -894,7 +929,16 @@ export default function GameScreen() {
           <p className="text-neutral-600 text-xs uppercase tracking-widest select-none animate-pulse">
             🌙 Fechem os olhos...
           </p>
-          <WerewolfPanel roomId={roomId} playerId={player.id} turnIndex={turnIndex} isFirstNight={turnIndex === 1} onDone={() => handleRoleDone('werewolf')} />
+          <WerewolfPanel
+            roomId={roomId}
+            playerId={player.id}
+            turnIndex={turnIndex}
+            isFirstNight={turnIndex === 1}
+            isAlpha={player.role === 'alpha_wolf'}
+            alphaHasPower={player.role === 'alpha_wolf' && !player.hasUsedPower}
+            wolvesFrenzy={wolvesFrenzy}
+            onDone={() => handleRoleDone('werewolf')}
+          />
         </div>
       )
     }
@@ -960,7 +1004,7 @@ export default function GameScreen() {
   }
 
   function renderEnded() {
-    const winner = gameWinner ?? lastEvent?.winner ?? (roomStatus === 'finished_wolves_win' ? 'wolves_win' : roomStatus === 'finished_tanner_win' ? 'tanner_win' : 'villagers_win')
+    const winner = gameWinner ?? lastEvent?.winner ?? (roomStatus === 'finished_wolves_win' ? 'wolves_win' : roomStatus === 'finished_tanner_win' ? 'tanner_win' : roomStatus === 'finished_lone_wolf_win' ? 'lone_wolf_win' : 'villagers_win')
     const isHost = player?.isHost ?? false
 
     async function handleReturnToLobby() {
@@ -979,6 +1023,7 @@ export default function GameScreen() {
     const cultStyle = 'text-violet-400 drop-shadow-[0_0_20px_rgba(139,92,246,0.5)]'
     const tannerStyle = 'text-stone-600 drop-shadow-[0_0_20px_rgba(120,100,80,0.5)]'
     const wolfStyle = 'text-red-700 drop-shadow-[0_0_20px_rgba(185,28,28,0.5)]'
+    const loneWolfStyle = 'text-orange-500 drop-shadow-[0_0_20px_rgba(249,115,22,0.5)]'
     const villagerStyle = 'text-yellow-500 drop-shadow-[0_0_20px_rgba(234,179,8,0.4)]'
 
     const colors =
@@ -986,6 +1031,7 @@ export default function GameScreen() {
         : winner === 'cult_win' ? cultStyle
         : winner === 'tanner_win' ? tannerStyle
         : winner === 'wolves_win' ? wolfStyle
+        : winner === 'lone_wolf_win' ? loneWolfStyle
         : villagerStyle
 
     const displayText =
@@ -993,6 +1039,7 @@ export default function GameScreen() {
         : winner === 'cult_win' ? 'O CULTO DOMINOU A VILA!'
         : winner === 'tanner_win' ? 'O CURTIDOR VENCEU'
         : winner === 'wolves_win' ? 'VITÓRIA DO TIME DOS LOBOS'
+        : winner === 'lone_wolf_win' ? 'O LOBO SOLITÁRIO VENCEU!'
         : 'VITÓRIA DO TIME DA VILA'
 
     return (
@@ -1002,6 +1049,7 @@ export default function GameScreen() {
             : winner === 'cult_win' ? '🔮'
             : winner === 'tanner_win' ? '👔'
             : winner === 'wolves_win' ? '🐺'
+            : winner === 'lone_wolf_win' ? '🐺'
             : '🏆'
         }</p>
         <p className="text-neutral-400 text-xs uppercase tracking-widest">

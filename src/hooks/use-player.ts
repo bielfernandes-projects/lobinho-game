@@ -14,6 +14,8 @@ interface RawPlayer {
   has_viewed_card: boolean
   viewed_card_at: string | null
   created_at: string
+  has_used_power: boolean
+  soulmate_id: string | null
 }
 
 function normalize(p: RawPlayer): Player {
@@ -27,6 +29,8 @@ function normalize(p: RawPlayer): Player {
     hasViewedCard: p.has_viewed_card,
     viewedCardAt: p.viewed_card_at,
     createdAt: p.created_at,
+    soulmateId: p.soulmate_id,
+    hasUsedPower: p.has_used_power,
   }
 }
 

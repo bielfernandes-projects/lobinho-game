@@ -9,15 +9,29 @@ interface WerewolfPanelProps {
   playerId: string
   turnIndex: number
   isFirstNight?: boolean
+  isAlpha?: boolean
+  alphaHasPower?: boolean
+  wolvesFrenzy?: boolean
   onDone?: () => void
 }
 
-export function WerewolfPanel({ roomId, playerId, turnIndex, isFirstNight = false, onDone }: WerewolfPanelProps) {
+export function WerewolfPanel({
+  roomId,
+  playerId,
+  turnIndex,
+  isFirstNight = false,
+  isAlpha = false,
+  alphaHasPower = false,
+  wolvesFrenzy = false,
+  onDone,
+}: WerewolfPanelProps) {
   const [wolves, setWolves] = useState<RoomProfile[]>([])
   const [targets, setTargets] = useState<RoomProfile[]>([])
   const [hasActed, setHasActed] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [selectedTargets, setSelectedTargets] = useState<string[]>([])
+  const [infectTarget, setInfectTarget] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
@@ -38,13 +52,13 @@ export function WerewolfPanel({ roomId, playerId, turnIndex, isFirstNight = fals
         userId: r.user_id,
       }))
 
-      const { data: wolves } = await supabase.rpc('get_werewolf_teammates', {
+      const { data: wolvesData } = await supabase.rpc('get_werewolf_teammates', {
         p_room_id: roomId,
       })
 
-      if (wolves) {
+      if (wolvesData) {
         const wolfIds = new Set(
-          (wolves as { id: string; name: string }[]).map((w) => w.id)
+          (wolvesData as { id: string; name: string }[]).map((w) => w.id)
         )
 
         setWolves(profiles.filter((p) => wolfIds.has(p.id)))
@@ -55,25 +69,51 @@ export function WerewolfPanel({ roomId, playerId, turnIndex, isFirstNight = fals
     load()
   }, [roomId, playerId])
 
-  async function handleKill(targetId: string) {
+  const expectedTargets = wolvesFrenzy ? 2 : 1
+
+  async function submitKill(targetId: string, shouldInfect: boolean) {
+    const { error: rpcErr } = await supabase.rpc('execute_night_action', {
+      p_room_id: roomId,
+      p_action_type: 'werewolf_kill',
+      p_target_id: targetId,
+    })
+    if (rpcErr) throw new Error(rpcErr.message)
+
+    if (shouldInfect) {
+      const { error: infectErr } = await supabase.rpc('execute_night_action', {
+        p_room_id: roomId,
+        p_action_type: 'alpha_infect',
+        p_target_id: targetId,
+      })
+      if (infectErr) throw new Error(infectErr.message)
+    }
+  }
+
+  async function handleNormalKill(targetId: string) {
     setBusy(true)
     setError('')
     try {
-      const { error: rpcErr } = await supabase.rpc('execute_night_action', {
-        p_room_id: roomId,
-        p_action_type: 'werewolf_kill',
-        p_target_id: targetId,
-      })
-      if (rpcErr) {
-        console.error('[WerewolfPanel] RPC error:', rpcErr)
-        setError(rpcErr.message)
-        setBusy(false)
-        return
-      }
+      await submitKill(targetId, infectTarget)
       setHasActed(true)
       onDone?.()
     } catch (err) {
-      console.error('[WerewolfPanel] Unexpected:', err)
+      console.error('[WerewolfPanel] RPC error:', err)
+      setError(err instanceof Error ? err.message : 'Erro inesperado')
+    }
+    setBusy(false)
+  }
+
+  async function handleFrenzyConfirm() {
+    if (selectedTargets.length !== 2) return
+    setBusy(true)
+    setError('')
+    try {
+      await submitKill(selectedTargets[0], infectTarget)
+      await submitKill(selectedTargets[1], false)
+      setHasActed(true)
+      onDone?.()
+    } catch (err) {
+      console.error('[WerewolfPanel] RPC error:', err)
       setError(err instanceof Error ? err.message : 'Erro inesperado')
     }
     setBusy(false)
@@ -101,6 +141,16 @@ export function WerewolfPanel({ roomId, playerId, turnIndex, isFirstNight = fals
       setError(err instanceof Error ? err.message : 'Erro inesperado')
     }
     setBusy(false)
+  }
+
+  function toggleTargetSelection(id: string) {
+    setSelectedTargets((prev) => {
+      if (prev.includes(id)) {
+        return prev.filter((t) => t !== id)
+      }
+      if (prev.length >= 2) return prev
+      return [...prev, id]
+    })
   }
 
   if (hasActed) {
@@ -164,6 +214,12 @@ export function WerewolfPanel({ roomId, playerId, turnIndex, isFirstNight = fals
         🐺 Lobisomens
       </p>
 
+      {wolvesFrenzy && (
+        <p className="text-yellow-400 text-xs uppercase tracking-wider font-bold animate-pulse">
+          🔥 FRENESI — Matem 2 vítimas esta noite!
+        </p>
+      )}
+
       {wolves.length > 1 && (
         <div>
           <p className="text-neutral-600 text-[10px] uppercase tracking-wider mb-2">
@@ -185,27 +241,102 @@ export function WerewolfPanel({ roomId, playerId, turnIndex, isFirstNight = fals
       )}
 
       <div>
-        <p className="text-neutral-500 text-xs mb-3">Escolha a vítima:</p>
-        <div className="space-y-2">
-          {targets.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => handleKill(t.id)}
-              disabled={busy}
-              className="
-                w-full py-3 px-4 rounded-xl text-sm font-medium
-                bg-neutral-900 border border-neutral-800 text-neutral-300
-                hover:border-red-800 hover:text-red-400
-                active:bg-red-950/20
-                disabled:opacity-40
-                transition-all duration-200
-                cursor-pointer
-              "
-            >
-              {t.name}
-            </button>
-          ))}
-        </div>
+        {wolvesFrenzy ? (
+          <>
+            <p className="text-neutral-500 text-xs mb-3">
+              {selectedTargets.length === 0
+                ? 'Selecione o 1º alvo:'
+                : selectedTargets.length === 1
+                  ? 'Selecione o 2º alvo:'
+                  : 'Alvos definidos:'}
+            </p>
+            <div className="space-y-2">
+              {targets.map((t) => {
+                const isSelected = selectedTargets.includes(t.id)
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => toggleTargetSelection(t.id)}
+                    disabled={busy}
+                    className={`
+                      w-full py-3 px-4 rounded-xl text-sm font-medium
+                      transition-all duration-200 cursor-pointer
+                      ${isSelected
+                        ? 'bg-red-900/30 border border-red-700/50 text-red-300'
+                        : 'bg-neutral-900 border border-neutral-800 text-neutral-300 hover:border-red-800 hover:text-red-400'
+                      }
+                      disabled:opacity-40
+                    `}
+                  >
+                    {isSelected ? `✓ ${t.name}` : t.name}
+                  </button>
+                )
+              })}
+            </div>
+
+            {isAlpha && alphaHasPower && selectedTargets.length >= 1 && (
+              <label className="flex items-center justify-center gap-2 mt-3 px-3 py-2 rounded-lg bg-neutral-900/40 border border-neutral-800 cursor-pointer hover:bg-neutral-800/40 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={infectTarget}
+                  onChange={(e) => setInfectTarget(e.target.checked)}
+                  className="accent-red-600 cursor-pointer"
+                />
+                <span className="text-neutral-400 text-xs">
+                  🐺 Infectar {targets.find((t) => t.id === selectedTargets[0])?.name ?? 'o 1º alvo'} (Poder do Lobo Alfa)
+                </span>
+              </label>
+            )}
+
+            {selectedTargets.length === 2 && (
+              <button
+                onClick={handleFrenzyConfirm}
+                disabled={busy}
+                className="w-full mt-3 py-3 px-4 rounded-xl text-sm font-bold bg-red-900/30 border border-red-700/50 text-red-400 hover:bg-red-800/40 disabled:opacity-40 transition-all duration-200 cursor-pointer"
+              >
+                {busy ? 'Atacando...' : `⚔️ Atacar ${selectedTargets.length} alvos`}
+              </button>
+            )}
+          </>
+        ) : (
+          <>
+            <p className="text-neutral-500 text-xs mb-3">Escolha a vítima:</p>
+            <div className="space-y-2">
+              {targets.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => handleNormalKill(t.id)}
+                  disabled={busy}
+                  className="
+                    w-full py-3 px-4 rounded-xl text-sm font-medium
+                    bg-neutral-900 border border-neutral-800 text-neutral-300
+                    hover:border-red-800 hover:text-red-400
+                    active:bg-red-950/20
+                    disabled:opacity-40
+                    transition-all duration-200
+                    cursor-pointer
+                  "
+                >
+                  {t.name}
+                </button>
+              ))}
+            </div>
+
+            {isAlpha && alphaHasPower && (
+              <label className="flex items-center justify-center gap-2 mt-3 px-3 py-2 rounded-lg bg-neutral-900/40 border border-neutral-800 cursor-pointer hover:bg-neutral-800/40 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={infectTarget}
+                  onChange={(e) => setInfectTarget(e.target.checked)}
+                  className="accent-red-600 cursor-pointer"
+                />
+                <span className="text-neutral-400 text-xs">
+                  🐺 Infectar em vez de matar (Poder do Lobo Alfa — Uso Único)
+                </span>
+              </label>
+            )}
+          </>
+        )}
       </div>
 
       {error && (
