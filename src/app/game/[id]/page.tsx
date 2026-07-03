@@ -610,21 +610,6 @@ export default function GameScreen() {
 
             {dayStep === 'reveal' && (
               <>
-                {lastVoteResult?.type === 'lynch' && lastVoteResult.victim_name && (
-                  <div className="fixed inset-0 z-40 flex items-center justify-center pointer-events-none">
-                    <div className="bg-red-950/80 border border-red-700/50 rounded-2xl px-5 py-4 text-center shadow-2xl backdrop-blur-sm max-w-[85vw]">
-                      <p className="text-3xl mb-2">⚖️</p>
-                      <p className="text-red-400 text-sm font-black tracking-wider">
-                        O acusado foi linchado pela vila!
-                      </p>
-                      {lastVoteResult.victim_role && (
-                        <p className="text-neutral-500 text-[10px] mt-1 uppercase tracking-wider">
-                          {getRevealedRoleText(lastVoteResult.victim_role as string, 'total')}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
                 <TribunalPanel
                   roomId={roomId}
                   dayStep={dayStep}
@@ -827,22 +812,7 @@ export default function GameScreen() {
 
         {dayStep !== 'announcement' && dayStep === 'reveal' && (
           <>
-                {lastVoteResult?.type === 'lynch' && lastVoteResult.victim_name && (
-                  <div className="fixed inset-0 z-40 flex items-center justify-center pointer-events-none">
-                    <div className="bg-red-950/80 border border-red-700/50 rounded-2xl px-5 py-4 text-center shadow-2xl backdrop-blur-sm max-w-[85vw]">
-                      <p className="text-3xl mb-2">⚖️</p>
-                      <p className="text-red-400 text-sm font-black tracking-wider">
-                        O acusado foi linchado pela vila!
-                      </p>
-                      {lastVoteResult.victim_role && (
-                        <p className="text-neutral-500 text-[10px] mt-1 uppercase tracking-wider">
-                          {getRevealedRoleText(lastVoteResult.victim_role as string, revealMode)}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
-                <TribunalReveal roomId={roomId} turnIndex={turnIndex} />
+            <TribunalReveal roomId={roomId} turnIndex={turnIndex} />
           </>
         )}
         {soulmateBanner}
