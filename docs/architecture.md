@@ -3,7 +3,27 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
-### `<current>` — Variações de Lobo (Lote 4)
+### `<current>` — Rollback: RLS fix abortado (commit `d18bcd1`)
+- **Contexto**: Tentamos corrigir o RLS da view `player_profiles` que impedia jogadores não-host de verem a lista de jogadores nos painéis noturnos.
+- **O que foi feito**:
+  1. Criada RPC `get_room_profiles` (SECURITY DEFINER) no banco remoto via `supabase db push` (migration `20260703_fix_rls_player_profiles.sql` — deletada do git no rollback mas permanece no banco).
+  2. Substituídas todas as chamadas `from('player_profiles')` por `rpc('get_room_profiles')` em 13 arquivos (todos os painéis noturnos + hooks).
+- **O que quebrou**: A RPC tinha `WHERE user_id = auth.uid()` ambíguo — a função declara `RETURNS TABLE(..., user_id UUID)`, e o PostgreSQL não conseguia distinguir se `user_id` era a coluna da tabela `players` ou a coluna de output. Resultado: `column reference "user_id" is ambiguous`, exception para TODOS os usuários, player list vazia no lobby.
+- **Correção tentada**: `players.user_id = auth.uid()` — aplicada ao banco mas o frontend já estava quebrado.
+- **Rollback**: Reset forçado para `d18bcd1` (feat: implementa variacoes de lobo Lote 4). GitHub force-push removeu commits `40348e3`, `a4cfe0b`, `811da79`, `6ada794`, `441b368`.
+- **Estado atual do banco** (contém objetos órfãos, inofensivos):
+  - `get_room_profiles(p_room_id UUID)` — SECURITY DEFINER RPC, criada pela migration. Não é mais chamada pelo frontend.
+  - A migration `20260703_fix_rls_player_profiles.sql` foi aplicada via `supabase db push` mas o arquivo não existe mais no git.
+  - A migration anterior `20260702224500_fix_4_issues.sql` permanece no banco por ter sido aplicada via SQL Editor.
+- **Aprendizado**: Nunca declarar coluna em `RETURNS TABLE` com mesmo nome de coluna usada no `WHERE` sem qualificar com alias da tabela. Testar RPC com `curl` ANTES de trocar o frontend.
+- **Commits perdidos no rollback**:
+  - `40348e3` — fix: resolve_night_wolves quebrava na 1ª noite (COUNT DISTINCT target_id retorna 0 para NULL)
+  - `a4cfe0b` — fix: resolve_night referenciava game_state.wolves_frenzy (coluna em rooms, nao game_state)
+  - `811da79` — fix: 3 bugs do Lote 4 (check_game_over, game over screen, frenesi sem botao)
+  - `6ada794` — fix: substitui player_profiles por get_room_profiles RPC em todos os paineis
+  - `441b368` — fix: qualifica user_id no RPC (correcao do bug, aplicada ao banco mas perdida no git)
+
+### `<current-1>` — Variações de Lobo (Lote 4)
 - **Migration `migration-026-wolf-variations.sql`** (aplicada via `supabase db query --linked`):
   - `rooms.wolves_frenzy BOOLEAN DEFAULT FALSE` — ativado via trigger quando o Filhote de Lobo morre
   - `trigger trg_wolf_cub_death`: AFTER UPDATE OF is_alive, se OLD.role = 'wolf_cub' → `UPDATE rooms SET wolves_frenzy = true`
