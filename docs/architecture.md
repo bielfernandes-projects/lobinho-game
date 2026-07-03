@@ -16,6 +16,7 @@ A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, S
 - **Banners de linchamento** (host + player view em `game/[id]/page.tsx`): Agora mostram o papel da vítima (original para host, mascarado para jogadores).
 - **GraveyardList**: Novo componente colapsável listando mortos com papel mascarado, visível para todos os jogadores não-host durante o jogo. Polling a cada 5s via RPC `get_graveyard_info`.
 - **Regra de visibilidade**: O host (`isHost === true`) SEMPRE enxerga o papel original, ignorando o `reveal_mode`. A máscara só se aplica aos jogadores comuns.
+- **Bugfix `execute_night_action`**: A UNIQUE constraint de `night_actions` foi alterada de `(room_id, turn_index, actor_id)` para `(room_id, turn_index, actor_id, action_type, target_id)` pela migration do Cupido. A função `execute_night_action` ainda referenciava a constraint antiga no `ON CONFLICT`, causando erro "there is no unique or exclusion constraint matching the ON CONFLICT specification" em ações noturnas (lobos 1ª noite, bruxa veneno, etc). Corrigido: todos os `ON CONFLICT` agora usam as 5 colunas corretas.
 - **Files**: `supabase/migrations/20260703175534_reveal_mode.sql`, `src/lib/reveal.ts`, `src/components/scenario-builder.tsx`, `src/components/day-announcement.tsx`, `src/components/graveyard-list.tsx`, `src/app/game/[id]/page.tsx`, `src/lib/sql/migration-024-reveal-mode.sql`, `docs/architecture.md`.
 
 ### `<current-1>` — 4 fixes: Cupido log dupla, História persistente, Alma gêmea no anúncio, Modal de linchamento

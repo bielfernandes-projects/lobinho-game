@@ -108,34 +108,6 @@ export function ScenarioBuilder({ roomId, playerCount }: ScenarioBuilderProps) {
         <span className="flex-1 h-px bg-neutral-800" />
       </div>
 
-      {/* Termômetro */}
-      <div className="rounded-xl border border-neutral-800 bg-neutral-900/60 px-4 py-3 space-y-1.5">
-        <p className={`text-xs font-bold tracking-wider uppercase ${thermo.color}`}>
-          {thermo.label}
-        </p>
-        <div className="flex items-center gap-2">
-          <div className="flex-1 h-1.5 rounded-full bg-neutral-800 overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all duration-300 ${
-                totalPoints < -3
-                  ? 'bg-red-500'
-                  : totalPoints > 3
-                    ? 'bg-emerald-500'
-                    : 'bg-yellow-500'
-              }`}
-              style={{
-                width: `${barPercent}%`,
-                marginLeft: totalPoints < 0 ? 'auto' : undefined,
-                float: totalPoints < 0 ? 'right' : 'left',
-              }}
-            />
-          </div>
-          <span className="text-neutral-500 text-xs font-mono min-w-[4ch] text-right">
-            {totalPoints}
-          </span>
-        </div>
-      </div>
-
       {/* Configurações da Partida */}
       <div className="rounded-xl border border-neutral-800 bg-neutral-900/60 px-4 py-3 space-y-2">
         <p className="text-neutral-500 text-[10px] uppercase tracking-widest font-bold">
@@ -169,6 +141,34 @@ export function ScenarioBuilder({ roomId, playerCount }: ScenarioBuilderProps) {
               </div>
             </label>
           ))}
+        </div>
+      </div>
+
+      {/* Termômetro */}
+      <div className="rounded-xl border border-neutral-800 bg-neutral-900/60 px-4 py-3 space-y-1.5">
+        <p className={`text-xs font-bold tracking-wider uppercase ${thermo.color}`}>
+          {thermo.label}
+        </p>
+        <div className="flex items-center gap-2">
+          <div className="flex-1 h-1.5 rounded-full bg-neutral-800 overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-300 ${
+                totalPoints < -3
+                  ? 'bg-red-500'
+                  : totalPoints > 3
+                    ? 'bg-emerald-500'
+                    : 'bg-yellow-500'
+              }`}
+              style={{
+                width: `${barPercent}%`,
+                marginLeft: totalPoints < 0 ? 'auto' : undefined,
+                float: totalPoints < 0 ? 'right' : 'left',
+              }}
+            />
+          </div>
+          <span className="text-neutral-500 text-xs font-mono min-w-[4ch] text-right">
+            {totalPoints}
+          </span>
         </div>
       </div>
 
