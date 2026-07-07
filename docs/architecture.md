@@ -3,7 +3,22 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
-### `<current>` — Hotfixes: Lobo Solitário paridade + constraint witch_skip (commit pendente)
+### `<current>` — Fix jogo quebrado: drop start_game duplicada, limpeza RPC órfã, verificação de funções/constraints
+- **Causa raiz do jogo quebrado**: A função `start_game(p_room_id UUID)` (versão antiga sem `p_roles`) coexistia com `start_game(p_room_id UUID, p_roles JSONB)`. A API REST do Supabase falhava ao resolver qual chamar, então `Iniciar Jogo` não funcionava.
+  - Ação: `DROP FUNCTION IF EXISTS public.start_game(UUID);`
+  - Verificação: só restou `start_game | p_room_id uuid, p_roles jsonb`.
+- **Limpeza RPC órfã**: `DROP FUNCTION IF EXISTS public.get_room_profiles(UUID);` — criada no rollback do RLS fix e nunca chamada pelo frontend.
+- **Verificações de integridade** (todas passaram):
+  - `night_actions_action_type_check`: contém `witch_skip` e `sorceress_search`.
+  - `check_game_over` e `trg_check_game_over`: contêm `v_alive_count <= 2` (paridade do Lobo Solitário).
+  - `execute_night_action`: Seer detecta `('werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf', 'lycan')`; Padre valida `v_used_power` e seta `has_used_power = true WHERE id = v_player_id`.
+  - `resolve_night`: deduplica vítimas com `IS DISTINCT FROM`; NÃO atualiza `wolves_frenzy` em `game_state` (apenas em `rooms`).
+  - `get_werewolf_teammates`: usa `p.name::text` para evitar mismatch de tipo.
+- **Build local**: `npm run build` passou.
+- **Vercel**: Redeploy manual necessário (CLI sem credenciais). Use o dashboard com "Use existing Build Cache" DESATIVADO.
+- **Files**: `docs/architecture.md`.
+
+### `<current-1>` — Hotfixes: Lobo Solitário paridade + constraint witch_skip (commit pendente)
 - **Bug 1 — Lobo Solitário paridade**: `check_game_over` e `trg_check_game_over` impediam `villagers_win` quando Solitário vivo, mas não declaravam `lone_wolf_win` na paridade (Solitário + 1 outro = 2 vivos, sem lobos de time). Adicionado `IF v_alive_count <= 2 THEN ... lone_wolf_win` no bloco `v_wolves = 0` de ambas as funções. Agora: `v_wolves = 0` + Solitário vivo + `<= 2` vivos → `lone_wolf_win`; `> 2` vivos → jogo continua.
 - **Bug 2 — Constraint `night_actions_action_type_check` sem `witch_skip`**: A RPC `execute_night_action` já tinha o branch `witch_skip` mas a constraint CHECK da tabela `night_actions` não incluía o valor. Resultado: "deixar morrer" na bruxa causava erro `violates check constraint`. Corrigido via SQL Editor.
 - **Bug 3 — Feiticeira sem resultado**: Removida guarda `actedRoles.has('sorceress')` do `renderNightPanel`. Painel agora fica visível com o resultado até o host avançar o `nightStep`.
