@@ -3,7 +3,17 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
-### `<current>` — Rollback: RLS fix abortado (commit `d18bcd1`)
+### `<current>` — Fixes do Lote 4 (wolf_cub, alpha_wolf, lone_wolf)
+- **Problema**: Fim de jogo prematuro quando `wolf_cub` morria e sobrava `alpha_wolf`; `resolve_night` quebrava ao tentar setar `wolves_frenzy` em `game_state` (coluna existe apenas em `rooms`); tela de game over não filtrava corretamente vencedores.
+- **Fix SQL** (migration `supabase/migrations/20260707130000_fix_lote4_wolf_variations.sql`, aplicada via `supabase db push`):
+  - `check_game_over` e `trg_check_game_over`: contagem de lobos agora usa `role IN ('werewolf', 'wolf_cub', 'alpha_wolf')`; não-lobos excluem essas 3 roles + `moderator`. `lone_wolf` continua como facção independente (non_wolf).
+  - `resolve_night`: removido `wolves_frenzy = false` dos `UPDATE game_state`; limpeza do frenesi mantida apenas em `UPDATE rooms SET wolves_frenzy = false`.
+- **Frontend**:
+  - `src/app/game/[id]/page.tsx`: fallback de `winnerType` cobre todos os status `finished_*`; filtros de `wolves_win` e `villagers_win` usam `CARD_CATALOG.team` (`wolf` / `village`), excluindo moderador automaticamente.
+  - `src/components/werewolf-panel.tsx`: `useEffect` de carregamento de alvos agora depende de `wolvesFrenzy`; `handleFrenzyConfirm` mantém estado em caso de erro para permitir retry.
+- **Files**: `supabase/migrations/20260707130000_fix_lote4_wolf_variations.sql`, `src/lib/sql/migration-026-wolf-variations.sql`, `src/app/game/[id]/page.tsx`, `src/components/werewolf-panel.tsx`, `docs/architecture.md`.
+
+### `<current-1>` — Rollback: RLS fix abortado (commit `d18bcd1`)
 - **Contexto**: Tentamos corrigir o RLS da view `player_profiles` que impedia jogadores não-host de verem a lista de jogadores nos painéis noturnos.
 - **O que foi feito**:
   1. Criada RPC `get_room_profiles` (SECURITY DEFINER) no banco remoto via `supabase db push` (migration `20260703_fix_rls_player_profiles.sql` — deletada do git no rollback mas permanece no banco).

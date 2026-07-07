@@ -581,6 +581,7 @@ BEGIN
   END IF;
 
   -- Build last_event with infection info if applicable
+  -- NOTE: wolves_frenzy is a column on rooms, not game_state.
   IF v_alpha_infected_id IS NOT NULL THEN
     UPDATE game_state
     SET current_phase = 'day',
@@ -588,7 +589,6 @@ BEGIN
         turn_index = v_turn,
         phase_started_at = now(),
         wolves_resolved = false,
-        wolves_frenzy = false,
         last_event = jsonb_build_object(
           'type', 'night_result',
           'victims', v_victims,
@@ -598,20 +598,19 @@ BEGIN
         last_vote_result = NULL
     WHERE room_id = p_room_id;
   ELSE
-    -- Clear frenzy at end of night (if it was active)
     UPDATE game_state
     SET current_phase = 'day',
         day_step = 'announcement',
         turn_index = v_turn,
         phase_started_at = now(),
         wolves_resolved = false,
-        wolves_frenzy = false,
         last_event = jsonb_build_object('type', 'night_result', 'victims', v_victims),
         last_vote_result = NULL
     WHERE room_id = p_room_id;
-
-    UPDATE rooms SET wolves_frenzy = false WHERE id = p_room_id AND wolves_frenzy = true;
   END IF;
+
+  -- Clear frenzy on rooms (not on game_state)
+  UPDATE rooms SET wolves_frenzy = false WHERE id = p_room_id AND wolves_frenzy = true;
 
   RETURN jsonb_build_object('success', true, 'victims', v_victims);
 END;
@@ -704,10 +703,11 @@ BEGIN
     RETURN jsonb_build_object('game_over', true, 'winner', 'tanner_win', 'display', 'Curtidor Venceu');
   END IF;
 
-  -- Standard wolf/village check (lone_wolf counted as non_wolf)
+  -- Standard wolf/village check — includes wolf_cub and alpha_wolf as wolves
+  -- lone_wolf counts as non_wolf (independent faction)
   SELECT
-    COUNT(*) FILTER (WHERE is_alive = true AND role = 'werewolf'),
-    COUNT(*) FILTER (WHERE is_alive = true AND role NOT IN ('werewolf', 'moderator'))
+    COUNT(*) FILTER (WHERE is_alive = true AND role IN ('werewolf', 'wolf_cub', 'alpha_wolf')),
+    COUNT(*) FILTER (WHERE is_alive = true AND role NOT IN ('werewolf', 'wolf_cub', 'alpha_wolf', 'moderator'))
   INTO v_wolves, v_non_wolves
   FROM players WHERE room_id = p_room_id;
 
@@ -809,9 +809,10 @@ BEGIN
     RETURN NEW;
   END IF;
 
-  -- Standard wolf/village check
-  SELECT COUNT(*) FILTER (WHERE is_alive = true AND role = 'werewolf'),
-         COUNT(*) FILTER (WHERE is_alive = true AND role NOT IN ('werewolf', 'moderator'))
+  -- Standard wolf/village check — includes wolf_cub and alpha_wolf as wolves
+  SELECT
+    COUNT(*) FILTER (WHERE is_alive = true AND role IN ('werewolf', 'wolf_cub', 'alpha_wolf')),
+    COUNT(*) FILTER (WHERE is_alive = true AND role NOT IN ('werewolf', 'wolf_cub', 'alpha_wolf', 'moderator'))
   INTO v_wolves, v_non_wolves FROM players WHERE room_id = NEW.room_id;
 
   IF v_wolves = 0 THEN

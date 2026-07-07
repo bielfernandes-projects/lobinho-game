@@ -67,7 +67,7 @@ export function WerewolfPanel({
     }
 
     load()
-  }, [roomId, playerId])
+  }, [roomId, playerId, wolvesFrenzy])
 
   const expectedTargets = wolvesFrenzy ? 2 : 1
 

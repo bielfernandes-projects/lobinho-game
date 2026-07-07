@@ -163,13 +163,22 @@ export default function GameScreen() {
     if (!gameEnded && !gameWinner) return
     async function poll() {
       const status = roomStatus
-      const w = gameWinner ?? lastEvent?.winner ?? (status === 'finished_wolves_win' ? 'wolves_win' : status === 'finished_tanner_win' ? 'tanner_win' : 'villagers_win')
+      const w = gameWinner
+        ?? lastEvent?.winner
+        ?? (status === 'finished_wolves_win' ? 'wolves_win'
+          : status === 'finished_tanner_win' ? 'tanner_win'
+          : status === 'finished_lone_wolf_win' ? 'lone_wolf_win'
+          : status === 'finished_soulmates_win' ? 'soulmates_win'
+          : status === 'finished_cult_win' ? 'cult_win'
+          : 'villagers_win')
 
       const winnerType = w as string
 
       const { data } = await supabase.rpc('get_revealed_players', { p_room_id: roomId })
 
       const allPlayers: { id: string; name: string; role: string; in_cult: boolean; soulmate_id: string | null }[] = (data as any[]) ?? []
+
+      const getTeam = (roleId: string) => CARD_CATALOG.find((c) => c.id === roleId)?.team
 
       let result: { name: string; role: string }[]
       if (winnerType === 'soulmates_win') {
@@ -186,14 +195,16 @@ export default function GameScreen() {
           .map((p) => ({ name: p.name, role: p.role }))
       } else if (winnerType === 'wolves_win') {
         result = allPlayers
-          .filter((p) => ['werewolf', 'wolf_cub', 'alpha_wolf'].includes(p.role))
+          .filter((p) => getTeam(p.role) === 'wolf')
           .map((p) => ({ name: p.name, role: p.role }))
       } else if (winnerType === 'tanner_win') {
         result = allPlayers
           .filter((p) => p.role === 'tanner')
           .map((p) => ({ name: p.name, role: p.role }))
       } else {
-        result = allPlayers.map((p) => ({ name: p.name, role: p.role }))
+        result = allPlayers
+          .filter((p) => getTeam(p.role) === 'village')
+          .map((p) => ({ name: p.name, role: p.role }))
       }
 
       setWinnerPlayers(result)
