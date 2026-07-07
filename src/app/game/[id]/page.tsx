@@ -521,8 +521,13 @@ export default function GameScreen() {
                   if (!WOLF_ROLES.some((r) => availableNightRoles.has(r))) return false
                   return nightStep !== 'wolves' && !wolvesResolved
                 }
+                if (s === 'masons') {
+                  if (!availableNightRoles.has('mason')) return false
+                  if (turnIndex !== 1) return false
+                  if (nightRolesActedRef.current.has(s)) return false
+                  return nightStep !== s
+                }
                 if (!availableNightRoles.has(s)) return false
-                if (s === 'masons' && turnIndex !== 1) return false
                 if (s === 'cupid' && turnIndex !== 1) return false
                 if (nightRolesActedRef.current.has(s)) return false
                 return nightStep !== s
@@ -1024,7 +1029,6 @@ export default function GameScreen() {
 
     if (player.role === 'sorceress') {
       if (nightStep !== 'sorceress') return sleepScreen()
-      if (actedRoles.has('sorceress')) return sleepScreen()
       return (
         <div className="flex flex-1 flex-col items-center justify-center px-6 gap-6">
           <p className="text-neutral-600 text-xs uppercase tracking-widest select-none animate-pulse">
