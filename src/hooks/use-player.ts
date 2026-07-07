@@ -2,7 +2,20 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import type { Player } from '@/lib/types'
+
+interface Player {
+  id: string
+  name: string
+  role?: string | null
+  isAlive: boolean
+  isHost: boolean
+  userId: string
+  hasViewedCard: boolean
+  viewedCardAt?: string | null
+  createdAt: string
+  soulmateId?: string | null
+  hasUsedPower?: boolean
+}
 
 interface RawPlayer {
   id: string

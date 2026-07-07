@@ -1,9 +1,0 @@
--- Prince check in host_execute_accused
---
--- ⚠️ NEUTERED: CREATE OR REPLACE FUNCTION removido para evitar overwrite pelo deploy.
--- Aplique via supabase db push (migration 20260702214222_prince_host_execute.sql).
---
--- Resumo:
--- host_execute_accused: se v_accused_role = 'prince', não mata, seta
--- day_step = 'prince_reveal', current_accused_id = NULL,
--- last_event = { type: 'prince_reveal', victim_id, victim_name }

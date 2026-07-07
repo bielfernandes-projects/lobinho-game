@@ -890,7 +890,6 @@ export default function GameScreen() {
     if (!isAlive) return sleepScreen()
 
     const wolfVictimName = lastEvent?.victim_name ?? null
-  const wolfVictimName2 = (lastEvent as any)?.victims?.[1]?.victim_name ?? null
 
     if (player.role === 'priest') {
       if (nightStep !== 'priest') return sleepScreen()

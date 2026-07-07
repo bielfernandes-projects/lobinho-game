@@ -223,7 +223,7 @@ function PollVoteCount({ roomId, turnIndex }: { roomId: string; turnIndex: numbe
   const supabase = createClient()
   const [count, setCount] = useState(0)
 
-  useState(() => {
+  useEffect(() => {
     async function poll() {
       const { count: c } = await supabase
         .from('votes')
@@ -235,7 +235,7 @@ function PollVoteCount({ roomId, turnIndex }: { roomId: string; turnIndex: numbe
     poll()
     const interval = setInterval(poll, 2000)
     return () => clearInterval(interval)
-  })
+  }, [roomId, turnIndex, supabase])
 
   return <p className="text-neutral-600 text-xs text-center">Votos registrados: {count}</p>
 }
