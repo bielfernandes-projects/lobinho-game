@@ -74,6 +74,26 @@ export function WitchPanel({ roomId, playerId, turnIndex, victimName, onDone }: 
         return
       }
     }
+    if (!save) {
+      try {
+        const { error: skipErr } = await supabase.rpc('execute_night_action', {
+          p_room_id: roomId,
+          p_action_type: 'witch_skip',
+          p_target_id: null,
+        })
+        if (skipErr) {
+          console.error('[WitchPanel] skip save error:', skipErr)
+          setError(skipErr.message)
+          setSaveBusy(false)
+          return
+        }
+      } catch (err) {
+        console.error('[WitchPanel] skip save unexpected:', err)
+        setError(err instanceof Error ? err.message : 'Erro inesperado')
+        setSaveBusy(false)
+        return
+      }
+    }
     setStep('poison')
     setSaveBusy(false)
   }
@@ -97,6 +117,27 @@ export function WitchPanel({ roomId, playerId, turnIndex, victimName, onDone }: 
         }
       } catch (err) {
         console.error('[WitchPanel] poison unexpected:', err)
+        setError(err instanceof Error ? err.message : 'Erro inesperado')
+        setPoisonBusy(false)
+        return
+      }
+    }
+
+    if (!targetId) {
+      try {
+        const { error: skipErr } = await supabase.rpc('execute_night_action', {
+          p_room_id: roomId,
+          p_action_type: 'witch_skip',
+          p_target_id: null,
+        })
+        if (skipErr) {
+          console.error('[WitchPanel] skip poison error:', skipErr)
+          setError(skipErr.message)
+          setPoisonBusy(false)
+          return
+        }
+      } catch (err) {
+        console.error('[WitchPanel] skip poison unexpected:', err)
         setError(err instanceof Error ? err.message : 'Erro inesperado')
         setPoisonBusy(false)
         return

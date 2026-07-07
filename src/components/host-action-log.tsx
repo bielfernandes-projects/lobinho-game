@@ -23,6 +23,7 @@ const ACTION_LABEL: Record<string, string> = {
   seer_investigate: '🔮 investigou',
   witch_save: '💚 salvou',
   witch_poison: '☠️ envenenou',
+  witch_skip: '🧪 pulou',
   priest_bless: '🙏 abençoou',
   bodyguard_protect: '🛡️ protegeu',
   aura_investigate: '👁️ investigou aura de',

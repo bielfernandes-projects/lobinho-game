@@ -3,7 +3,15 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
-### `<current>` — Correções Finais: RPC type mismatch, Aura Seer, UI Noturna
+### `<current>` — 3 Correções Finais: Witch Dimming/Skip, Vítimas Duplicadas, Lone Wolf
+- **Bruxa pular e aparecer no histórico**: nova ação `witch_skip` inserida em `night_actions` quando a bruxa pula save ou poison. `execute_night_action` ganhou branch `witch_skip`, a constraint `night_actions_action_type_check` foi atualizada, e `HostActionLog` exibe "🧪 pulou".
+- **Bruxa pular e botão apagar**: `src/app/game/[id]/page.tsx` agora marca o `prevStep` em `resolvedActions` sempre que o host avança o `nightStep`. `STEP_TO_ACTION_TYPES` inclui `witch_skip` para o polling detectar o skip. Resolve o dimming para bruxa e qualquer outro papel que pule.
+- **Vítimas duplicadas (lobo + veneno no mesmo alvo)**: `resolve_night` agora verifica `v_poison_target_id IS DISTINCT FROM v_wolf_target_id` e `v_wolf_target2_id` antes de adicionar a segunda entrada no array `victims`.
+- **Lobo Solitário não encerra jogo prematuramente**: `check_game_over` e `trg_check_game_over` verificam se um `lone_wolf` vivo ainda existe antes de declarar `villagers_win`. O Solitário só vence na Priority 0 (último vivo).
+- **Botão "Todos Dormindo" visível**: borda `border-white/30` no controle noturno do host.
+- **Files**: `src/app/game/[id]/page.tsx`, `src/components/witch-panel.tsx`, `src/components/host-action-log.tsx`, `docs/architecture.md`.
+
+### `<current-1>` — Correções Finais: RPC type mismatch, Aura Seer, UI Noturna
 - **`get_werewolf_teammates` type mismatch**: `execute_night_action` causava erro "Returned type character varying(30) does not match expected type text in column 2" porque `players.name` é `character varying(30)` mas a função declarava `RETURNS TABLE(id UUID, name TEXT)`. Corrigido com cast explícito `p.name::text` no `SELECT`.
 - **Aura Seer não marca lobos como "papel especial"**: `execute_night_action` no branch `aura_investigate` agora exclui `wolf_cub`, `alpha_wolf` e `lone_wolf` do conjunto de papéis "comuns", além de `werewolf`.
 - **Seer detecta todas as variantes**: `execute_night_action` no branch `seer_investigate` usa `role IN ('werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf', 'lycan')`.

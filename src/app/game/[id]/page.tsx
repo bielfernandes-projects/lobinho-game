@@ -60,7 +60,7 @@ export default function GameScreen() {
     priest: ['priest_bless'],
     bodyguard: ['bodyguard_protect'],
     wolves: ['werewolf_kill'],
-    witch: ['witch_save', 'witch_poison'],
+    witch: ['witch_save', 'witch_poison', 'witch_skip'],
     seer: ['seer_investigate'],
     aura_seer: ['aura_investigate'],
     cult_leader: ['cult_convert'],
@@ -341,13 +341,10 @@ export default function GameScreen() {
     const prevStep = prevNightStepRef.current
     if (prevStep !== 'sleeping') {
       nightRolesActedRef.current = new Set([...nightRolesActedRef.current, prevStep])
+      setResolvedActions((prev) => new Set([...prev, prevStep]))
     }
     prevNightStepRef.current = nightStep
     setActedRoles(new Set())
-    // Force witch dimming when host advances past witch step
-    if (prevStep === 'witch') {
-      setResolvedActions((prev) => new Set([...prev, 'witch']))
-    }
   }
 
   const isHost = player.isHost
