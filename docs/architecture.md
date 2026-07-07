@@ -3,7 +3,15 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
-### `<current>` — 7 Correções: Seer, Padre, WerewolfPanel, Witch Log, Game Over, Dead Code, Migrations
+### `<current>` — Correções Finais: RPC type mismatch, Aura Seer, UI Noturna
+- **`get_werewolf_teammates` type mismatch**: `execute_night_action` causava erro "Returned type character varying(30) does not match expected type text in column 2" porque `players.name` é `character varying(30)` mas a função declarava `RETURNS TABLE(id UUID, name TEXT)`. Corrigido com cast explícito `p.name::text` no `SELECT`.
+- **Aura Seer não marca lobos como "papel especial"**: `execute_night_action` no branch `aura_investigate` agora exclui `wolf_cub`, `alpha_wolf` e `lone_wolf` do conjunto de papéis "comuns", além de `werewolf`.
+- **Seer detecta todas as variantes**: `execute_night_action` no branch `seer_investigate` usa `role IN ('werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf', 'lycan')`.
+- **Botão "Todos Dormindo" visível**: borda alterada para `border-white/30` em `src/app/game/[id]/page.tsx` para destacar o botão no controle noturno do host.
+- **Dimming fallback da Bruxa**: quando o host avança o `nightStep` de `'witch'` para outro valor, `src/app/game/[id]/page.tsx` agora marca `'witch'` em `resolvedActions`, garantindo que o botão "Acordar Bruxa" escureça mesmo que o polling não capture as ações.
+- **Files**: `src/app/game/[id]/page.tsx`, `docs/architecture.md`.
+
+### `<current-1>` — 7 Correções: Seer, Padre, WerewolfPanel, Witch Log, Game Over, Dead Code, Migrations
 - **Seer detecta todas as variantes de lobo**: `execute_night_action` no banco agora usa `role IN ('werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf', 'lycan')` na investigação da vidente.
 - **Padre 1 uso por jogo**: `execute_night_action` valida `v_used_power` para `priest_bless` e marca `has_used_power = true` no jogador padre.
 - **`WerewolfPanel` robusto**: `useEffect` de carregamento de alvos em `src/components/werewolf-panel.tsx` agora captura erros de `player_profiles` e `get_werewolf_teammates`, usa flag `cancelled` para evitar setState em componente desmontado, garante `wolfIds` mesmo com `wolvesData` nulo, e recarrega quando `wolvesFrenzy` muda.
