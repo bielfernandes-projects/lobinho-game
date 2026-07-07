@@ -3,7 +3,14 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
-### `<current>` — Lote 5A: Maçom, Pacifista, Idiota, Feiticeira
+### `<current>` — Hotfixes: Lobo Solitário paridade + constraint witch_skip (commit pendente)
+- **Bug 1 — Lobo Solitário paridade**: `check_game_over` e `trg_check_game_over` impediam `villagers_win` quando Solitário vivo, mas não declaravam `lone_wolf_win` na paridade (Solitário + 1 outro = 2 vivos, sem lobos de time). Adicionado `IF v_alive_count <= 2 THEN ... lone_wolf_win` no bloco `v_wolves = 0` de ambas as funções. Agora: `v_wolves = 0` + Solitário vivo + `<= 2` vivos → `lone_wolf_win`; `> 2` vivos → jogo continua.
+- **Bug 2 — Constraint `night_actions_action_type_check` sem `witch_skip`**: A RPC `execute_night_action` já tinha o branch `witch_skip` mas a constraint CHECK da tabela `night_actions` não incluía o valor. Resultado: "deixar morrer" na bruxa causava erro `violates check constraint`. Corrigido via SQL Editor.
+- **Bug 3 — Feiticeira sem resultado**: Removida guarda `actedRoles.has('sorceress')` do `renderNightPanel`. Painel agora fica visível com o resultado até o host avançar o `nightStep`.
+- **Bug 4 — Maçons na ordem de acordar**: `nextRoleToWake` usava `availableNightRoles.has('masons')` (plural) em vez de `'mason'` (singular). Criado bloco especial com mapeamento correto.
+- **Files**: SQL Editor (`check_game_over`, `trg_check_game_over`, constraint `night_actions`), `src/app/game/[id]/page.tsx`, `docs/architecture.md`.
+
+### `<current-1>` — Lote 5A: Maçom, Pacifista, Idiota, Feiticeira
 - **Novas cartas** (`src/lib/cards.ts`): `mason` (🧱 Maçom, +2 pts, vila), `pacifist` (🕊️ Pacifista, -1 pt, vila), `idiot` (🤪 Idiota, +2 pts, vila), `sorceress` (🔮 Feiticeira, -3 pts, lobo/time lobo).
 - **Banco** (aplicado via SQL Editor):
   - `players_role_check` e `night_actions_action_type_check` atualizados para aceitar `mason`, `pacifist`, `idiot`, `sorceress`, `sorceress_search`, `mason_recognition`.
