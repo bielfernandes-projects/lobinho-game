@@ -76,6 +76,9 @@ export function useCurrentPlayer(roomId: string) {
 
     load()
 
+    // Polling de fallback a cada 5s (caso Realtime caia)
+    const pollInterval = setInterval(load, 5000)
+
     const channel = supabase
       .channel(`self:${roomId}`)
       .on(
@@ -97,6 +100,7 @@ export function useCurrentPlayer(roomId: string) {
       .subscribe()
 
     return () => {
+      clearInterval(pollInterval)
       supabase.removeChannel(channel)
     }
   }, [roomId])

@@ -3,7 +3,22 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
-### `<current>` — Fix jogo quebrado: drop start_game duplicada, limpeza RPC órfã, verificação de funções/constraints
+### `<current>` — Fix Realtime instável: polling fallback + player_profiles sem SECURITY DEFINER
+- **Root cause**: O WebSocket do Supabase estava sendo interrompido pelo Cloudflare (`__cf_bm` rejeitado). Como `useGameState` e `useCurrentPlayer` dependiam 100% de Realtime, o estado congelava e o jogo parava de responder.
+- **Fix frontend**:
+  - `src/hooks/use-room.ts` → `useGameState`: adicionado `setInterval(load, 3000)` como fallback de polling. Se Realtime funcionar, o polling é redundante; se cair, o estado continua atualizando.
+  - `src/hooks/use-player.ts` → `useCurrentPlayer`: adicionado `setInterval(load, 5000)` como fallback. Garante que morte, infecção Alfa e outros status próprios cheguem mesmo com WebSocket off.
+- **Fix banco**:
+  - `player_profiles` estava como `SECURITY DEFINER` (alerta crítico do Advisor). Recriada via CLI como view padrão (`SECURITY INVOKER`) com RLS desabilitado: `relrowsecurity = false`.
+  - Comando: `DROP VIEW IF EXISTS public.player_profiles; CREATE VIEW public.player_profiles AS SELECT id, room_id, name, is_alive, is_host, has_viewed_card, user_id, created_at FROM public.players; ALTER VIEW public.player_profiles SET (security_barrier = false);`
+- **Vercel**: Redeploy manual necessário (CLI sem credenciais). Use o dashboard com "Use existing Build Cache" DESATIVADO.
+- **Variáveis de ambiente a conferir no dashboard da Vercel**:
+  - `NEXT_PUBLIC_SUPABASE_URL=https://bamygdefokpdrzdofccu.supabase.co`
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbG...ktHA`
+  - `SUPABASE_SERVICE_ROLE_KEY=eyJhbG...Eqo`
+- **Files**: `src/hooks/use-room.ts`, `src/hooks/use-player.ts`, `docs/architecture.md`.
+
+### `<current-1>` — Fix jogo quebrado: drop start_game duplicada, limpeza RPC órfã, verificação de funções/constraints
 - **Causa raiz do jogo quebrado**: A função `start_game(p_room_id UUID)` (versão antiga sem `p_roles`) coexistia com `start_game(p_room_id UUID, p_roles JSONB)`. A API REST do Supabase falhava ao resolver qual chamar, então `Iniciar Jogo` não funcionava.
   - Ação: `DROP FUNCTION IF EXISTS public.start_game(UUID);`
   - Verificação: só restou `start_game | p_room_id uuid, p_roles jsonb`.

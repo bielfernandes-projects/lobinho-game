@@ -115,6 +115,9 @@ export function useGameState(roomId: string) {
 
     load()
 
+    // Polling de fallback a cada 3s (caso Realtime caia)
+    const pollInterval = setInterval(load, 3000)
+
     const channel = supabase
       .channel(`game-state:${roomId}`)
       .on(
@@ -133,7 +136,10 @@ export function useGameState(roomId: string) {
       )
       .subscribe()
 
-    return () => { supabase.removeChannel(channel) }
+    return () => {
+      clearInterval(pollInterval)
+      supabase.removeChannel(channel)
+    }
   }, [roomId])
 
   return { gameState: state, loading }
