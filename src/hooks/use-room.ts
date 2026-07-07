@@ -85,7 +85,7 @@ export function useRoomPlayers(roomId: string) {
     }
 
     poll()
-    intervalRef.current = setInterval(poll, 2000)
+    intervalRef.current = setInterval(poll, 4000)
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
@@ -103,20 +103,28 @@ export function useGameState(roomId: string) {
     const supabase = createClient()
 
     async function load() {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('game_state')
         .select('current_phase, turn_index, night_step, wolves_resolved, voting_open, day_step, current_accused_id, winner, last_event, last_vote_result, timer_duration, timer_remaining, is_timer_running, timer_started_at')
         .eq('room_id', roomId)
         .single()
 
+      if (error) {
+        // PGRST116 = row não existe (game_state deletado ao voltar pro lobby)
+        if (error.code !== 'PGRST116') {
+          console.error('[useGameState] query error:', error)
+        }
+        setLoading(false)
+        return
+      }
       if (data) setState(data as GameStateRow)
       setLoading(false)
     }
 
     load()
 
-    // Polling de fallback a cada 3s (caso Realtime caia)
-    const pollInterval = setInterval(load, 3000)
+    // Polling de fallback a cada 5s (caso Realtime caia)
+    const pollInterval = setInterval(load, 5000)
 
     const channel = supabase
       .channel(`game-state:${roomId}`)

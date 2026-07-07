@@ -233,7 +233,7 @@ function PollVoteCount({ roomId, turnIndex }: { roomId: string; turnIndex: numbe
       if (c !== null) setCount(c)
     }
     poll()
-    const interval = setInterval(poll, 2000)
+    const interval = setInterval(poll, 4000)
     return () => clearInterval(interval)
   }, [roomId, turnIndex, supabase])
 

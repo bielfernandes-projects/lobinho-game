@@ -63,7 +63,13 @@ export function HostRolePanel({ roomId, isHost }: HostRolePanelProps) {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'game_state', filter: `room_id=eq.${roomId}` }, handleChange)
       .subscribe()
 
-    return () => { supabase.removeChannel(channel) }
+    // Polling de fallback — caso Realtime falhe
+    const pollInterval = setInterval(fetchPlayers, 4000)
+
+    return () => {
+      clearInterval(pollInterval)
+      supabase.removeChannel(channel)
+    }
   }, [roomId, isHost, fetchPlayers])
 
   const [killTarget, setKillTarget] = useState<{ id: string; name: string } | null>(null)

@@ -3,7 +3,20 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
-### `<current>` — Fix Realtime instável: polling fallback + player_profiles sem SECURITY DEFINER
+### `<current>` — 4 Fixes Críticos: lone_wolf_win, HostRolePanel polling, redução de polling, erro 406
+- **Fix 1 — `host_end_game` não reconhecia `lone_wolf_win`**: A função caía no `ELSE` e levantava `Nenhum vencedor definido`. Adicionado `ELSIF v_winner = 'lone_wolf_win' THEN UPDATE rooms SET status = 'finished_lone_wolf_win'`.
+- **Fix 2 — `HostRolePanel` sem polling fallback**: O painel do mestre dependia só de Realtime para atualizar `has_viewed_card`. Adicionado `setInterval(fetchPlayers, 4000)` como fallback em `src/components/host-role-panel.tsx`.
+- **Fix 3 — Redução do excesso de polling**:
+  - `useGameState`: 3s → 5s (`src/hooks/use-room.ts`).
+  - `useCurrentPlayer`: 5s → 10s (`src/hooks/use-player.ts`).
+  - `useRoomPlayers`: 2s → 4s (`src/hooks/use-room.ts`).
+  - `resolvedActions`/`voteCount` polling em `src/app/game/[id]/page.tsx`: 2s → 4s.
+  - `PollVoteCount` em `src/components/tribunal-panel.tsx`: 2s → 4s.
+  - `host-controls.tsx` (resolve night wolves / resolve vote): 2s → 4s.
+- **Fix 4 — Erro 406 ao voltar pro lobby**: Quando o host volta pro lobby, `trg_reset_game` deleta `game_state`. O polling continuava e recebia `PGRST116`. `useGameState` agora trata `error.code === 'PGRST116'` silenciosamente e não loga como erro.
+- **Files**: `src/hooks/use-room.ts`, `src/hooks/use-player.ts`, `src/components/host-role-panel.tsx`, `src/app/game/[id]/page.tsx`, `src/components/tribunal-panel.tsx`, `src/components/host-controls.tsx`, `docs/architecture.md`.
+
+### `<current-1>` — Fix Realtime instável: polling fallback + player_profiles sem SECURITY DEFINER
 - **Root cause**: O WebSocket do Supabase estava sendo interrompido pelo Cloudflare (`__cf_bm` rejeitado). Como `useGameState` e `useCurrentPlayer` dependiam 100% de Realtime, o estado congelava e o jogo parava de responder.
 - **Fix frontend**:
   - `src/hooks/use-room.ts` → `useGameState`: adicionado `setInterval(load, 3000)` como fallback de polling. Se Realtime funcionar, o polling é redundante; se cair, o estado continua atualizando.

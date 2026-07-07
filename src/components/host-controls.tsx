@@ -24,12 +24,12 @@ export function HostControls({ roomId, mode, allViewed = true, advanceLabel = 'A
   useEffect(() => {
     if (mode === 'resolve_night_wolves') {
       poll()
-      pollRef.current = setInterval(poll, 2000)
+      pollRef.current = setInterval(poll, 4000)
     }
 
     if (mode === 'resolve_vote') {
       pollVotes()
-      pollRef.current = setInterval(pollVotes, 2000)
+      pollRef.current = setInterval(pollVotes, 4000)
     }
 
     return () => {

@@ -216,7 +216,7 @@ export default function GameScreen() {
       setWinnerPlayers(result)
     }
     poll()
-    const iv = setInterval(poll, 2000)
+    const iv = setInterval(poll, 4000)
     return () => clearInterval(iv)
   }, [gameEnded, gameWinner])
 
@@ -271,7 +271,7 @@ export default function GameScreen() {
       setEligibleVoters(eligible)
     }
     poll()
-    const iv = setInterval(poll, 2000)
+    const iv = setInterval(poll, 4000)
     return () => clearInterval(iv)
   }, [dayStep, roomId, turnIndex, accusedId])
 
@@ -296,7 +296,7 @@ export default function GameScreen() {
       }
     }
     poll()
-    const iv = setInterval(poll, 2000)
+    const iv = setInterval(poll, 4000)
     return () => clearInterval(iv)
   }, [phase, roomId, turnIndex])
 
