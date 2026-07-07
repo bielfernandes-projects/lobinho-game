@@ -30,6 +30,8 @@ const ACTION_LABEL: Record<string, string> = {
   cult_convert: '🔮 converteu',
   cupid_match: '💘 uniu',
   alpha_infect: '🐺 infectou',
+  sorceress_search: '🔮 procurou a Vidente em',
+  mason_recognition: '🧱 reconheceu Maçons',
 }
 
 export function HostActionLog({ roomId, turnIndex }: HostActionLogProps) {

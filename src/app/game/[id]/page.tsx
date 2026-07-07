@@ -27,6 +27,8 @@ import { BodyguardPanel } from '@/components/bodyguard-panel'
 import { AuraSeerPanel } from '@/components/aura-seer-panel'
 import { CupidPanel } from '@/components/cupid-panel'
 import { CultLeaderPanel } from '@/components/cult-leader-panel'
+import { MasonPanel } from '@/components/mason-panel'
+import { SorceressPanel } from '@/components/sorceress-panel'
 import { GraveyardList } from '@/components/graveyard-list'
 import type { RevealMode } from '@/lib/reveal'
 
@@ -54,8 +56,9 @@ export default function GameScreen() {
   const [infectedId, setInfectedId] = useState<string | null>(null)
   const [showInfectionBanner, setShowInfectionBanner] = useState(false)
 
-  const WAKE_ORDER = ['cupid', 'priest', 'bodyguard', 'wolves', 'witch', 'seer', 'aura_seer', 'cult_leader'] as const
+  const WAKE_ORDER = ['masons', 'cupid', 'priest', 'bodyguard', 'wolves', 'witch', 'seer', 'aura_seer', 'sorceress', 'cult_leader'] as const
   const STEP_TO_ACTION_TYPES: Record<string, string[]> = {
+    masons: [],
     cupid: [],
     priest: ['priest_bless'],
     bodyguard: ['bodyguard_protect'],
@@ -63,9 +66,11 @@ export default function GameScreen() {
     witch: ['witch_save', 'witch_poison', 'witch_skip'],
     seer: ['seer_investigate'],
     aura_seer: ['aura_investigate'],
+    sorceress: ['sorceress_search'],
     cult_leader: ['cult_convert'],
   }
   const NIGHT_ROLE_LABELS: Record<string, string> = {
+    masons: '🧱 Maçons',
     cupid: '💘 Cupido',
     priest: '🙏 Padre',
     bodyguard: '🛡️ Guarda-costas',
@@ -73,6 +78,7 @@ export default function GameScreen() {
     witch: '🧪 Bruxa',
     seer: '🔮 Vidente',
     aura_seer: '👁️ Vidente de Aura',
+    sorceress: '🔮 Feiticeira',
     cult_leader: '🔮 Líder de Culto',
   }
   const prevNightStepRef = useRef<string>('sleeping')
@@ -111,7 +117,7 @@ export default function GameScreen() {
       .select('role, has_used_power')
       .eq('room_id', roomId)
       .neq('role', 'moderator')
-      .in('role', ['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf', 'seer', 'witch', 'priest', 'bodyguard', 'aura_seer', 'cupid', 'cult_leader'])
+      .in('role', ['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf', 'seer', 'witch', 'priest', 'bodyguard', 'aura_seer', 'cupid', 'cult_leader', 'mason', 'sorceress'])
       .then(({ data }) => {
         if (data) {
           const roles = (data as any[])
@@ -516,6 +522,7 @@ export default function GameScreen() {
                   return nightStep !== 'wolves' && !wolvesResolved
                 }
                 if (!availableNightRoles.has(s)) return false
+                if (s === 'masons' && turnIndex !== 1) return false
                 if (s === 'cupid' && turnIndex !== 1) return false
                 if (nightRolesActedRef.current.has(s)) return false
                 return nightStep !== s
@@ -549,6 +556,7 @@ export default function GameScreen() {
                 😴 Todos Dormindo
               </button>
               {[
+                { step: 'masons', role: 'mason', label: '🧱 Acordar Maçons' },
                 { step: 'cupid', role: 'cupid', label: '💘 Acordar Cupido' },
                 { step: 'priest', role: 'priest', label: '🙏 Acordar Padre' },
                 { step: 'bodyguard', role: 'bodyguard', label: '🛡️ Acordar Guarda-costas' },
@@ -556,8 +564,10 @@ export default function GameScreen() {
                 { step: 'witch', role: 'witch', label: '🧪 Acordar Bruxa' },
                 { step: 'seer', role: 'seer', label: '🔮 Acordar Vidente' },
                 { step: 'aura_seer', role: 'aura_seer', label: '👁️ Acordar Vidente de Aura' },
+                { step: 'sorceress', role: 'sorceress', label: '🔮 Acordar Feiticeira' },
                 { step: 'cult_leader', role: 'cult_leader', label: '🔮 Acordar Líder de Culto' },
               ].filter((b) => {
+                if (b.step === 'masons' && turnIndex !== 1) return false
                 if (b.step === 'cupid' && turnIndex !== 1) return false
                 if (b.step === 'wolves') {
                   return ['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf'].some((r) => availableNightRoles.has(r))
@@ -849,9 +859,9 @@ export default function GameScreen() {
         {dayStep !== 'announcement' && dayStep === 'voting' && (
           <TribunalVoting
             roomId={roomId}
-            playerId={player.id}
             isAlive={isAlive}
             isAccused={player.id === accusedId}
+            playerRole={player.role}
           />
         )}
 
@@ -932,6 +942,20 @@ export default function GameScreen() {
       )
     }
 
+    if (player.role === 'mason') {
+      if (nightStep !== 'masons') return sleepScreen()
+      if (turnIndex !== 1) return sleepScreen()
+      if (actedRoles.has('mason')) return sleepScreen()
+      return (
+        <div className="flex flex-1 flex-col items-center justify-center px-6 gap-6">
+          <p className="text-neutral-600 text-xs uppercase tracking-widest select-none animate-pulse">
+            🌙 Fechem os olhos...
+          </p>
+          <MasonPanel roomId={roomId} playerId={player.id} onDone={() => handleRoleDone('mason')} />
+        </div>
+      )
+    }
+
     if (['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf'].includes(player.role ?? '')) {
       if (nightStep !== 'wolves') return sleepScreen()
       if (actedRoles.has('werewolf')) return sleepScreen()
@@ -994,6 +1018,19 @@ export default function GameScreen() {
             🌙 Fechem os olhos...
           </p>
           <AuraSeerPanel roomId={roomId} playerId={player.id} turnIndex={turnIndex} onDone={() => handleRoleDone('aura_seer')} />
+        </div>
+      )
+    }
+
+    if (player.role === 'sorceress') {
+      if (nightStep !== 'sorceress') return sleepScreen()
+      if (actedRoles.has('sorceress')) return sleepScreen()
+      return (
+        <div className="flex flex-1 flex-col items-center justify-center px-6 gap-6">
+          <p className="text-neutral-600 text-xs uppercase tracking-widest select-none animate-pulse">
+            🌙 Fechem os olhos...
+          </p>
+          <SorceressPanel roomId={roomId} playerId={player.id} onDone={() => handleRoleDone('sorceress')} />
         </div>
       )
     }

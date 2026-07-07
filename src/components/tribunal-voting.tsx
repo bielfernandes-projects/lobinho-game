@@ -1,20 +1,46 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 interface TribunalVotingProps {
   roomId: string
-  playerId: string
   isAlive: boolean
   isAccused: boolean
+  playerRole?: string | null
 }
 
-export function TribunalVoting({ roomId, playerId, isAlive, isAccused }: TribunalVotingProps) {
+export function TribunalVoting({ roomId, isAlive, isAccused, playerRole }: TribunalVotingProps) {
   const [voted, setVoted] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const supabase = createClient()
+
+  const autoVoteValue = playerRole === 'pacifist' ? 'no' : playerRole === 'idiot' ? 'yes' : null
+
+  const handleVote = useCallback(async (value: 'yes' | 'no') => {
+    setBusy(true)
+    setError('')
+    const { error: e } = await supabase.rpc('submit_tribunal_vote', {
+      p_room_id: roomId,
+      p_vote_value: value,
+    })
+    if (e) {
+      setError(e.message)
+      setBusy(false)
+      return
+    }
+    setVoted(true)
+    setBusy(false)
+  }, [roomId, supabase])
+
+  useEffect(() => {
+    if (!autoVoteValue || voted || busy || !isAlive || isAccused) return
+    const t = setTimeout(() => {
+      handleVote(autoVoteValue)
+    }, 0)
+    return () => clearTimeout(t)
+  }, [autoVoteValue, busy, handleVote, isAccused, isAlive, voted])
 
   if (!isAlive) {
     return (
@@ -35,7 +61,7 @@ export function TribunalVoting({ roomId, playerId, isAlive, isAccused }: Tribuna
     )
   }
 
-  if (voted) {
+  if (voted || busy) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center px-6">
         <p className="text-green-600 text-sm font-semibold">✅ Voto registrado</p>
@@ -44,20 +70,14 @@ export function TribunalVoting({ roomId, playerId, isAlive, isAccused }: Tribuna
     )
   }
 
-  async function handleVote(value: 'yes' | 'no') {
-    setBusy(true)
-    setError('')
-    const { error: e } = await supabase.rpc('submit_tribunal_vote', {
-      p_room_id: roomId,
-      p_vote_value: value,
-    })
-    if (e) {
-      setError(e.message)
-      setBusy(false)
-      return
-    }
-    setVoted(true)
-    setBusy(false)
+  if (autoVoteValue) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center px-6">
+        <p className="text-neutral-500 text-xs uppercase tracking-widest text-center">
+          {playerRole === 'pacifist' ? '🕊️ Você é Pacifista — voto automático: NÃO' : '🤪 Você é Idiota — voto automático: SIM'}
+        </p>
+      </div>
+    )
   }
 
   return (

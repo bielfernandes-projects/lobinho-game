@@ -3,7 +3,22 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
-### `<current>` — 3 Correções Finais: Witch Dimming/Skip, Vítimas Duplicadas, Lone Wolf
+### `<current>` — Lote 5A: Maçom, Pacifista, Idiota, Feiticeira
+- **Novas cartas** (`src/lib/cards.ts`): `mason` (🧱 Maçom, +2 pts, vila), `pacifist` (🕊️ Pacifista, -1 pt, vila), `idiot` (🤪 Idiota, +2 pts, vila), `sorceress` (🔮 Feiticeira, -3 pts, lobo/time lobo).
+- **Banco** (aplicado via SQL Editor):
+  - `players_role_check` e `night_actions_action_type_check` atualizados para aceitar `mason`, `pacifist`, `idiot`, `sorceress`, `sorceress_search`, `mason_recognition`.
+  - Nova RPC `get_masons(p_room_id UUID)` retorna todos os jogadores vivos com role `mason`.
+  - `execute_night_action`: novo branch `sorceress_search` retorna `{is_seer: BOOLEAN}` quando o alvo é `seer`; `check_game_over` e `trg_check_game_over` contam `sorceress` como lobo no time dos lobos.
+- **Ordem noturna**: `masons` (apenas 1ª noite) → `cupid` → `priest` → `bodyguard` → `wolves` → `witch` → `seer` → `aura_seer` → `sorceress` → `cult_leader`.
+- **Frontend**:
+  - `src/components/mason-panel.tsx`: mostra os outros Maçons vivos na 1ª noite.
+  - `src/components/sorceress-panel.tsx`: permite à Feiticeira procurar pela Vidente a cada noite.
+  - `src/app/game/[id]/page.tsx`: `WAKE_ORDER`, `STEP_TO_ACTION_TYPES`, `NIGHT_ROLE_LABELS`, botões do host e `renderNightPanel` atualizados para `masons` e `sorceress`.
+  - `src/components/tribunal-voting.tsx`: `pacifist` vota automaticamente `no` (absolvição); `idiot` vota automaticamente `yes` (linchamento).
+  - `src/components/host-action-log.tsx`: novos labels `sorceress_search` e `mason_recognition`.
+- **Files**: `src/lib/cards.ts`, `src/components/mason-panel.tsx`, `src/components/sorceress-panel.tsx`, `src/app/game/[id]/page.tsx`, `src/components/tribunal-voting.tsx`, `src/components/host-action-log.tsx`, `docs/architecture.md`.
+
+### `<current-1>` — 3 Correções Finais: Witch Dimming/Skip, Vítimas Duplicadas, Lone Wolf
 - **Bruxa pular e aparecer no histórico**: nova ação `witch_skip` inserida em `night_actions` quando a bruxa pula save ou poison. `execute_night_action` ganhou branch `witch_skip`, a constraint `night_actions_action_type_check` foi atualizada, e `HostActionLog` exibe "🧪 pulou".
 - **Bruxa pular e botão apagar**: `src/app/game/[id]/page.tsx` agora marca o `prevStep` em `resolvedActions` sempre que o host avança o `nightStep`. `STEP_TO_ACTION_TYPES` inclui `witch_skip` para o polling detectar o skip. Resolve o dimming para bruxa e qualquer outro papel que pule.
 - **Vítimas duplicadas (lobo + veneno no mesmo alvo)**: `resolve_night` agora verifica `v_poison_target_id IS DISTINCT FROM v_wolf_target_id` e `v_wolf_target2_id` antes de adicionar a segunda entrada no array `victims`.

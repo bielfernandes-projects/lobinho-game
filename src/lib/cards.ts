@@ -25,6 +25,10 @@ export const ROLE_STYLE: Record<string, string> = {
   bodyguard: 'bg-slate-100 text-slate-700 border-slate-300',
   cupid: 'bg-pink-100 text-pink-700 border-pink-300',
   cult_leader: 'bg-violet-100 text-violet-700 border-violet-300',
+  mason: 'bg-emerald-100 text-emerald-700 border-emerald-300',
+  pacifist: 'bg-sky-100 text-sky-700 border-sky-300',
+  idiot: 'bg-amber-100 text-amber-700 border-amber-300',
+  sorceress: 'bg-purple-100 text-purple-700 border-purple-300',
 }
 
 export const ROLE_LABEL: Record<string, string> = {
@@ -44,6 +48,10 @@ export const ROLE_LABEL: Record<string, string> = {
   lone_wolf: '🐺 Lobo Solitário',
   cupid: '💘 Cupido',
   cult_leader: '🔮 Líder de Culto',
+  mason: '🧱 Maçom',
+  pacifist: '🕊️ Pacifista',
+  idiot: '🤪 Idiota',
+  sorceress: '🔮 Feiticeira',
   moderator: '🎙️ Mestre',
 }
 
@@ -149,6 +157,34 @@ export const CARD_CATALOG: CardDefinition[] = [
     team: 'independent',
     description:
       'Toda noite, converta um jogador para o culto. Se todos os vivos estiverem no culto, você vence!',
+  },
+  {
+    id: 'mason',
+    name: 'Maçom',
+    points: 2,
+    team: 'village',
+    description: 'Na 1ª noite, acorde com os outros Maçons para se reconhecerem. Vocês são aliados secretos.',
+  },
+  {
+    id: 'pacifist',
+    name: 'Pacifista',
+    points: -1,
+    team: 'village',
+    description: 'Você odeia violência. Seu voto no tribunal é SEMPRE pela absolvição (NÃO).',
+  },
+  {
+    id: 'idiot',
+    name: 'Idiota',
+    points: 2,
+    team: 'village',
+    description: 'Você quer ver sangue. Seu voto no tribunal é SEMPRE pelo linchamento (SIM).',
+  },
+  {
+    id: 'sorceress',
+    name: 'Feiticeira',
+    points: -3,
+    team: 'wolf',
+    description: 'Toda noite, procure pela Vidente. Os lobos não sabem quem você é, e a Vidente te enxerga como Aldeão.',
   },
   {
     id: 'wolf_cub',
