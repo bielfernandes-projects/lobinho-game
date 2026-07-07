@@ -35,13 +35,22 @@ export function WerewolfPanel({
   const supabase = createClient()
 
   useEffect(() => {
+    let cancelled = false
+
     async function load() {
-      const { data: all } = await supabase
+      setError('')
+
+      const { data: all, error: profilesErr } = await supabase
         .from('player_profiles')
         .select('id, name, is_host, is_alive, has_viewed_card, user_id')
         .eq('room_id', roomId)
 
-      if (!all) return
+      if (cancelled) return
+
+      if (profilesErr || !all) {
+        if (!cancelled) setError('Erro ao carregar jogadores.')
+        return
+      }
 
       const profiles = (all as any[]).map((r) => ({
         id: r.id,
@@ -52,21 +61,36 @@ export function WerewolfPanel({
         userId: r.user_id,
       }))
 
-      const { data: wolvesData } = await supabase.rpc('get_werewolf_teammates', {
-        p_room_id: roomId,
-      })
+      const { data: wolvesData, error: wolvesErr } = await supabase.rpc(
+        'get_werewolf_teammates',
+        { p_room_id: roomId }
+      )
 
-      if (wolvesData) {
-        const wolfIds = new Set(
-          (wolvesData as { id: string; name: string }[]).map((w) => w.id)
-        )
+      if (cancelled) return
 
+      if (wolvesErr) {
+        console.error('[WerewolfPanel] RPC error:', wolvesErr)
+        if (!cancelled) setError('Erro ao carregar aliados.')
+        return
+      }
+
+      const wolfIds = new Set(
+        ((wolvesData ?? []) as { id: string; name: string }[]).map((w) => w.id)
+      )
+
+      if (!cancelled) {
         setWolves(profiles.filter((p) => wolfIds.has(p.id)))
-        setTargets(profiles.filter((p) => p.isAlive && !wolfIds.has(p.id) && !p.isHost && p.id !== playerId))
+        setTargets(
+          profiles.filter(
+            (p) =>
+              p.isAlive && !wolfIds.has(p.id) && !p.isHost && p.id !== playerId
+          )
+        )
       }
     }
 
     load()
+    return () => { cancelled = true }
   }, [roomId, playerId, wolvesFrenzy])
 
   const expectedTargets = wolvesFrenzy ? 2 : 1

@@ -3,15 +3,16 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
-### `<current>` — Bugs e Limpeza de Arquitetura
-- **Padre abençoar infinitas vezes**: `execute_night_action` no banco agora valida `v_used_power` para `priest_bless` e marca `has_used_power = true` no jogador padre, limitando a bênção a 1 uso por jogo.
-- **`src/lib/types.ts` deletado**: arquivo de tipos 100% desatualizado e sem uso. O tipo `Player` foi movido para `src/hooks/use-player.ts` (único consumidor).
+### `<current>` — 7 Correções: Seer, Padre, WerewolfPanel, Witch Log, Game Over, Dead Code, Migrations
+- **Seer detecta todas as variantes de lobo**: `execute_night_action` no banco agora usa `role IN ('werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf', 'lycan')` na investigação da vidente.
+- **Padre 1 uso por jogo**: `execute_night_action` valida `v_used_power` para `priest_bless` e marca `has_used_power = true` no jogador padre.
+- **`WerewolfPanel` robusto**: `useEffect` de carregamento de alvos em `src/components/werewolf-panel.tsx` agora captura erros de `player_profiles` e `get_werewolf_teammates`, usa flag `cancelled` para evitar setState em componente desmontado, garante `wolfIds` mesmo com `wolvesData` nulo, e recarrega quando `wolvesFrenzy` muda.
+- **`HostActionLog` try/catch**: busca de nomes em `player_profiles` agora está envolvida em `try/catch`, evitando que erro silencioso esconda ações da bruxa no histórico.
 - **Game Over `renderEnded()`**: fallback de `winnerType` cobre todos os status `finished_*`; filtros de `wolves_win` e `villagers_win` usam `CARD_CATALOG.team`, excluindo moderador automaticamente.
-- **`PollVoteCount` reescrito**: `src/components/tribunal-panel.tsx` agora usa `useEffect` para polling de 2s em vez de inicializador assíncrono do `useState` (anti-padrão no React 19).
-- **Código morto removido**: removida variável `wolfVictimName2` de `src/app/game/[id]/page.tsx` (nunca usada e acessava campo inexistente).
-- **`WerewolfPanel` deps**: `useEffect` de carregamento de alvos inclui `wolvesFrenzy`, recarregando os alvos quando o frenesi é ativado.
+- **`PollVoteCount` reescrito**: `src/components/tribunal-panel.tsx` usa `useEffect` para polling de 2s em vez de inicializador assíncrono do `useState`.
+- **Código morto removido**: deletado `src/lib/types.ts` (tipos desatualizados, nenhum uso real) e removida variável `wolfVictimName2` de `src/app/game/[id]/page.tsx`.
 - **Limpeza de migrations**: deletados todos os arquivos `.sql` defasados de `src/lib/sql/` e `supabase/migrations/`. Diretórios preservados com `.gitkeep`. O banco real continua sendo mantido via Supabase SQL Editor.
-- **Files**: `src/hooks/use-player.ts`, `src/app/game/[id]/page.tsx`, `src/components/tribunal-panel.tsx`, `src/components/werewolf-panel.tsx`, `src/lib/sql/`, `supabase/migrations/`, `docs/architecture.md`.
+- **Files**: `src/components/werewolf-panel.tsx`, `src/components/host-action-log.tsx`, `src/app/game/[id]/page.tsx`, `src/components/tribunal-panel.tsx`, `src/hooks/use-player.ts`, `src/lib/types.ts` (deletado), `src/lib/sql/`, `supabase/migrations/`, `docs/architecture.md`.
 
 ### `<current-1>` — Fixes do Lote 4 (wolf_cub, alpha_wolf, lone_wolf)
 - **Problema**: Fim de jogo prematuro quando `wolf_cub` morria e sobrava `alpha_wolf`; `resolve_night` quebrava ao tentar setar `wolves_frenzy` em `game_state` (coluna existe apenas em `rooms`); tela de game over não filtrava corretamente vencedores.

@@ -56,16 +56,24 @@ export function HostActionLog({ roomId, turnIndex }: HostActionLogProps) {
       }
 
       if (missingIds.size > 0) {
-        const { data: profiles } = await supabase
-          .from('player_profiles')
-          .select('id, name')
-          .in('id', [...missingIds])
+        try {
+          const { data: profiles, error: profilesErr } = await supabase
+            .from('player_profiles')
+            .select('id, name')
+            .in('id', [...missingIds])
 
-        if (profiles) {
-          for (const p of profiles as { id: string; name: string }[]) {
-            actorNames[p.id] = p.name
-            targetNames[p.id] = p.name
+          if (profilesErr) {
+            console.error('[HostActionLog] player_profiles error:', profilesErr)
           }
+
+          if (profiles) {
+            for (const p of profiles as { id: string; name: string }[]) {
+              actorNames[p.id] = p.name
+              targetNames[p.id] = p.name
+            }
+          }
+        } catch (err) {
+          console.error('[HostActionLog] Failed to fetch names:', err)
         }
       }
 
