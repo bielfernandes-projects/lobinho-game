@@ -43,7 +43,7 @@ export function ScenarioBuilder({ roomId, playerCount }: ScenarioBuilderProps) {
     (sum, c) => sum + c.points * (counts[c.id] ?? 0),
     0
   )
-  const isValid = totalCards === playerCount && playerCount >= 4 && playerCount <= 25
+  const isValid = totalCards === playerCount && playerCount >= 6 && playerCount <= 77
 
   function inc(id: string) {
     setCounts((prev) => ({ ...prev, [id]: (prev[id] ?? 0) + 1 }))
@@ -260,11 +260,11 @@ export function ScenarioBuilder({ roomId, playerCount }: ScenarioBuilderProps) {
         >
           Cartas: {totalCards}/{playerCount} {isValid ? '✅' : ''}
         </p>
-        {playerCount < 4 && (
-          <p className="text-red-500 text-[10px]">Mínimo 4 jogadores</p>
+        {playerCount < 6 && (
+          <p className="text-red-500 text-[10px]">Mínimo 6 jogadores</p>
         )}
-        {playerCount > 25 && (
-          <p className="text-red-500 text-[10px]">Máximo 25 jogadores</p>
+        {playerCount > 77 && (
+          <p className="text-red-500 text-[10px]">Máximo 77 jogadores</p>
         )}
       </div>
 

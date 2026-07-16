@@ -3,6 +3,13 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — Player limits 6-78, nomes em inglês, player list /78
+- **Mínimo de jogadores 6**: `scenario-builder.tsx` validação e mensagem de erro alteradas de 4 para 6.
+- **Máximo de jogadores 78** (77 jogadores + 1 mestre): `max_players: 78` na criação da sala (`page.tsx`); `player-list.tsx` mostra `{total}/78`; ScenarioBuilder valida `playerCount <= 77` (exclui host).
+- **Nomes dos personagens em inglês**: `CARD_CATALOG[*].name` traduzido para inglês (ex: "Werewolf", "Seer", "Witch"). Novo mapa `ROLE_TRANSLATION` mantém traduções em português para tooltip. `ROLE_LABEL` e `NIGHT_ROLE_LABELS` continuam em português.
+- **RoleInfoModal bilíngue**: Título mostra nome em inglês, abaixo entre parênteses a tradução em português (ex: "Werewolf (Lobisomem)").
+- **Files**: `src/app/page.tsx`, `src/components/player-list.tsx`, `src/components/scenario-builder.tsx`, `src/lib/cards.ts`, `src/components/role-info-modal.tsx`, `docs/architecture.md`.
+
 ### `<current>` — 3 ScenarioBuilder QoL: tooltip sem pontos, revealMode padrão, reset
 - **RoleInfoModal sem pontos**: Removida linha "Pontos: +X" do modal de informações de papel (`src/components/role-info-modal.tsx`). Pontos continuam visíveis apenas ao lado do nome no ScenarioBuilder.
 - **RevealMode padrão `'team'`**: `useState<RevealMode>('total')` → `useState<RevealMode>('team')` em `src/components/scenario-builder.tsx`. Novas partidas começam com "Apenas o Time" selecionado.

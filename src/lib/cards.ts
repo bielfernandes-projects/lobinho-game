@@ -55,10 +55,34 @@ export const ROLE_LABEL: Record<string, string> = {
   moderator: '🎙️ Mestre',
 }
 
+export const ROLE_TRANSLATION: Record<string, string> = {
+  werewolf: 'Lobisomem',
+  seer: 'Vidente',
+  witch: 'Bruxa',
+  villager: 'Aldeão',
+  mayor: 'Prefeito',
+  prince: 'Príncipe',
+  tanner: 'Curtidor',
+  lycan: 'Licano',
+  priest: 'Padre',
+  bodyguard: 'Guarda-costas',
+  aura_seer: 'Vidente de Aura',
+  cupid: 'Cupido',
+  cult_leader: 'Líder de Culto',
+  mason: 'Maçom',
+  pacifist: 'Pacifista',
+  idiot: 'Idiota',
+  sorceress: 'Feiticeira',
+  wolf_cub: 'Filhote de Lobo',
+  lone_wolf: 'Lobo Solitário',
+  alpha_wolf: 'Lobo Alfa',
+  moderator: 'Mestre',
+}
+
 export const CARD_CATALOG: CardDefinition[] = [
   {
     id: 'werewolf',
-    name: 'Lobisomem',
+    name: 'Werewolf',
     points: -6,
     team: 'wolf',
     description:
@@ -66,14 +90,14 @@ export const CARD_CATALOG: CardDefinition[] = [
   },
   {
     id: 'seer',
-    name: 'Vidente',
+    name: 'Seer',
     points: 7,
     team: 'village',
     description: 'Toda noite, escolha alguém para saber se é vila ou lobo.',
   },
   {
     id: 'witch',
-    name: 'Bruxa',
+    name: 'Witch',
     points: 4,
     team: 'village',
     description:
@@ -81,14 +105,14 @@ export const CARD_CATALOG: CardDefinition[] = [
   },
   {
     id: 'villager',
-    name: 'Aldeão',
+    name: 'Villager',
     points: 1,
     team: 'village',
     description: 'Encontre os lobisomens e elimine-os.',
   },
   {
     id: 'mayor',
-    name: 'Prefeito',
+    name: 'Mayor',
     points: 2,
     team: 'village',
     description:
@@ -96,7 +120,7 @@ export const CARD_CATALOG: CardDefinition[] = [
   },
   {
     id: 'prince',
-    name: 'Príncipe',
+    name: 'Prince',
     points: 3,
     team: 'village',
     description:
@@ -104,7 +128,7 @@ export const CARD_CATALOG: CardDefinition[] = [
   },
   {
     id: 'tanner',
-    name: 'Curtidor',
+    name: 'Tanner',
     points: -2,
     team: 'independent',
     description:
@@ -112,7 +136,7 @@ export const CARD_CATALOG: CardDefinition[] = [
   },
   {
     id: 'lycan',
-    name: 'Licano',
+    name: 'Lycan',
     points: -1,
     team: 'village',
     description:
@@ -120,7 +144,7 @@ export const CARD_CATALOG: CardDefinition[] = [
   },
   {
     id: 'priest',
-    name: 'Padre',
+    name: 'Priest',
     points: 3,
     team: 'village',
     description:
@@ -128,7 +152,7 @@ export const CARD_CATALOG: CardDefinition[] = [
   },
   {
     id: 'bodyguard',
-    name: 'Guarda-costas',
+    name: 'Bodyguard',
     points: 3,
     team: 'village',
     description:
@@ -136,7 +160,7 @@ export const CARD_CATALOG: CardDefinition[] = [
   },
   {
     id: 'aura_seer',
-    name: 'Vidente de Aura',
+    name: 'Aura Seer',
     points: 3,
     team: 'village',
     description:
@@ -144,7 +168,7 @@ export const CARD_CATALOG: CardDefinition[] = [
   },
   {
     id: 'cupid',
-    name: 'Cupido',
+    name: 'Cupid',
     points: -3,
     team: 'independent',
     description:
@@ -152,7 +176,7 @@ export const CARD_CATALOG: CardDefinition[] = [
   },
   {
     id: 'cult_leader',
-    name: 'Líder de Culto',
+    name: 'Cult Leader',
     points: 1,
     team: 'independent',
     description:
@@ -160,35 +184,35 @@ export const CARD_CATALOG: CardDefinition[] = [
   },
   {
     id: 'mason',
-    name: 'Maçom',
+    name: 'Mason',
     points: 2,
     team: 'village',
     description: 'Na 1ª noite, acorde com os outros Maçons para se reconhecerem. Vocês são aliados secretos.',
   },
   {
     id: 'pacifist',
-    name: 'Pacifista',
+    name: 'Pacifist',
     points: -1,
     team: 'village',
     description: 'Você odeia violência. Seu voto no tribunal é SEMPRE pela absolvição (NÃO).',
   },
   {
     id: 'idiot',
-    name: 'Idiota',
+    name: 'Idiot',
     points: 2,
     team: 'village',
     description: 'Você quer ver sangue. Seu voto no tribunal é SEMPRE pelo linchamento (SIM).',
   },
   {
     id: 'sorceress',
-    name: 'Feiticeira',
+    name: 'Sorceress',
     points: -3,
     team: 'wolf',
     description: 'Toda noite, procure pela Vidente. Os lobos não sabem quem você é, e a Vidente te enxerga como Aldeão.',
   },
   {
     id: 'wolf_cub',
-    name: 'Filhote de Lobo',
+    name: 'Wolf Cub',
     points: -8,
     team: 'wolf',
     description:
@@ -196,7 +220,7 @@ export const CARD_CATALOG: CardDefinition[] = [
   },
   {
     id: 'lone_wolf',
-    name: 'Lobo Solitário',
+    name: 'Lone Wolf',
     points: -5,
     team: 'independent',
     description:
@@ -204,7 +228,7 @@ export const CARD_CATALOG: CardDefinition[] = [
   },
   {
     id: 'alpha_wolf',
-    name: 'Lobo Alfa',
+    name: 'Alpha Wolf',
     points: -9,
     team: 'wolf',
     description:

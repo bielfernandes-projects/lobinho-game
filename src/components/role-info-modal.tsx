@@ -1,6 +1,7 @@
 'use client'
 
 import type { CardDefinition } from '@/lib/cards'
+import { ROLE_TRANSLATION } from '@/lib/cards'
 
 interface RoleInfoModalProps {
   open: boolean
@@ -20,7 +21,10 @@ export function RoleInfoModal({ open, onClose, card }: RoleInfoModalProps) {
         className="w-full max-w-xs rounded-2xl border border-neutral-700 bg-neutral-900 p-6 text-center space-y-4"
         onClick={(e) => e.stopPropagation()}
       >
-        <p className="text-neutral-200 text-lg font-bold">{card.name}</p>
+        <div className="text-center">
+          <p className="text-neutral-200 text-lg font-bold">{card.name}</p>
+          <p className="text-neutral-500 text-xs">({ROLE_TRANSLATION[card.id]})</p>
+        </div>
         <p className="text-neutral-400 text-sm leading-relaxed">
           {card.description}
         </p>

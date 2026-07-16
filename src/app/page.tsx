@@ -44,7 +44,7 @@ export default function EntryScreen() {
           .insert({
             pin_code: pinCode,
             host_id: user.id,
-            max_players: 8,
+            max_players: 78,
           })
           .select('id, pin_code')
           .single()
