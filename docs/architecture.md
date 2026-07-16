@@ -3,6 +3,12 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — 3 ScenarioBuilder QoL: tooltip sem pontos, revealMode padrão, reset
+- **RoleInfoModal sem pontos**: Removida linha "Pontos: +X" do modal de informações de papel (`src/components/role-info-modal.tsx`). Pontos continuam visíveis apenas ao lado do nome no ScenarioBuilder.
+- **RevealMode padrão `'team'`**: `useState<RevealMode>('total')` → `useState<RevealMode>('team')` em `src/components/scenario-builder.tsx`. Novas partidas começam com "Apenas o Time" selecionado.
+- **Botão Resetar Cenário**: Novo botão full-width abaixo do termômetro no ScenarioBuilder — zera todos os `counts` de volta a 0 e limpa o localStorage.
+- **Files**: `src/components/role-info-modal.tsx`, `src/components/scenario-builder.tsx`, `docs/architecture.md`.
+
 ### `<current>` — 4 Fixes Críticos: lone_wolf_win, HostRolePanel polling, redução de polling, erro 406
 - **Fix 1 — `host_end_game` não reconhecia `lone_wolf_win`**: A função caía no `ELSE` e levantava `Nenhum vencedor definido`. Adicionado `ELSIF v_winner = 'lone_wolf_win' THEN UPDATE rooms SET status = 'finished_lone_wolf_win'`.
 - **Fix 2 — `HostRolePanel` sem polling fallback**: O painel do mestre dependia só de Realtime para atualizar `has_viewed_card`. Adicionado `setInterval(fetchPlayers, 4000)` como fallback em `src/components/host-role-panel.tsx`.

@@ -28,7 +28,7 @@ function getInitialCounts(): Record<string, number> {
 
 export function ScenarioBuilder({ roomId, playerCount }: ScenarioBuilderProps) {
   const [counts, setCounts] = useState<Record<string, number>>(getInitialCounts)
-  const [revealMode, setRevealMode] = useState<RevealMode>('total')
+  const [revealMode, setRevealMode] = useState<RevealMode>('team')
   const [modalCard, setModalCard] = useState<CardDefinition | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -171,6 +171,15 @@ export function ScenarioBuilder({ roomId, playerCount }: ScenarioBuilderProps) {
           </span>
         </div>
       </div>
+
+      {/* Resetar cenário */}
+      <button
+        type="button"
+        onClick={() => setCounts(Object.fromEntries(CARD_CATALOG.map((c) => [c.id, 0])))}
+        className="w-full rounded-xl border border-neutral-800 bg-neutral-900/60 px-4 py-3 text-sm text-neutral-400 hover:text-neutral-200 hover:border-neutral-700 transition-all cursor-pointer text-center"
+      >
+        ↺ Resetar Cenário
+      </button>
 
       {/* Lista de cartas agrupada por time */}
       {([

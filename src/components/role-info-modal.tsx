@@ -24,9 +24,6 @@ export function RoleInfoModal({ open, onClose, card }: RoleInfoModalProps) {
         <p className="text-neutral-400 text-sm leading-relaxed">
           {card.description}
         </p>
-        <p className="text-neutral-500 text-xs font-mono">
-          Pontos: {card.points > 0 ? `+${card.points}` : card.points}
-        </p>
         <button
           onClick={onClose}
           className="w-full py-2.5 rounded-xl text-xs font-medium tracking-wider text-neutral-500 border border-neutral-700 hover:text-neutral-300 hover:border-neutral-600 transition-all duration-200 cursor-pointer"
