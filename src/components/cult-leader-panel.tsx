@@ -18,13 +18,15 @@ export function CultLeaderPanel({ roomId, playerId, onDone }: CultLeaderPanelPro
 
   useEffect(() => {
     async function load() {
-      const { data } = await supabase.rpc('get_cult_targets', {
-        p_room_id: roomId,
-      })
+      try {
+        const { data } = await supabase.rpc('get_cult_targets', {
+          p_room_id: roomId,
+        })
 
-      if (data) {
-        setTargets(data as { id: string; name: string }[])
-      }
+        if (data) {
+          setTargets(data as { id: string; name: string }[])
+        }
+      } catch {}
     }
 
     load()

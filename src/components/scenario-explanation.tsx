@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { CARD_CATALOG, ROLE_STYLE, ROLE_TRANSLATION } from '@/lib/cards'
 import { getRevealedRoleText } from '@/lib/reveal'
-import { useGameState } from '@/hooks/use-room'
 
 interface ScenarioExplanationProps {
   roomId: string
@@ -14,10 +13,9 @@ interface ScenarioExplanationProps {
   onBackToLobby: () => void
 }
 
-interface PlayerRole {
-  id: string
-  role: string | null
-  is_host: boolean
+interface CompositionEntry {
+  role_id: string
+  player_count: number
 }
 
 export function ScenarioExplanation({
@@ -28,37 +26,29 @@ export function ScenarioExplanation({
   onBackToLobby,
 }: ScenarioExplanationProps) {
   const supabase = createClient()
-  const [roles, setRoles] = useState<PlayerRole[]>([])
+  const [composition, setComposition] = useState<CompositionEntry[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function load() {
-      const { data, error } = await supabase
-        .from('players')
-        .select('id, role, is_host')
-        .eq('room_id', roomId)
+      try {
+        const { data, error } = await supabase
+          .rpc('get_scenario_composition', { p_room_id: roomId })
 
-      if (data && !error) {
-        setRoles(data as PlayerRole[])
-      }
+        if (data && !error) {
+          setComposition(data as CompositionEntry[])
+        }
+      } catch {}
       setLoading(false)
     }
     load()
   }, [roomId])
 
-  // Calcular composição do cenário
-  const composition = new Map<string, number>()
-  for (const p of roles) {
-    if (p.is_host) continue
-    const r = p.role ?? 'unknown'
-    composition.set(r, (composition.get(r) ?? 0) + 1)
-  }
-
-  const sortedEntries = Array.from(composition.entries())
-    .filter(([role]) => CARD_CATALOG.some((c) => c.id === role))
+  const sortedEntries = composition
+    .filter((entry) => CARD_CATALOG.some((c) => c.id === entry.role_id))
     .sort((a, b) => {
-      const ca = CARD_CATALOG.find((c) => c.id === a[0])!
-      const cb = CARD_CATALOG.find((c) => c.id === b[0])!
+      const ca = CARD_CATALOG.find((c) => c.id === a.role_id)!
+      const cb = CARD_CATALOG.find((c) => c.id === b.role_id)!
       // Aldeia → Lobisomens → Independentes
       const order = { village: 0, wolf: 1, independent: 2 }
       const oa = order[ca.team as keyof typeof order] ?? 3
@@ -97,15 +87,15 @@ export function ScenarioExplanation({
             Nenhum papel encontrado.
           </p>
         ) : (
-          sortedEntries.map(([roleId, count]) => {
-            const card = CARD_CATALOG.find((c) => c.id === roleId)!
-            const ptName = ROLE_TRANSLATION[roleId] ?? card.name
+          sortedEntries.map((entry) => {
+            const card = CARD_CATALOG.find((c) => c.id === entry.role_id)!
+            const ptName = ROLE_TRANSLATION[entry.role_id] ?? card.name
             return (
               <div
-                key={roleId}
+                key={entry.role_id}
                 className={`
                   rounded-2xl border-2 p-4
-                  ${ROLE_STYLE[roleId] ?? 'bg-neutral-100 text-neutral-700 border-neutral-300'}
+                  ${ROLE_STYLE[entry.role_id] ?? 'bg-neutral-100 text-neutral-700 border-neutral-300'}
                 `}
               >
                 <div className="flex items-start justify-between gap-3">
@@ -117,14 +107,14 @@ export function ScenarioExplanation({
                           <span className="text-xs opacity-70 ml-1">({ptName})</span>
                         )}
                       </h3>
-                      {count > 1 && (
+                      {entry.player_count > 1 && (
                         <span className="text-[10px] font-black tracking-widest uppercase opacity-80">
-                          ×{count}
+                          ×{entry.player_count}
                         </span>
                       )}
                     </div>
                     <p className="text-xs opacity-90 leading-relaxed">
-                      {getRevealedRoleText(roleId, 'total')}
+                      {getRevealedRoleText(entry.role_id, 'total')}
                     </p>
                   </div>
                 </div>

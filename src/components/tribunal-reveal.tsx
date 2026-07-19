@@ -20,55 +20,57 @@ export function TribunalReveal({ roomId, turnIndex }: TribunalRevealProps) {
 
   useEffect(() => {
     async function load() {
-      const { data } = await supabase
-        .from('votes')
-        .select('vote_value, voter_id')
-        .eq('room_id', roomId)
-        .eq('turn_index', turnIndex)
+      try {
+        const { data } = await supabase
+          .from('votes')
+          .select('vote_value, voter_id')
+          .eq('room_id', roomId)
+          .eq('turn_index', turnIndex)
 
-      if (!data) return
+        if (!data) return
 
-      const rows = data as { vote_value: string; voter_id: string }[]
-      if (rows.length === 0) return
+        const rows = data as { vote_value: string; voter_id: string }[]
+        if (rows.length === 0) return
 
-      const voterIds = rows.map((r) => r.voter_id)
+        const voterIds = rows.map((r) => r.voter_id)
 
-      const { data: profiles } = await supabase
-        .from('player_profiles')
-        .select('id, name')
-        .in('id', voterIds)
+        const { data: profiles } = await supabase
+          .from('player_profiles')
+          .select('id, name')
+          .in('id', voterIds)
 
-      const { data: playerRoles } = await supabase
-        .from('players')
-        .select('id, role')
-        .in('id', voterIds)
+        const { data: playerRoles } = await supabase
+          .from('players')
+          .select('id, role')
+          .in('id', voterIds)
 
-      const nameMap = new Map<string, string>()
-      if (profiles) {
-        for (const p of profiles as { id: string; name: string }[]) {
-          nameMap.set(p.id, p.name)
+        const nameMap = new Map<string, string>()
+        if (profiles) {
+          for (const p of profiles as { id: string; name: string }[]) {
+            nameMap.set(p.id, p.name)
+          }
         }
-      }
 
-      const roleMap = new Map<string, string>()
-      if (playerRoles) {
-        for (const p of playerRoles as { id: string; role: string }[]) {
-          roleMap.set(p.id, p.role)
+        const roleMap = new Map<string, string>()
+        if (playerRoles) {
+          for (const p of playerRoles as { id: string; role: string }[]) {
+            roleMap.set(p.id, p.role)
+          }
         }
-      }
 
-      const yes: VoterInfo[] = []
-      const no: VoterInfo[] = []
+        const yes: VoterInfo[] = []
+        const no: VoterInfo[] = []
 
-      for (const v of rows) {
-        const name = nameMap.get(v.voter_id) ?? 'Desconhecido'
-        const role = roleMap.get(v.voter_id) ?? ''
-        if (v.vote_value === 'yes') yes.push({ name, role })
-        else no.push({ name, role })
-      }
+        for (const v of rows) {
+          const name = nameMap.get(v.voter_id) ?? 'Desconhecido'
+          const role = roleMap.get(v.voter_id) ?? ''
+          if (v.vote_value === 'yes') yes.push({ name, role })
+          else no.push({ name, role })
+        }
 
-      setYesVotes(yes)
-      setNoVotes(no)
+        setYesVotes(yes)
+        setNoVotes(no)
+      } catch {}
     }
 
     load()

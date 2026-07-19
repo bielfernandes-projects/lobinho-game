@@ -109,7 +109,7 @@ export function useCurrentPlayer(roomId: string) {
     }
 
     // Aguarda o primeiro load para obter myUserId antes de subscrever
-    load().then(() => setupChannel())
+    load().then(() => setupChannel()).catch(() => { setLoading(false) })
 
     // Polling de fallback a cada 5s (caso Realtime caia)
     const pollInterval = setInterval(load, 5000)

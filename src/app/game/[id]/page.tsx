@@ -122,21 +122,23 @@ export default function GameScreen() {
   // Fetch available night roles (roles with night actions present in this game)
   useEffect(() => {
     if (!roomId) return
-    supabase
-      .from('players')
-      .select('role, has_used_power')
-      .eq('room_id', roomId)
-      .eq('is_alive', true)
-      .neq('role', 'moderator')
-      .in('role', ['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf', 'seer', 'witch', 'priest', 'bodyguard', 'aura_seer', 'cupid', 'cult_leader', 'mason', 'sorceress', 'doppelganger'])
-      .then(({ data }) => {
+    ;(async () => {
+      try {
+        const { data } = await supabase
+          .from('players')
+          .select('role, has_used_power')
+          .eq('room_id', roomId)
+          .eq('is_alive', true)
+          .neq('role', 'moderator')
+          .in('role', ['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf', 'seer', 'witch', 'priest', 'bodyguard', 'aura_seer', 'cupid', 'cult_leader', 'mason', 'sorceress', 'doppelganger'])
         if (data) {
           const roles = (data as any[])
             .filter((r) => !(r.role === 'priest' && r.has_used_power))
             .map((r) => r.role)
           setAvailableNightRoles(new Set(roles))
         }
-      })
+      } catch {}
+    })()
   }, [roomId, gameState?.turn_index])
 
   // Watch rooms.status for game over (fallback para Realtime)
@@ -179,52 +181,54 @@ export default function GameScreen() {
   useEffect(() => {
     if (!gameEnded && !gameWinner) return
     async function poll() {
-      const status = roomStatus
-      const w = gameWinner
-        ?? lastEvent?.winner
-        ?? (status === 'finished_wolves_win' ? 'wolves_win'
-          : status === 'finished_tanner_win' ? 'tanner_win'
-          : status === 'finished_lone_wolf_win' ? 'lone_wolf_win'
-          : status === 'finished_soulmates_win' ? 'soulmates_win'
-          : status === 'finished_cult_win' ? 'cult_win'
-          : 'villagers_win')
+      try {
+        const status = roomStatus
+        const w = gameWinner
+          ?? lastEvent?.winner
+          ?? (status === 'finished_wolves_win' ? 'wolves_win'
+            : status === 'finished_tanner_win' ? 'tanner_win'
+            : status === 'finished_lone_wolf_win' ? 'lone_wolf_win'
+            : status === 'finished_soulmates_win' ? 'soulmates_win'
+            : status === 'finished_cult_win' ? 'cult_win'
+            : 'villagers_win')
 
-      const winnerType = w as string
+        const winnerType = w as string
 
-      const { data } = await supabase.rpc('get_revealed_players', { p_room_id: roomId })
+        const { data } = await supabase.rpc('get_revealed_players', { p_room_id: roomId })
 
-      const allPlayers: { id: string; name: string; role: string; in_cult: boolean; soulmate_id: string | null }[] = (data as any[]) ?? []
+        const allPlayers: { id: string; name: string; role: string; in_cult: boolean; soulmate_id: string | null }[] = (data as any[]) ?? []
 
-      const getTeam = (roleId: string) => CARD_CATALOG.find((c) => c.id === roleId)?.team
+        const getTeam = (roleId: string) => CARD_CATALOG.find((c) => c.id === roleId)?.team
 
-      let result: { name: string; role: string }[]
-      if (winnerType === 'soulmates_win') {
-        result = allPlayers
-          .filter((p) => p.soulmate_id != null)
-          .map((p) => ({ name: p.name, role: p.role }))
-      } else if (winnerType === 'cult_win') {
-        result = allPlayers
-          .filter((p) => p.role === 'cult_leader' || p.in_cult)
-          .map((p) => ({ name: p.name, role: p.role }))
-      } else if (winnerType === 'lone_wolf_win') {
-        result = allPlayers
-          .filter((p) => p.role === 'lone_wolf')
-          .map((p) => ({ name: p.name, role: p.role }))
-      } else if (winnerType === 'wolves_win') {
-        result = allPlayers
-          .filter((p) => getTeam(p.role) === 'wolf')
-          .map((p) => ({ name: p.name, role: p.role }))
-      } else if (winnerType === 'tanner_win') {
-        result = allPlayers
-          .filter((p) => p.role === 'tanner')
-          .map((p) => ({ name: p.name, role: p.role }))
-      } else {
-        result = allPlayers
-          .filter((p) => getTeam(p.role) === 'village')
-          .map((p) => ({ name: p.name, role: p.role }))
-      }
+        let result: { name: string; role: string }[]
+        if (winnerType === 'soulmates_win') {
+          result = allPlayers
+            .filter((p) => p.soulmate_id != null)
+            .map((p) => ({ name: p.name, role: p.role }))
+        } else if (winnerType === 'cult_win') {
+          result = allPlayers
+            .filter((p) => p.role === 'cult_leader' || p.in_cult)
+            .map((p) => ({ name: p.name, role: p.role }))
+        } else if (winnerType === 'lone_wolf_win') {
+          result = allPlayers
+            .filter((p) => p.role === 'lone_wolf')
+            .map((p) => ({ name: p.name, role: p.role }))
+        } else if (winnerType === 'wolves_win') {
+          result = allPlayers
+            .filter((p) => getTeam(p.role) === 'wolf')
+            .map((p) => ({ name: p.name, role: p.role }))
+        } else if (winnerType === 'tanner_win') {
+          result = allPlayers
+            .filter((p) => p.role === 'tanner')
+            .map((p) => ({ name: p.name, role: p.role }))
+        } else {
+          result = allPlayers
+            .filter((p) => getTeam(p.role) === 'village')
+            .map((p) => ({ name: p.name, role: p.role }))
+        }
 
-      setWinnerPlayers(result)
+        setWinnerPlayers(result)
+      } catch {}
     }
     poll()
     const iv = setInterval(poll, 4000)
@@ -234,28 +238,32 @@ export default function GameScreen() {
   // Fetch reveal_mode + wolves_frenzy from rooms
   useEffect(() => {
     if (!roomId) return
-    supabase
-      .from('rooms')
-      .select('reveal_mode, wolves_frenzy')
-      .eq('id', roomId)
-      .single()
-      .then(({ data }) => {
+    ;(async () => {
+      try {
+        const { data } = await supabase
+          .from('rooms')
+          .select('reveal_mode, wolves_frenzy')
+          .eq('id', roomId)
+          .single()
         if (data?.reveal_mode) setRevealMode(data.reveal_mode as RevealMode)
         if (data?.wolves_frenzy != null) setWolvesFrenzy(data.wolves_frenzy as boolean)
-      })
+      } catch {}
+    })()
   }, [roomId])
 
   // Fetch soulmate name if player has one
   useEffect(() => {
     if (!player?.soulmateId) return
-    supabase
-      .from('players')
-      .select('name')
-      .eq('id', player.soulmateId)
-      .single()
-      .then(({ data }) => {
+    ;(async () => {
+      try {
+        const { data } = await supabase
+          .from('players')
+          .select('name')
+          .eq('id', player.soulmateId)
+          .single()
         if (data) setSoulmateName((data as any).name)
-      })
+      } catch {}
+    })()
   }, [player?.soulmateId])
 
   // Check if current player was infected by Alpha Wolf
@@ -286,15 +294,17 @@ export default function GameScreen() {
   useEffect(() => {
     if (dayStep !== 'voting' || !roomId) return
     async function poll() {
-      const [{ count: countVotes }, { data: alivePlayers }] = await Promise.all([
-        supabase.from('votes').select('*', { count: 'exact', head: true }).eq('room_id', roomId).eq('turn_index', turnIndex),
-        supabase.from('players').select('id, role').eq('room_id', roomId).eq('is_alive', true),
-      ])
-      const eligible = (alivePlayers ?? []).filter(
-        (p: any) => p.role !== 'moderator' && p.id !== accusedId
-      ).length
-      setVoteCount(countVotes ?? 0)
-      setEligibleVoters(eligible)
+      try {
+        const [{ count: countVotes }, { data: alivePlayers }] = await Promise.all([
+          supabase.from('votes').select('*', { count: 'exact', head: true }).eq('room_id', roomId).eq('turn_index', turnIndex),
+          supabase.from('players').select('id, role').eq('room_id', roomId).eq('is_alive', true),
+        ])
+        const eligible = (alivePlayers ?? []).filter(
+          (p: any) => p.role !== 'moderator' && p.id !== accusedId
+        ).length
+        setVoteCount(countVotes ?? 0)
+        setEligibleVoters(eligible)
+      } catch {}
     }
     poll()
     const iv = setInterval(poll, 4000)
@@ -305,21 +315,23 @@ export default function GameScreen() {
   useEffect(() => {
     if (phase !== 'night' || !roomId) return
     async function poll() {
-      const { data } = await supabase
-        .from('night_actions')
-        .select('action_type')
-        .eq('room_id', roomId)
-        .eq('turn_index', turnIndex)
-      if (data) {
-        const types = new Set(data.map((r: any) => r.action_type))
-        const resolved = new Set<string>()
-        for (const [step, actionTypes] of Object.entries(STEP_TO_ACTION_TYPES)) {
-          if (actionTypes.some((at) => types.has(at))) {
-            resolved.add(step)
+      try {
+        const { data } = await supabase
+          .from('night_actions')
+          .select('action_type')
+          .eq('room_id', roomId)
+          .eq('turn_index', turnIndex)
+        if (data) {
+          const types = new Set(data.map((r: any) => r.action_type))
+          const resolved = new Set<string>()
+          for (const [step, actionTypes] of Object.entries(STEP_TO_ACTION_TYPES)) {
+            if (actionTypes.some((at) => types.has(at))) {
+              resolved.add(step)
+            }
           }
+          setResolvedActions(resolved)
         }
-        setResolvedActions(resolved)
-      }
+      } catch {}
     }
     poll()
     const iv = setInterval(poll, 4000)
@@ -342,6 +354,24 @@ export default function GameScreen() {
 
   const allViewed = players.length > 0 && players.every((p) => p.isHost || !p.isAlive || p.hasViewedCard)
 
+  // Reset night role tracking on new turn (moved from render body to useEffect)
+  useEffect(() => {
+    prevTurnRef.current = turnIndex
+    nightRolesActedRef.current = new Set()
+    setResolvedActions(new Set())
+  }, [turnIndex])
+
+  // Reset actedRoles when nightStep changes; track visited roles (moved from render body to useEffect)
+  useEffect(() => {
+    const prevStep = prevNightStepRef.current
+    if (prevStep !== 'sleeping') {
+      nightRolesActedRef.current = new Set([...nightRolesActedRef.current, prevStep])
+      setResolvedActions((prev) => new Set([...prev, prevStep]))
+    }
+    prevNightStepRef.current = nightStep
+    setActedRoles(new Set())
+  }, [nightStep])
+
   if (playerLoading || playersLoading || stateLoading) {
     return (
       <div className="flex flex-1 items-center justify-center min-h-dvh">
@@ -362,24 +392,6 @@ export default function GameScreen() {
   // Exception: dead Hunter gets a chance to retaliate
   if (!player.isAlive && player.role !== 'moderator' && !isHunterPending) {
     return <DeadPlayerScreen />
-  }
-
-  // Reset night role tracking on new turn
-  if (turnIndex !== prevTurnRef.current) {
-    prevTurnRef.current = turnIndex
-    nightRolesActedRef.current = new Set()
-    setResolvedActions(new Set())
-  }
-
-  // Reset actedRoles when nightStep changes; track visited roles
-  if (nightStep !== prevNightStepRef.current) {
-    const prevStep = prevNightStepRef.current
-    if (prevStep !== 'sleeping') {
-      nightRolesActedRef.current = new Set([...nightRolesActedRef.current, prevStep])
-      setResolvedActions((prev) => new Set([...prev, prevStep]))
-    }
-    prevNightStepRef.current = nightStep
-    setActedRoles(new Set())
   }
 
   const isHost = player.isHost

@@ -17,11 +17,12 @@ export function HunterRetaliatePanel({ roomId, hunterId, onDone }: HunterRetalia
   const supabase = createClient()
 
   useEffect(() => {
-    supabase
-      .from('player_profiles')
-      .select('id, name, is_alive, is_host')
-      .eq('room_id', roomId)
-      .then(({ data }) => {
+    ;(async () => {
+      try {
+        const { data } = await supabase
+          .from('player_profiles')
+          .select('id, name, is_alive, is_host')
+          .eq('room_id', roomId)
         if (data) {
           setTargets(
             (data as any[])
@@ -29,7 +30,8 @@ export function HunterRetaliatePanel({ roomId, hunterId, onDone }: HunterRetalia
               .map((r) => ({ id: r.id, name: r.name }))
           )
         }
-      })
+      } catch {}
+    })()
   }, [roomId, hunterId])
 
   async function handleShoot(targetId: string, _targetName: string) {

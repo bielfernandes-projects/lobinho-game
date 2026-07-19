@@ -21,25 +21,27 @@ export function CupidPanel({ roomId, playerId, onDone }: CupidPanelProps) {
 
   useEffect(() => {
     async function load() {
-      const { data: all } = await supabase
-        .from('player_profiles')
-        .select('id, name, is_host, is_alive, has_viewed_card, user_id')
-        .eq('room_id', roomId)
+      try {
+        const { data: all } = await supabase
+          .from('player_profiles')
+          .select('id, name, is_host, is_alive, has_viewed_card, user_id')
+          .eq('room_id', roomId)
 
-      if (!all) return
+        if (!all) return
 
-      setPlayers(
-        (all as any[])
-          .filter((r) => r.id !== playerId && r.is_alive && !r.is_host)
-          .map((r) => ({
-            id: r.id,
-            name: r.name,
-            isHost: r.is_host,
-            isAlive: r.is_alive,
-            hasViewedCard: r.has_viewed_card,
-            userId: r.user_id,
-          }))
-      )
+        setPlayers(
+          (all as any[])
+            .filter((r) => r.id !== playerId && r.is_alive && !r.is_host)
+            .map((r) => ({
+              id: r.id,
+              name: r.name,
+              isHost: r.is_host,
+              isAlive: r.is_alive,
+              hasViewedCard: r.has_viewed_card,
+              userId: r.user_id,
+            }))
+        )
+      } catch {}
     }
 
     load()

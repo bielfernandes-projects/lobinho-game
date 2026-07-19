@@ -18,11 +18,12 @@ export function MarksmanPanel({ roomId, playerId, onShot }: MarksmanPanelProps) 
   const supabase = createClient()
 
   useEffect(() => {
-    supabase
-      .from('player_profiles')
-      .select('id, name, is_alive, is_host')
-      .eq('room_id', roomId)
-      .then(({ data }) => {
+    ;(async () => {
+      try {
+        const { data } = await supabase
+          .from('player_profiles')
+          .select('id, name, is_alive, is_host')
+          .eq('room_id', roomId)
         if (data) {
           setTargets(
             (data as any[])
@@ -30,7 +31,8 @@ export function MarksmanPanel({ roomId, playerId, onShot }: MarksmanPanelProps) 
               .map((r) => ({ id: r.id, name: r.name }))
           )
         }
-      })
+      } catch {}
+    })()
   }, [roomId, playerId])
 
   async function handleShoot(targetId: string) {

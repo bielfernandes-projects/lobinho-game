@@ -21,11 +21,12 @@ export function BodyguardPanel({ roomId, playerId, turnIndex, onDone }: Bodyguar
   const supabase = createClient()
 
   useEffect(() => {
-    supabase
-      .from('player_profiles')
-      .select('id, name, is_alive, is_host')
-      .eq('room_id', roomId)
-      .then(({ data }) => {
+    ;(async () => {
+      try {
+        const { data } = await supabase
+          .from('player_profiles')
+          .select('id, name, is_alive, is_host')
+          .eq('room_id', roomId)
         if (data) {
           setTargets(
             (data as any[])
@@ -33,7 +34,8 @@ export function BodyguardPanel({ roomId, playerId, turnIndex, onDone }: Bodyguar
               .map((r) => ({ id: r.id, name: r.name }))
           )
         }
-      })
+      } catch {}
+    })()
 
     const stored = localStorage.getItem(`${STORAGE_KEY_PREFIX}_${roomId}_${playerId}`)
     if (stored) {

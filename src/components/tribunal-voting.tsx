@@ -21,16 +21,20 @@ export function TribunalVoting({ roomId, isAlive, isAccused, playerRole }: Tribu
   const handleVote = useCallback(async (value: 'yes' | 'no') => {
     setBusy(true)
     setError('')
-    const { error: e } = await supabase.rpc('submit_tribunal_vote', {
-      p_room_id: roomId,
-      p_vote_value: value,
-    })
-    if (e) {
-      setError(e.message)
-      setBusy(false)
-      return
+    try {
+      const { error: e } = await supabase.rpc('submit_tribunal_vote', {
+        p_room_id: roomId,
+        p_vote_value: value,
+      })
+      if (e) {
+        setError(e.message)
+        setBusy(false)
+        return
+      }
+      setVoted(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro inesperado')
     }
-    setVoted(true)
     setBusy(false)
   }, [roomId, supabase])
 

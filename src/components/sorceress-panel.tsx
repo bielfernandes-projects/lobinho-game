@@ -19,11 +19,12 @@ export function SorceressPanel({ roomId, playerId, onDone }: SorceressPanelProps
   const supabase = createClient()
 
   useEffect(() => {
-    supabase
-      .from('player_profiles')
-      .select('id, name, is_alive, is_host')
-      .eq('room_id', roomId)
-      .then(({ data }) => {
+    ;(async () => {
+      try {
+        const { data } = await supabase
+          .from('player_profiles')
+          .select('id, name, is_alive, is_host')
+          .eq('room_id', roomId)
         if (data) {
           setTargets(
             (data as { id: string; name: string; is_alive: boolean; is_host: boolean }[])
@@ -31,8 +32,9 @@ export function SorceressPanel({ roomId, playerId, onDone }: SorceressPanelProps
               .map((r) => ({ id: r.id, name: r.name }))
           )
         }
-      })
-  }, [roomId, playerId, supabase])
+      } catch {}
+    })()
+  }, [roomId, playerId])
 
   async function handleSearch(targetId: string, name: string) {
     setBusy(true)

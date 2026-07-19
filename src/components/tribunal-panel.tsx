@@ -25,16 +25,18 @@ export function TribunalPanel({ roomId, dayStep, accusedId, turnIndex }: Tribuna
   useEffect(() => {
     if (!accusedId) { setAccusedName(null); return }
     const id = ++accusedFetchCountRef.current
-    supabase
-      .from('players')
-      .select('name')
-      .eq('id', accusedId)
-      .single()
-      .then(({ data }) => {
+    ;(async () => {
+      try {
+        const { data } = await supabase
+          .from('players')
+          .select('name')
+          .eq('id', accusedId)
+          .single()
         if (id === accusedFetchCountRef.current && data) {
           setAccusedName((data as any).name)
         }
-      })
+      } catch {}
+    })()
   }, [accusedId])
 
   async function openAccuseModal() {
@@ -225,12 +227,14 @@ function PollVoteCount({ roomId, turnIndex }: { roomId: string; turnIndex: numbe
 
   useEffect(() => {
     async function poll() {
-      const { count: c } = await supabase
-        .from('votes')
-        .select('*', { count: 'exact', head: true })
-        .eq('room_id', roomId)
-        .eq('turn_index', turnIndex)
-      if (c !== null) setCount(c)
+      try {
+        const { count: c } = await supabase
+          .from('votes')
+          .select('*', { count: 'exact', head: true })
+          .eq('room_id', roomId)
+          .eq('turn_index', turnIndex)
+        if (c !== null) setCount(c)
+      } catch {}
     }
     poll()
     const interval = setInterval(poll, 4000)

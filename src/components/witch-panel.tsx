@@ -24,11 +24,12 @@ export function WitchPanel({ roomId, playerId, turnIndex, victimName, onDone }: 
   const supabase = createClient()
 
   useEffect(() => {
-    supabase
-      .from('player_profiles')
-      .select('id, name, is_alive, is_host')
-      .eq('room_id', roomId)
-      .then(({ data }) => {
+    ;(async () => {
+      try {
+        const { data } = await supabase
+          .from('player_profiles')
+          .select('id, name, is_alive, is_host')
+          .eq('room_id', roomId)
         if (data) {
           setTargets(
             (data as any[])
@@ -36,19 +37,22 @@ export function WitchPanel({ roomId, playerId, turnIndex, victimName, onDone }: 
               .map((r) => ({ id: r.id, name: r.name, isHost: r.is_host }))
           )
         }
-      })
+      } catch {}
+    })()
 
-    supabase
-      .from('players')
-      .select('has_used_life_potion, has_used_death_potion')
-      .eq('id', playerId)
-      .single()
-      .then(({ data }) => {
+    ;(async () => {
+      try {
+        const { data } = await supabase
+          .from('players')
+          .select('has_used_life_potion, has_used_death_potion')
+          .eq('id', playerId)
+          .single()
         if (data) {
           setUsedLife(data.has_used_life_potion)
           setUsedDeath(data.has_used_death_potion)
         }
-      })
+      } catch {}
+    })()
   }, [roomId, playerId])
 
   async function handleSave(save: boolean) {

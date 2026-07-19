@@ -17,15 +17,17 @@ export function MasonPanel({ roomId, playerId, onDone }: MasonPanelProps) {
 
   useEffect(() => {
     async function load() {
-      const { data, error: rpcErr } = await supabase.rpc('get_masons', {
-        p_room_id: roomId,
-      })
-      if (rpcErr) {
-        console.error('[MasonPanel] RPC error:', rpcErr)
-        setError('Erro ao carregar companheiros.')
-        return
-      }
-      setPartners(((data as { id: string; name: string }[]) ?? []).filter((p) => p.id !== playerId))
+      try {
+        const { data, error: rpcErr } = await supabase.rpc('get_masons', {
+          p_room_id: roomId,
+        })
+        if (rpcErr) {
+          console.error('[MasonPanel] RPC error:', rpcErr)
+          setError('Erro ao carregar companheiros.')
+          return
+        }
+        setPartners(((data as { id: string; name: string }[]) ?? []).filter((p) => p.id !== playerId))
+      } catch {}
     }
     load()
   }, [roomId, playerId, supabase])
