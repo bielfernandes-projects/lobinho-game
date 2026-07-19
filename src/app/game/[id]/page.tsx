@@ -30,6 +30,8 @@ import { CultLeaderPanel } from '@/components/cult-leader-panel'
 import { MasonPanel } from '@/components/mason-panel'
 import { SorceressPanel } from '@/components/sorceress-panel'
 import { GraveyardList } from '@/components/graveyard-list'
+import { HunterRetaliatePanel } from '@/components/hunter-retaliate-panel'
+import { MarksmanPanel } from '@/components/marksman-panel'
 import type { RevealMode } from '@/lib/reveal'
 
 export default function GameScreen() {
@@ -94,6 +96,8 @@ export default function GameScreen() {
   const dayStep = gameState?.day_step ?? 'discussion'
   const accusedId = gameState?.current_accused_id ?? null
   const gameWinner = gameState?.winner ?? null
+  const hunterPending = gameState?.hunter_pending ?? false
+  const hunterId = gameState?.hunter_id ?? null
   const lastEvent = gameState?.last_event ?? null
   const lastVoteResult = gameState?.last_vote_result ?? null
   const timerRemaining = gameState?.timer_remaining ?? null
@@ -332,8 +336,13 @@ export default function GameScreen() {
   }
 
   // Dead players (non-moderator) only see the death screen
+  // Exception: dead Hunter gets a chance to retaliate
   if (!player.isAlive && player.role !== 'moderator') {
-    return <DeadPlayerScreen />
+    if (player.role === 'hunter' && hunterPending) {
+      // Allow through — hunter panel rendered below
+    } else {
+      return <DeadPlayerScreen />
+    }
   }
 
   // Reset night role tracking on new turn
@@ -395,6 +404,10 @@ export default function GameScreen() {
     await supabase.rpc('advance_to_night', { p_room_id: roomId })
   }
 
+  async function handleAdvanceAfterHunter() {
+    await supabase.rpc('advance_after_host', { p_room_id: roomId })
+  }
+
   // ── Moderator / Host Dashboard ──────────────────────────
   // Omniscient view — NEVER shows the "close your eyes" screen
   if (isHost || isModerator) {
@@ -409,6 +422,7 @@ export default function GameScreen() {
               <>
                 ☀️ Dia
                 {dayStep === 'announcement' && ' - Anúncio'}
+                {dayStep === 'hunter_reveal' && ' - Caçador'}
                 {dayStep === 'discussion' && ' - Discussão'}
                 {dayStep === 'trial' && ' - Acusação'}
                 {dayStep === 'voting' && ' - Votação'}
@@ -448,6 +462,32 @@ export default function GameScreen() {
               >
                 🌙 Avançar para Noite
               </button>
+            </div>
+          </div>
+        )}
+
+        {phase === 'day' && dayStep === 'hunter_reveal' && (
+          <div className="w-full max-w-sm mx-auto space-y-4 px-6 py-4">
+            <div className="fixed inset-0 z-40 flex items-center justify-center pointer-events-none">
+              <div className="bg-orange-950/80 border border-orange-700/50 rounded-2xl px-5 py-4 text-center shadow-2xl backdrop-blur-sm max-w-[85vw]">
+                <p className="text-3xl mb-2">🔫</p>
+                <p className="text-orange-400 text-sm font-black tracking-wider">
+                  O Caçador foi linchado! Antes de morrer, ele pode atirar em alguém...
+                </p>
+                <p className="text-neutral-500 text-[10px] mt-2">
+                  {hunterPending ? 'Aguardando o Caçador escolher...' : 'O Caçador decidiu não atirar.'}
+                </p>
+              </div>
+            </div>
+            <div className="pt-24">
+              {!hunterPending && (
+                <button
+                  onClick={handleAdvanceAfterHunter}
+                  className="w-full py-4 rounded-2xl font-bold text-lg tracking-wider bg-red-700 text-white hover:bg-red-600 active:bg-red-800 shadow-lg shadow-red-900/40 transition-all duration-200 cursor-pointer"
+                >
+                  ⚖️ Avançar para Julgamento
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -774,6 +814,10 @@ export default function GameScreen() {
           />
         )}
 
+        {dayStep === 'announcement' && hunterPending && player.role === 'hunter' && (
+          <HunterRetaliatePanel roomId={roomId} hunterId={player.id} />
+        )}
+
         {dayStep === 'prince_reveal' && lastEvent?.type === 'prince_reveal' && (
           <div className="flex flex-1 flex-col items-center justify-center px-6 gap-4">
             <div className="fixed inset-0 z-40 flex items-center justify-center pointer-events-none">
@@ -787,6 +831,31 @@ export default function GameScreen() {
             <p className="text-neutral-500 text-sm text-center mt-32">
               O dia foi cancelado pela autoridade do Príncipe. Todos vão dormir.
             </p>
+          </div>
+        )}
+
+        {dayStep === 'hunter_reveal' && (
+          <div className="flex flex-1 flex-col items-center justify-center px-6 gap-4">
+            <div className="fixed inset-0 z-40 flex items-center justify-center pointer-events-none">
+              <div className="bg-orange-950/80 border border-orange-700/50 rounded-2xl px-5 py-4 text-center shadow-2xl backdrop-blur-sm max-w-[85vw]">
+                <p className="text-3xl mb-2">🔫</p>
+                <p className="text-orange-400 text-sm font-black tracking-wider">
+                  O Caçador foi linchado! Antes de morrer, ele pode atirar em alguém...
+                </p>
+              </div>
+            </div>
+            {hunterPending && player.role === 'hunter' && !isAlive && (
+              <div className="mt-32 w-full max-w-sm px-6">
+                <HunterRetaliatePanel roomId={roomId} hunterId={player.id} />
+              </div>
+            )}
+            {!hunterPending && (
+              <p className="text-neutral-500 text-sm text-center mt-32">
+                {player.role === 'hunter' && !isAlive
+                  ? 'Você decidiu não atirar.'
+                  : 'Aguardando o Caçador...'}
+              </p>
+            )}
           </div>
         )}
 
@@ -827,6 +896,12 @@ export default function GameScreen() {
                 Comunique-se com a vila para entender o que está acontecendo durante a noite.
               </p>
             </div>
+
+            {player.role === 'marksman' && isAlive && !player.hasUsedPower && (
+              <div className="w-full max-w-sm mx-auto px-6">
+                <MarksmanPanel roomId={roomId} playerId={player.id} />
+              </div>
+            )}
 
             <div className="w-full max-w-sm mx-auto px-6 pb-8 flex flex-col items-center gap-3">
               <TimerDisplay

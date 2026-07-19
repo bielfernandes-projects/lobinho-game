@@ -29,6 +29,9 @@ export const ROLE_STYLE: Record<string, string> = {
   pacifist: 'bg-sky-100 text-sky-700 border-sky-300',
   idiot: 'bg-amber-100 text-amber-700 border-amber-300',
   sorceress: 'bg-purple-100 text-purple-700 border-purple-300',
+  hunter: 'bg-orange-100 text-orange-700 border-orange-300',
+  squire: 'bg-cyan-100 text-cyan-700 border-cyan-300',
+  marksman: 'bg-red-100 text-red-700 border-red-300',
 }
 
 export const ROLE_LABEL: Record<string, string> = {
@@ -53,6 +56,9 @@ export const ROLE_LABEL: Record<string, string> = {
   idiot: '🤪 Idiota',
   sorceress: '🔮 Feiticeira',
   moderator: '🎙️ Mestre',
+  hunter: '🔫 Caçador',
+  squire: '🛡️ Escudeiro',
+  marksman: '🎯 Atirador',
 }
 
 export const ROLE_TRANSLATION: Record<string, string> = {
@@ -77,6 +83,9 @@ export const ROLE_TRANSLATION: Record<string, string> = {
   lone_wolf: 'Lobo Solitário',
   alpha_wolf: 'Lobo Alfa',
   moderator: 'Mestre',
+  hunter: 'Caçador',
+  squire: 'Escudeiro',
+  marksman: 'Atirador',
 }
 
 export const CARD_CATALOG: CardDefinition[] = [
@@ -233,5 +242,29 @@ export const CARD_CATALOG: CardDefinition[] = [
     team: 'wolf',
     description:
       'Uma vez por jogo, você pode transformar a vítima dos lobos em um Lobisomem em vez de matá-la.',
+  },
+  {
+    id: 'hunter',
+    name: 'Hunter',
+    points: 3,
+    team: 'village',
+    description:
+      'Quando você morrer, pode atirar em um jogador. Sua vítima morre imediatamente antes de você.',
+  },
+  {
+    id: 'squire',
+    name: 'Squire',
+    points: 1,
+    team: 'village',
+    description:
+      'Se o Príncipe morrer, você assume seu lugar e se torna o novo Príncipe.',
+  },
+  {
+    id: 'marksman',
+    name: 'Marksman',
+    points: 2,
+    team: 'village',
+    description:
+      'Uma vez por jogo, durante o dia, você pode atirar em um jogador antes do tribunal.',
   },
 ]

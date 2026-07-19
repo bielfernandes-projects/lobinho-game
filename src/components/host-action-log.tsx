@@ -32,6 +32,7 @@ const ACTION_LABEL: Record<string, string> = {
   alpha_infect: '🐺 infectou',
   sorceress_search: '🔮 procurou a Vidente em',
   mason_recognition: '🧱 reconheceu Maçons',
+  hunter_shot: '🔫 atirou em',
 }
 
 export function HostActionLog({ roomId, turnIndex }: HostActionLogProps) {

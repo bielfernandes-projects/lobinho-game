@@ -3,6 +3,27 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — Hunter, Squire, Marksman: 3 new village roles
+- **3 new VILLAGE roles** (no new win conditions):
+  - **Hunter (Caçador)** `hunter` (+2 pts): When killed (lynch or night), enters `hunter_pending` state. Dead Hunter chooses a revenge target or skips. Retaliation kills the target instantly. Triggered via new `day_step = 'hunter_reveal'` (lynch path) or during `announcement` (night death path).
+  - **Squire (Escudeiro)** `squire` (+2 pts): Passive role. When the Prince dies by any cause, the alive Squire's role is updated to `prince` (inheriting the protection). Logic lives in the same death-resolution RPCs (`resolve_night`, `host_execute_accused`, `resolve_day_vote`).
+  - **Marksman (Atirador)** `marksman` (+2 pts): Unique DAY action. During `day_step = 'discussion'`, the Marksman can shoot one player via `marksman_shoot` RPC. One-use (`has_used_power`).
+- **Database** (`20260719120000_hunter_squire_marksman.sql`):
+  - `game_state` gained `hunter_pending BOOLEAN DEFAULT FALSE` and `hunter_id UUID DEFAULT NULL`.
+  - `players_role_check` updated with `hunter`, `squire`, `marksman`.
+  - `night_actions_action_type_check` updated with `hunter_shot`.
+  - New RPCs: `hunter_retaliate`, `advance_after_hunter`, `marksman_shoot`.
+  - Updated RPCs: `resolve_night` (Squire promotion on wolf kill), `host_execute_accused` (Squire promotion on lynch), `resolve_day_vote` (Squire promotion on lynch), `check_game_over` + `trg_check_game_over` (Hunter pending gate: game doesn't end while Hunter is pending).
+  - New `day_step`: `hunter_reveal` — sits between `lynch` and `lynch_reveal`; host waits for Hunter to act, then advances.
+- **Frontend**:
+  - `src/lib/cards.ts`: 3 new entries in `CARD_CATALOG`, `ROLE_STYLE`, `ROLE_LABEL`, `ROLE_TRANSLATION`.
+  - `src/hooks/use-room.ts`: `GameStateRow` includes `hunter_pending` and `hunter_id`; `useGameState` selects both columns.
+  - `src/components/hunter-retaliate-panel.tsx`: dead Hunter picks revenge target or skips.
+  - `src/components/marksman-panel.tsx`: day-action button + modal for target selection.
+  - `src/app/game/[id]/page.tsx`: dead-player bypass for pending Hunter; `HunterRetaliatePanel` rendered during `announcement` (night death) and `hunter_reveal` (lynch death); `MarksmanPanel` rendered during `discussion` for alive Marksman with unused power; host phase display includes `hunter_reveal`; host controls include advance button for `hunter_reveal`.
+  - `src/components/host-action-log.tsx`: `hunter_shot: '🔫 atirou em'` label added.
+- **Files**: `supabase/migrations/20260719120000_hunter_squire_marksman.sql`, `src/lib/cards.ts`, `src/hooks/use-room.ts`, `src/components/hunter-retaliate-panel.tsx`, `src/components/marksman-panel.tsx`, `src/app/game/[id]/page.tsx`, `src/components/host-action-log.tsx`, `docs/architecture.md`.
+
 ### `<current>` — Player limits 6-78, nomes em inglês, player list /78
 - **Mínimo de jogadores 6**: `scenario-builder.tsx` validação e mensagem de erro alteradas de 4 para 6.
 - **Máximo de jogadores 78** (77 jogadores + 1 mestre): `max_players: 78` na criação da sala (`page.tsx`); `player-list.tsx` mostra `{total}/78`; ScenarioBuilder valida `playerCount <= 77` (exclui host).
