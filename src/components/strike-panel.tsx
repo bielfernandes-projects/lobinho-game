@@ -24,6 +24,7 @@ export function StrikePanel({ roomId, players, onPlayerKilled }: StrikePanelProp
   const [confirmTarget, setConfirmTarget] = useState<{ id: string; name: string } | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [collapsed, setCollapsed] = useState(true)
   const supabase = createClient()
 
   // Sincronizar strikes iniciais dos jogadores
@@ -116,88 +117,96 @@ export function StrikePanel({ roomId, players, onPlayerKilled }: StrikePanelProp
   const alivePlayers = players.filter((p) => !p.isHost && p.isAlive)
 
   return (
-    <div className="w-full max-w-sm mx-auto py-4 border-t border-neutral-800 space-y-3">
-      <p className="text-orange-500 text-[10px] uppercase tracking-widest text-center font-bold">
-        ⚠️ Strikes
-      </p>
+    <div className="w-full max-w-sm mx-auto py-4 space-y-2">
+      <button
+        onClick={() => setCollapsed((c) => !c)}
+        className="w-full flex items-center justify-between px-4 py-2 rounded-xl bg-neutral-900/80 border border-neutral-800 text-xs uppercase tracking-widest text-orange-500 hover:text-orange-400 transition-colors cursor-pointer"
+      >
+        <span>⚠️ Strikes</span>
+        <span className="text-neutral-600">{collapsed ? '▼' : '▲'}</span>
+      </button>
 
-      {error && (
-        <p className="text-red-500 text-[10px] text-center">{error}</p>
-      )}
+      {!collapsed && (
+        <div className="space-y-3 border-t border-neutral-800 pt-3">
+          {error && (
+            <p className="text-red-500 text-[10px] text-center">{error}</p>
+          )}
 
-      {alivePlayers.length === 0 ? (
-        <p className="text-neutral-600 text-[10px] text-center">Nenhum jogador vivo.</p>
-      ) : (
-        <div className="space-y-2">
-          {alivePlayers.map((p) => {
-            const count = strikes[p.id] ?? 0
-            const isAtMax = count >= MAX_STRIKES
-            return (
-              <div
-                key={p.id}
-                className={`
-                  flex items-center gap-2 rounded-lg border px-3 py-2
-                  ${isAtMax
-                    ? 'border-red-600/60 bg-red-950/20'
-                    : 'border-neutral-800 bg-neutral-900'
-                  }
-                `}
-              >
-                <span className="flex-1 text-sm text-neutral-300 truncate">
-                  {p.name}
-                </span>
-                <div className="flex items-center gap-1">
-                  {[0, 1, 2].map((i) => (
-                    <span
-                      key={i}
-                      className={`
-                        w-2 h-2 rounded-full
-                        ${i < count ? 'bg-red-500' : 'bg-neutral-700'}
-                      `}
-                    />
-                  ))}
-                  <span
+          {alivePlayers.length === 0 ? (
+            <p className="text-neutral-600 text-[10px] text-center">Nenhum jogador vivo.</p>
+          ) : (
+            <div className="space-y-2">
+              {alivePlayers.map((p) => {
+                const count = strikes[p.id] ?? 0
+                const isAtMax = count >= MAX_STRIKES
+                return (
+                  <div
+                    key={p.id}
                     className={`
-                      text-[10px] font-bold tabular-nums ml-1 min-w-[2.5ch] text-center
-                      ${isAtMax ? 'text-red-400' : 'text-neutral-500'}
+                      flex items-center gap-2 rounded-lg border px-3 py-2
+                      ${isAtMax
+                        ? 'border-red-600/60 bg-red-950/20'
+                        : 'border-neutral-800 bg-neutral-900'
+                      }
                     `}
                   >
-                    {count}/3
-                  </span>
-                </div>
-                <button
-                  onClick={() => removeStrike(p.id)}
-                  disabled={busy === p.id || count === 0}
-                  className="
-                    px-2 py-1 rounded-md text-xs font-bold
-                    bg-neutral-800 border border-neutral-700 text-neutral-400
-                    hover:text-neutral-200 hover:border-neutral-600
-                    disabled:opacity-30 disabled:cursor-not-allowed
-                    transition-all duration-200 cursor-pointer
-                  "
-                  title="Remover strike"
-                >
-                  −
-                </button>
-                <button
-                  onClick={() => addStrike(p.id)}
-                  disabled={busy === p.id || isAtMax}
-                  className={`
-                    px-2 py-1 rounded-md text-xs font-bold
-                    ${isAtMax
-                      ? 'bg-red-800/40 border border-red-700/50 text-red-300 animate-pulse'
-                      : 'bg-neutral-800 border border-neutral-700 text-neutral-400 hover:text-red-300 hover:border-red-700/50'
-                    }
-                    disabled:opacity-30 disabled:cursor-not-allowed
-                    transition-all duration-200 cursor-pointer
-                  `}
-                  title={isAtMax ? '3/3 — clique para eliminar' : 'Adicionar strike'}
-                >
-                  +
-                </button>
-              </div>
-            )
-          })}
+                    <span className="flex-1 text-sm text-neutral-300 truncate">
+                      {p.name}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      {[0, 1, 2].map((i) => (
+                        <span
+                          key={i}
+                          className={`
+                            w-2 h-2 rounded-full
+                            ${i < count ? 'bg-red-500' : 'bg-neutral-700'}
+                          `}
+                        />
+                      ))}
+                      <span
+                        className={`
+                          text-[10px] font-bold tabular-nums ml-1 min-w-[2.5ch] text-center
+                          ${isAtMax ? 'text-red-400' : 'text-neutral-500'}
+                        `}
+                      >
+                        {count}/3
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => removeStrike(p.id)}
+                      disabled={busy === p.id || count === 0}
+                      className="
+                        px-2 py-1 rounded-md text-xs font-bold
+                        bg-neutral-800 border border-neutral-700 text-neutral-400
+                        hover:text-neutral-200 hover:border-neutral-600
+                        disabled:opacity-30 disabled:cursor-not-allowed
+                        transition-all duration-200 cursor-pointer
+                      "
+                      title="Remover strike"
+                    >
+                      −
+                    </button>
+                    <button
+                      onClick={() => addStrike(p.id)}
+                      disabled={busy === p.id || isAtMax}
+                      className={`
+                        px-2 py-1 rounded-md text-xs font-bold
+                        ${isAtMax
+                          ? 'bg-red-800/40 border border-red-700/50 text-red-300 animate-pulse'
+                          : 'bg-neutral-800 border border-neutral-700 text-neutral-400 hover:text-red-300 hover:border-red-700/50'
+                        }
+                        disabled:opacity-30 disabled:cursor-not-allowed
+                        transition-all duration-200 cursor-pointer
+                      `}
+                      title={isAtMax ? '3/3 — clique para eliminar' : 'Adicionar strike'}
+                    >
+                      +
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
 

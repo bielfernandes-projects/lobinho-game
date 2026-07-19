@@ -10,6 +10,7 @@ interface RoleRow {
   name: string
   role: string
   is_alive: boolean
+  is_host: boolean
   has_viewed_card: boolean
   soulmate_id: string | null
   in_cult: boolean
@@ -107,7 +108,7 @@ export function HostRolePanel({ roomId, isHost }: HostRolePanelProps) {
             </div>
           )}
           <div className="divide-y divide-neutral-800">
-            {rows.filter((r) => r.role !== 'moderator').map((r) => (
+            {rows.filter((r) => !r.is_host).map((r) => (
               <div key={r.id} className="flex items-center gap-3 px-4 py-2.5">
                 <span
                   className={`w-2 h-2 rounded-full shrink-0 ${
@@ -135,7 +136,7 @@ export function HostRolePanel({ roomId, isHost }: HostRolePanelProps) {
                     ⓘ
                   </button>
                 </span>
-                {r.is_alive && r.role !== 'moderator' && (
+                {r.is_alive && !r.is_host && (
                   <button
                     onClick={() => setKillTarget({ id: r.id, name: r.name })}
                     className="text-sm opacity-60 hover:opacity-100 hover:text-red-400 transition-all duration-200 cursor-pointer shrink-0"
@@ -146,7 +147,7 @@ export function HostRolePanel({ roomId, isHost }: HostRolePanelProps) {
                 )}
               </div>
             ))}
-            {rows.filter((r) => r.role !== 'moderator').length === 0 && !error && (
+            {rows.filter((r) => !r.is_host).length === 0 && !error && (
               <div className="px-4 py-6 text-center">
                 <p className="text-neutral-700 text-xs">Nenhum jogador encontrado</p>
               </div>

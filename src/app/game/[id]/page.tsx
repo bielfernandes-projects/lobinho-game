@@ -126,6 +126,7 @@ export default function GameScreen() {
       .from('players')
       .select('role, has_used_power')
       .eq('room_id', roomId)
+      .eq('is_alive', true)
       .neq('role', 'moderator')
       .in('role', ['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf', 'seer', 'witch', 'priest', 'bodyguard', 'aura_seer', 'cupid', 'cult_leader', 'mason', 'sorceress', 'doppelganger'])
       .then(({ data }) => {
@@ -269,7 +270,7 @@ export default function GameScreen() {
   // Check if current player was cursed by wolves
   useEffect(() => {
     if (!player || !lastEvent || showCursedBanner) return
-    if ((lastEvent as any)?.cursed_converted && (lastEvent as any)?.cursed_converted_name === player.name) {
+    if ((lastEvent as any)?.cursed_converted && (lastEvent as any)?.cursed_converted_id === player.id) {
       setShowCursedBanner(true)
     }
   }, [lastEvent, player, showCursedBanner])
@@ -367,6 +368,7 @@ export default function GameScreen() {
   if (turnIndex !== prevTurnRef.current) {
     prevTurnRef.current = turnIndex
     nightRolesActedRef.current = new Set()
+    setResolvedActions(new Set())
   }
 
   // Reset actedRoles when nightStep changes; track visited roles
@@ -459,6 +461,22 @@ export default function GameScreen() {
             )}
           </p>
         </div>
+
+        {phase === 'scenario_reveal' && (
+          <div className="w-full px-6 pb-4">
+            <ScenarioExplanation
+              roomId={roomId}
+              isHost={true}
+              playerId={player.id}
+              onStart={async () => {
+                await supabase.rpc('advance_to_card_reveal', { p_room_id: roomId })
+              }}
+              onBackToLobby={async () => {
+                await supabase.rpc('back_to_lobby_from_scenario', { p_room_id: roomId })
+              }}
+            />
+          </div>
+        )}
 
         {phase === 'day' && dayStep === 'announcement' && (
           <DayAnnouncement
@@ -841,19 +859,6 @@ export default function GameScreen() {
           />
         </div>
       </div>
-    )
-  }
-
-  // ── Phase: scenario_reveal (jogadores) ───────────────────────────
-  if (phase === 'scenario_reveal') {
-    return (
-      <ScenarioExplanation
-        roomId={roomId}
-        isHost={false}
-        playerId={player.id}
-        onStart={async () => {}}
-        onBackToLobby={async () => {}}
-      />
     )
   }
 

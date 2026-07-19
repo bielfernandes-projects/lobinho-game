@@ -3,7 +3,30 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
-### `<current>` — QoL based on real testing: stale screens fix, custom timer, strikes, scenario explanation, PWA
+### `<current>` — Critical audit fixes: host visibility, rule corrections, constraint fix, collapsible strikes
+- **Fix: host aparecia na lista de jogadores** — `start_game` agora seta `role = 'moderator'` no host. `HostRolePanel` filtra por `is_host` em vez de `role !== 'moderator'`. `fetch_roles_for_host` agora retorna `is_host` no JSON.
+- **Fix: constraint `game_state_current_phase_check`** — Adicionado `'scenario_reveal'` à constraint CHECK (antes era `card_reveal, night, day, vote, ended`). Sem isso, `start_game` falhava com erro de constraint.
+- **Fix: botão avançar para host na scenario_reveal** — Dashboard do host agora renderiza `ScenarioExplanation` com botões "Iniciar Jogo" e "Voltar ao Lobby" quando `phase = 'scenario_reveal'`. Antes, o host ficava sem ações nessa fase.
+- **Fix: strikes expansível** — `StrikePanel` agora tem toggle ▼/▲ (colapsa por padrão), consistente com o "Painel do Mestre".
+- **Fix: Cursed sobrevive ao linchamento** — `host_execute_accused` e `resolve_day_vote` agora convertem Cursed → werewolf **sem matar**. Avança direto para noite. Regra 5.6/7.3: "When LYNCHED: does NOT die, role changes to werewolf."
+- **Fix: Prince imunidade one-shot** — Nova coluna `game_state.prince_revealed BOOLEAN DEFAULT false`. Na 1ª vez que Príncipe é linchado, revela identidade e sobrevive. Nas vezes seguintes, morre normalmente. Regra 5.4/7.3.
+- **Fix: Squire só é promovido quando Prince MORRE** — Removida promoção do bloco de Prince (que sobrevive). Squire agora só é promovido quando Prince morre via soulmate. Regra 7.7.
+- **Fix: Mayor voto x2 no backend** — `resolve_day_vote` agora faz `SUM(CASE WHEN role='mayor' THEN 2 ELSE 1)` em vez de `COUNT(*)`. Regra 5.3.
+- **Fix: `availableNightRoles` filtra mortos** — Adicionado `.eq('is_alive', true)` na query. Botões de acordar papéis mortos não aparecem mais.
+- **Fix: `resolvedActions` reset no turno** — Agora é resetado quando `turnIndex` muda, evitando botões desabilitados indevidamente.
+- **Fix: Cursed banner usa `player.id`** — Evita falsos positivos com nomes duplicados.
+- **Fix: Pacifist points** — Corrigido de `-1` para `+2` em `cards.ts` (conf. regra 7.3).
+- **Fix: Sorceress cor** — Corrigido de roxo para vermelho em `ROLE_STYLE` (time wolf).
+- **Fix: código duplicado removido** — Bloco morto de `scenario_reveal` para jogadores removido de `page.tsx`.
+- **Database** (migrations via CLI, arquivos deletados):
+  - `game_state_current_phase_check` inclui `scenario_reveal`.
+  - `start_game` seta `role = 'moderator'` no host.
+  - `fetch_roles_for_host` retorna `is_host`.
+  - `game_state.prince_revealed BOOLEAN DEFAULT false`.
+  - `host_execute_accused` e `resolve_day_vote` reescritos com Cursed survival, Prince one-shot, Squire-only-on-death, Mayor x2.
+- **Files**: `src/app/game/[id]/page.tsx`, `src/components/host-role-panel.tsx`, `src/components/strike-panel.tsx`, `src/lib/cards.ts`, `docs/architecture.md`.
+
+### `<current-1>` — QoL based on real testing: stale screens fix, custom timer, strikes, scenario explanation, PWA
 - **Stale screens fix** — Supabase Realtime agora com `heartbeatIntervalMs: 10000` (padrão era 30s) e `re-subscribe` automático em `useGameState`/`useCurrentPlayer`/`useRoomPlayers`. `useRoomPlayers` agora tem Realtime no `players` (mortes/role changes em tempo real). Polling do `useGameState` reduzido de 5s→2s. `useCurrentPlayer` 10s→5s. Reconnect silencioso após 3s em caso de `CHANNEL_ERROR`/`TIMED_OUT`/`CLOSED`.
 - **Free-form debate time** — `HostTimerControls` agora tem `<input type="number">` (0.5–30 min, decimais) substituindo os 5 botões de preset. `VoteTimerPanel` também aceita input (0.5–10 min).
 - **Day timer persistente** — Timer do dia agora aparece em TODAS as sub-fases do dia (discussion, trial, voting, reveal) tanto para host quanto para jogadores. O host pode pausar/retomar manualmente — a transição entre fases não pausa o cronômetro.
@@ -20,9 +43,9 @@ A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, S
 
 ### `<current>` — Diseased, Cursed, Doppelgänger: 3 new roles (official rulebook)
 - **3 new roles** (verified against official PDFs in `game_archives/`):
-  - **Diseased (Doente)** `diseased` (+2 pts, village): When wolves kill the Diseased, wolves' next night kill is skipped (`game_state.diseased_skip_wolves = true`). Triggered in `resolve_night` when victim has `role = 'diseased'`. Flag is consumed next night (same function checks and clears it before wolves resolve).
-  - **Cursed (Amaldiçoado)** `cursed` (+3 pts, village→wolf): When attacked by wolves OR lynched, the Cursed is NOT killed — instead their role is updated to `werewolf` and they join the wolf team. Banner shown to player via `cursed_converted` event data. Seer sees as Villager until conversion. Logic in `resolve_night`, `host_execute_accused`, `resolve_day_vote`.
-  - **Doppelgänger (Doppelgänger)** `doppelganger` (+2 pts, village→target's team): Night 1 only — picks a target via `doppelganger_select` RPC. When target dies (any cause), Doppelgänger secretly becomes target's role. Until then, they're on Village team and Seer sees as Villager. Logic in `resolve_night` (copies role on target death) and `host_execute_accused` / `resolve_day_vote` (same copy on lynch). `players.doppelganger_target_id` column tracks the bond.
+  - **Diseased (Doente)** `diseased` (+3 pts, village): When wolves kill the Diseased, wolves' next night kill is skipped (`game_state.diseased_skip_wolves = true`). Triggered in `resolve_night` when victim has `role = 'diseased'`. Flag is consumed next night (same function checks and clears it before wolves resolve).
+  - **Cursed (Amaldiçoado)** `cursed` (-3 pts, village→wolf): When attacked by wolves, the Cursed is NOT killed — instead their role is updated to `werewolf` and they join the wolf team. When LYNCHED, same conversion but Cursed SURVIVES (does not die). Banner shown to player via `cursed_converted` event data. Seer sees as Villager until conversion. Logic in `resolve_night`, `host_execute_accused`, `resolve_day_vote`.
+  - **Doppelgänger (Doppelgänger)** `doppelganger` (-2 pts, village→target's team): Night 1 only — picks a target via `doppelganger_select` RPC. When target dies (any cause), Doppelgänger secretly becomes target's role. Until then, they're on Village team and Seer sees as Villager. Logic in `resolve_night` (copies role on target death) and `host_execute_accused` / `resolve_day_vote` (same copy on lynch). `players.doppelganger_target_id` column tracks the bond.
 - **Database** (`20260719200000_diseased_cursed_doppelganger.sql`):
   - `game_state` gained `diseased_skip_wolves BOOLEAN DEFAULT FALSE`.
   - `players` gained `doppelganger_target_id UUID REFERENCES players(id)`.

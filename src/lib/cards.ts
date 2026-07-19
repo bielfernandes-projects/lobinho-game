@@ -28,7 +28,7 @@ export const ROLE_STYLE: Record<string, string> = {
   mason: 'bg-emerald-100 text-emerald-700 border-emerald-300',
   pacifist: 'bg-sky-100 text-sky-700 border-sky-300',
   idiot: 'bg-amber-100 text-amber-700 border-amber-300',
-  sorceress: 'bg-purple-100 text-purple-700 border-purple-300',
+  sorceress: 'bg-red-100 text-red-700 border-red-300',
   hunter: 'bg-orange-100 text-orange-700 border-orange-300',
   squire: 'bg-cyan-100 text-cyan-700 border-cyan-300',
   marksman: 'bg-red-100 text-red-700 border-red-300',
@@ -210,7 +210,7 @@ export const CARD_CATALOG: CardDefinition[] = [
   {
     id: 'pacifist',
     name: 'Pacifist',
-    points: -1,
+    points: 2,
     team: 'village',
     description: 'Você odeia violência. Seu voto no tribunal é SEMPRE pela absolvição (NÃO).',
   },
