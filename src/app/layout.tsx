@@ -18,6 +18,20 @@ export const metadata: Metadata = {
   title: "Lobinho",
   description: "A Werewolf Game Based — Jogo de dedução social multiplayer",
   manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/icon-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512x512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/icon-192x192.png", sizes: "192x192", type: "image/png" },
+    ],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Lobinho",
+  },
 };
 
 export const viewport = {

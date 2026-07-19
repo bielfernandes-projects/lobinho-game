@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import type { RealtimeChannel } from '@supabase/supabase-js'
 
 interface Player {
   id: string
@@ -54,6 +55,7 @@ export function useCurrentPlayer(roomId: string) {
   useEffect(() => {
     const supabase = createClient()
     let myUserId: string | undefined
+    let channelRef: RealtimeChannel | null = null
 
     async function load() {
       const { data: { user } } = await supabase.auth.getUser()
@@ -74,34 +76,47 @@ export function useCurrentPlayer(roomId: string) {
       setLoading(false)
     }
 
-    load()
-
-    // Polling de fallback a cada 10s (caso Realtime caia)
-    const pollInterval = setInterval(load, 10000)
-
-    const channel = supabase
-      .channel(`self:${roomId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'players',
-          filter: `room_id=eq.${roomId}`,
-        },
-        (payload) => {
-          if (!payload.new || !myUserId) return
-          const raw = payload.new as RawPlayer
-          if (raw.user_id === myUserId) {
-            setPlayer(normalize(raw))
+    function setupChannel() {
+      if (!myUserId) return
+      const channel = supabase
+        .channel(`self:${roomId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'players',
+            filter: `room_id=eq.${roomId}`,
+          },
+          (payload) => {
+            if (!payload.new || !myUserId) return
+            const raw = payload.new as RawPlayer
+            if (raw.user_id === myUserId) {
+              setPlayer(normalize(raw))
+            }
           }
-        }
-      )
-      .subscribe()
+        )
+        .subscribe((status: string) => {
+          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+            console.warn('[useCurrentPlayer] channel error, re-subscribing in 3s')
+            setTimeout(() => {
+              if (channelRef) supabase.removeChannel(channelRef)
+              setupChannel()
+            }, 3000)
+          }
+        })
+      channelRef = channel
+    }
+
+    // Aguarda o primeiro load para obter myUserId antes de subscrever
+    load().then(() => setupChannel())
+
+    // Polling de fallback a cada 5s (caso Realtime caia)
+    const pollInterval = setInterval(load, 5000)
 
     return () => {
       clearInterval(pollInterval)
-      supabase.removeChannel(channel)
+      if (channelRef) supabase.removeChannel(channelRef)
     }
   }, [roomId])
 

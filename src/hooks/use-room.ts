@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import type { RealtimeChannel } from '@supabase/supabase-js'
 
 interface ProfileRow {
   id: string
@@ -39,6 +40,10 @@ export interface GameStateRow {
     wolf_votes?: number
     victim_role?: string | null
     soulmate_role?: string | null
+    cursed_converted?: boolean
+    cursed_converted_name?: string | null
+    infected_id?: string | null
+    infected_name?: string | null
   } | null
   last_vote_result: {
     type: string
@@ -70,6 +75,7 @@ export function useRoomPlayers(roomId: string) {
   const [players, setPlayers] = useState<RoomProfile[]>([])
   const [loading, setLoading] = useState(true)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const channelRef = useRef<RealtimeChannel | null>(null)
 
   useEffect(() => {
     const supabase = createClient()
@@ -87,10 +93,51 @@ export function useRoomPlayers(roomId: string) {
     }
 
     poll()
-    intervalRef.current = setInterval(poll, 4000)
+    // Polling de fallback reduzido de 4s para 3s
+    intervalRef.current = setInterval(poll, 3000)
+
+    // Realtime subscription para mortes, role changes, etc. em tempo real
+    const channel = supabase
+      .channel(`room-players:${roomId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'players',
+          filter: `room_id=eq.${roomId}`,
+        },
+        () => {
+          // Refetch on any change to keep state synced
+          poll()
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          // Tenta re-subscribe após 3s
+          setTimeout(() => {
+            supabase.removeChannel(channel)
+            channelRef.current = supabase
+              .channel(`room-players:${roomId}`)
+              .on(
+                'postgres_changes',
+                {
+                  event: '*',
+                  schema: 'public',
+                  table: 'players',
+                  filter: `room_id=eq.${roomId}`,
+                },
+                () => poll()
+              )
+              .subscribe()
+          }, 3000)
+        }
+      })
+    channelRef.current = channel
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
+      if (channelRef.current) supabase.removeChannel(channelRef.current)
     }
   }, [roomId])
 
@@ -100,6 +147,7 @@ export function useRoomPlayers(roomId: string) {
 export function useGameState(roomId: string) {
   const [state, setState] = useState<GameStateRow | null>(null)
   const [loading, setLoading] = useState(true)
+  const channelRef = useRef<RealtimeChannel | null>(null)
 
   useEffect(() => {
     const supabase = createClient()
@@ -125,8 +173,8 @@ export function useGameState(roomId: string) {
 
     load()
 
-    // Polling de fallback a cada 5s (caso Realtime caia)
-    const pollInterval = setInterval(load, 5000)
+    // Polling de fallback a cada 2s (fase de jogo é crítica)
+    const pollInterval = setInterval(load, 2000)
 
     const channel = supabase
       .channel(`game-state:${roomId}`)
@@ -144,11 +192,36 @@ export function useGameState(roomId: string) {
           }
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          console.warn('[useGameState] channel error, attempting re-subscribe in 3s')
+          setTimeout(() => {
+            supabase.removeChannel(channel)
+            channelRef.current = supabase
+              .channel(`game-state:${roomId}`)
+              .on(
+                'postgres_changes',
+                {
+                  event: '*',
+                  schema: 'public',
+                  table: 'game_state',
+                  filter: `room_id=eq.${roomId}`,
+                },
+                (payload) => {
+                  if (payload.new) {
+                    setState(payload.new as GameStateRow)
+                  }
+                }
+              )
+              .subscribe()
+          }, 3000)
+        }
+      })
+    channelRef.current = channel
 
     return () => {
       clearInterval(pollInterval)
-      supabase.removeChannel(channel)
+      if (channelRef.current) supabase.removeChannel(channelRef.current)
     }
   }, [roomId])
 

@@ -33,6 +33,8 @@ import { GraveyardList } from '@/components/graveyard-list'
 import { HunterRetaliatePanel } from '@/components/hunter-retaliate-panel'
 import { MarksmanPanel } from '@/components/marksman-panel'
 import { DoppelgangerPanel } from '@/components/doppelganger-panel'
+import { StrikePanel } from '@/components/strike-panel'
+import { ScenarioExplanation } from '@/components/scenario-explanation'
 import type { RevealMode } from '@/lib/reveal'
 
 export default function GameScreen() {
@@ -438,6 +440,7 @@ export default function GameScreen() {
         <div className="w-full px-6 pt-8 pb-4 text-center">
           <p className="text-neutral-600 text-[10px] uppercase tracking-widest mb-1">Fase</p>
           <p className="text-sm font-bold tracking-wider uppercase">
+            {phase === 'scenario_reveal' && '📜 Cenário'}
             {phase === 'card_reveal' && '🎴 Revelação'}
             {phase === 'night' && '🌙 Noite'}
             {phase === 'day' && (
@@ -451,7 +454,7 @@ export default function GameScreen() {
                 {dayStep === 'reveal' && ' - Julgamento'}
               </>
             )}
-            {!'card_reveal night day vote'.includes(phase) && (
+            {!'scenario_reveal card_reveal night day vote'.includes(phase) && (
               <span className="text-red-500">⚠️ {phase}</span>
             )}
           </p>
@@ -683,25 +686,29 @@ export default function GameScreen() {
 
         {phase === 'day' && dayStep !== 'announcement' && (
           <>
+            {/* Cronômetro do dia — visível em TODAS as sub-fases do dia
+                para que o host possa controlar sem que a transição
+                discussion→trial→voting pause o cronômetro. */}
+            <div className="w-full max-w-sm mx-auto py-4 flex flex-col items-center gap-3">
+              <TimerDisplay
+                remaining={timerRemaining}
+                isRunning={isTimerRunning}
+                startedAt={timerStartedAt}
+              />
+              <HostTimerControls
+                roomId={roomId}
+                isRunning={isTimerRunning}
+                hasTimer={hasTimer}
+              />
+            </div>
+
             {dayStep === 'discussion' && (
-              <div className="w-full max-w-sm mx-auto py-4 flex flex-col items-center gap-3">
-                <TimerDisplay
-                  remaining={timerRemaining}
-                  isRunning={isTimerRunning}
-                  startedAt={timerStartedAt}
-                />
-                <HostTimerControls
-                  roomId={roomId}
-                  isRunning={isTimerRunning}
-                  hasTimer={hasTimer}
-                />
-                <TribunalPanel
-                  roomId={roomId}
-                  dayStep={dayStep}
-                  accusedId={accusedId}
-                  turnIndex={turnIndex}
-                />
-              </div>
+              <TribunalPanel
+                roomId={roomId}
+                dayStep={dayStep}
+                accusedId={accusedId}
+                turnIndex={turnIndex}
+              />
             )}
 
             {dayStep === 'trial' && (
@@ -747,6 +754,13 @@ export default function GameScreen() {
         )}
 
         <div className="mt-auto pt-6 pb-8 px-6 w-full max-w-sm mx-auto">
+          <StrikePanel
+            roomId={roomId}
+            players={players}
+            onPlayerKilled={() => {
+              // Após matar, o check_game_over será disparado pelo RPC.
+            }}
+          />
           <button
             onClick={() => setShowExitModal(true)}
             className="w-full py-2.5 rounded-xl text-xs font-medium tracking-wider text-neutral-600 border border-neutral-800 hover:border-red-900/50 hover:text-red-500 transition-all duration-200 cursor-pointer bg-transparent"
@@ -782,6 +796,23 @@ export default function GameScreen() {
     )
   }
 
+  // ── Phase: scenario_reveal ──────────────────────────────────────
+  if (phase === 'scenario_reveal') {
+    return (
+      <ScenarioExplanation
+        roomId={roomId}
+        isHost={isHost || isModerator}
+        playerId={player.id}
+        onStart={async () => {
+          await supabase.rpc('advance_to_card_reveal', { p_room_id: roomId })
+        }}
+        onBackToLobby={async () => {
+          await supabase.rpc('back_to_lobby_from_scenario', { p_room_id: roomId })
+        }}
+      />
+    )
+  }
+
   // ── Phase: card_reveal ────────────────────────────────────────────
   if (phase === 'card_reveal') {
     const myCard = CARD_CATALOG.find((c) => c.id === player?.role)
@@ -810,6 +841,19 @@ export default function GameScreen() {
           />
         </div>
       </div>
+    )
+  }
+
+  // ── Phase: scenario_reveal (jogadores) ───────────────────────────
+  if (phase === 'scenario_reveal') {
+    return (
+      <ScenarioExplanation
+        roomId={roomId}
+        isHost={false}
+        playerId={player.id}
+        onStart={async () => {}}
+        onBackToLobby={async () => {}}
+      />
     )
   }
 
@@ -928,21 +972,25 @@ export default function GameScreen() {
                 <MarksmanPanel roomId={roomId} playerId={player.id} />
               </div>
             )}
-
-            <div className="w-full max-w-sm mx-auto px-6 pb-8 flex flex-col items-center gap-3">
-              <TimerDisplay
-                remaining={timerRemaining}
-                isRunning={isTimerRunning}
-                startedAt={timerStartedAt}
-              />
-
-              {hasTimer && !isTimerRunning && timerRemaining != null && timerRemaining > 0 && (
-                <p className="text-neutral-600 text-[10px] uppercase tracking-widest">
-                  ⏸️ Pausado pelo anfitrião
-                </p>
-              )}
-            </div>
           </>
+        )}
+
+        {/* Cronômetro do dia — visível em TODAS as sub-fases (discussion, trial, voting, reveal)
+            para que o tempo continue correndo sem que a transição pause. */}
+        {dayStep !== 'announcement' && dayStep !== 'prince_reveal' && dayStep !== 'lynch_reveal' && dayStep !== 'hunter_reveal' && (
+          <div className="w-full max-w-sm mx-auto px-6 pb-8 flex flex-col items-center gap-3">
+            <TimerDisplay
+              remaining={timerRemaining}
+              isRunning={isTimerRunning}
+              startedAt={timerStartedAt}
+            />
+
+            {hasTimer && !isTimerRunning && timerRemaining != null && timerRemaining > 0 && (
+              <p className="text-neutral-600 text-[10px] uppercase tracking-widest">
+                ⏸️ Pausado pelo anfitrião
+              </p>
+            )}
+          </div>
         )}
 
         {dayStep !== 'announcement' && dayStep === 'trial' && (

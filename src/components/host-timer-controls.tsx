@@ -9,24 +9,42 @@ interface HostTimerControlsProps {
   hasTimer: boolean
 }
 
-const PRESETS = [
-  { label: '1min', value: 60 },
-  { label: '2min', value: 120 },
-  { label: '3min', value: 180 },
-  { label: '5min', value: 300 },
-  { label: '10min', value: 600 },
-]
-
 export function HostTimerControls({ roomId, isRunning, hasTimer }: HostTimerControlsProps) {
   const [busy, setBusy] = useState(false)
-  const [selected, setSelected] = useState(120)
+  const [minutesInput, setMinutesInput] = useState('2')
+  const [inputError, setInputError] = useState('')
   const supabase = createClient()
 
+  function validateAndParse(): number | null {
+    const trimmed = minutesInput.trim()
+    if (!trimmed) {
+      setInputError('Digite um valor')
+      return null
+    }
+    const num = Number(trimmed)
+    if (!Number.isFinite(num) || num <= 0) {
+      setInputError('Valor inválido')
+      return null
+    }
+    if (num < 0.5) {
+      setInputError('Mínimo: 0.5 min')
+      return null
+    }
+    if (num > 30) {
+      setInputError('Máximo: 30 min')
+      return null
+    }
+    setInputError('')
+    return Math.round(num * 60)
+  }
+
   async function handleStart() {
+    const seconds = validateAndParse()
+    if (seconds == null) return
     setBusy(true)
     await supabase.rpc('start_timer', {
       p_room_id: roomId,
-      p_duration: selected,
+      p_duration: seconds,
     })
     setBusy(false)
   }
@@ -55,31 +73,47 @@ export function HostTimerControls({ roomId, isRunning, hasTimer }: HostTimerCont
       {!hasTimer && (
         <div>
           <p className="text-neutral-500 text-[10px] uppercase tracking-wider mb-2 text-center">
-            Tempo de discussão
+            Tempo de discussão (minutos)
           </p>
-          <div className="flex gap-2 justify-center">
-            {PRESETS.map((p) => (
-              <button
-                key={p.value}
-                onClick={() => setSelected(p.value)}
-                className={`
-                  px-3 py-2 rounded-lg text-xs font-bold tracking-wider transition-all duration-200 cursor-pointer
-                  ${
-                    selected === p.value
-                      ? 'bg-red-900/40 text-red-400 border border-red-800/60'
-                      : 'bg-neutral-900 text-neutral-500 border border-neutral-800 hover:text-neutral-400'
-                  }
-                `}
-              >
-                {p.label}
-              </button>
-            ))}
+          <div className="flex items-center gap-2 justify-center">
+            <input
+              type="number"
+              inputMode="decimal"
+              step="0.5"
+              min="0.5"
+              max="30"
+              value={minutesInput}
+              onChange={(e) => {
+                setMinutesInput(e.target.value)
+                if (inputError) setInputError('')
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleStart()
+              }}
+              placeholder="Minutos"
+              className="
+                w-24 px-3 py-2 rounded-lg text-sm font-bold text-center
+                bg-neutral-900 text-red-400 border border-red-800/60
+                focus:outline-none focus:border-red-600
+                tabular-nums
+                [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none
+              "
+            />
+            <span className="text-neutral-500 text-xs font-medium">min</span>
           </div>
+          {inputError && (
+            <p className="text-red-500 text-[10px] text-center mt-1">
+              {inputError}
+            </p>
+          )}
+          <p className="text-neutral-600 text-[10px] text-center mt-1">
+            Aceita decimais: 1.5 = 1min30s
+          </p>
         </div>
       )}
 
       {/* Botoes de controle */}
-      <div className="flex gap-2 justify-center">
+      <div className="flex gap-2 justify-center flex-wrap">
         {!hasTimer && (
           <button
             onClick={handleStart}

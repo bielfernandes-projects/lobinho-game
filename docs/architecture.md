@@ -3,6 +3,21 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — QoL based on real testing: stale screens fix, custom timer, strikes, scenario explanation, PWA
+- **Stale screens fix** — Supabase Realtime agora com `heartbeatIntervalMs: 10000` (padrão era 30s) e `re-subscribe` automático em `useGameState`/`useCurrentPlayer`/`useRoomPlayers`. `useRoomPlayers` agora tem Realtime no `players` (mortes/role changes em tempo real). Polling do `useGameState` reduzido de 5s→2s. `useCurrentPlayer` 10s→5s. Reconnect silencioso após 3s em caso de `CHANNEL_ERROR`/`TIMED_OUT`/`CLOSED`.
+- **Free-form debate time** — `HostTimerControls` agora tem `<input type="number">` (0.5–30 min, decimais) substituindo os 5 botões de preset. `VoteTimerPanel` também aceita input (0.5–10 min).
+- **Day timer persistente** — Timer do dia agora aparece em TODAS as sub-fases do dia (discussion, trial, voting, reveal) tanto para host quanto para jogadores. O host pode pausar/retomar manualmente — a transição entre fases não pausa o cronômetro.
+- **Strike system (x/3 + insta-kill)** — Nova coluna `strikes INT` em `players` (CHECK 0..3). RPCs `add_strike`, `remove_strike`, `insta_kill` (host only). Componente `StrikePanel` no dashboard do host lista jogadores vivos com contador 0/3 → 3/3. Em 3/3, modal de confirmação ☠️ aparece. Após confirmação, `insta_kill` mata o jogador e dispara `check_game_over`. Strikes resetam em `back_to_lobby` via `trg_reset_game`.
+- **Scenario explanation screen** — Nova fase `scenario_reveal` entre lobby e `card_reveal`. Componente `ScenarioExplanation` lista todos os papéis do cenário com nome (EN + PT), descrição, time, contagem ×N. Host vê botões "▶ Iniciar Jogo" (→ `card_reveal` via `advance_to_card_reveal`) e "↩ Voltar ao Lobby" (via `back_to_lobby_from_scenario`). Jogadores veem lista (read-only) e aguardam. `start_game` agora inicia em `scenario_reveal` em vez de `card_reveal`.
+- **PWA icons melhorados** — Manifest agora referencia PNGs (192px/512px) além de SVGs, e versões maskable. `layout.tsx` agora inclui `appleWebApp.capable: true` e `apple-touch-icon` link via metadata `icons.apple`. `InstallButton` agora detecta iOS (Safari não dispara `beforeinstallprompt`) e mostra modal com instruções "Compartilhar → Adicionar à Tela de Início". Em modo standalone (já instalado), botão não aparece.
+- **Database** (`20260719180639_strikes.sql`, `20260719190000_scenario_explanation.sql`, `20260719191000_start_game_scenario_reveal.sql`):
+  - `players.strikes INT NOT NULL DEFAULT 0 CHECK (strikes BETWEEN 0 AND 3)`
+  - New RPCs: `add_strike`, `remove_strike`, `insta_kill`, `advance_to_card_reveal`, `back_to_lobby_from_scenario`
+  - Updated RPC: `start_game` agora cria `game_state` com `current_phase = 'scenario_reveal'`
+  - Updated constraint: `night_actions_action_type_check` agora inclui `'insta_kill'`
+  - `trg_reset_game` resetada para limpar `strikes` ao voltar para `waiting`
+- **Files**: `src/lib/supabase/client.ts`, `src/hooks/use-room.ts`, `src/hooks/use-player.ts`, `src/components/host-timer-controls.tsx`, `src/components/vote-timer-panel.tsx`, `src/components/strike-panel.tsx`, `src/components/scenario-explanation.tsx`, `src/components/install-button.tsx`, `src/app/game/[id]/page.tsx`, `src/app/layout.tsx`, `public/manifest.json`, `public/icon-192x192.png`, `public/icon-512x512.png`, `public/icon-maskable-192x192.png`, `public/icon-maskable-512x512.png`, `supabase/migrations/20260719180639_strikes.sql`, `supabase/migrations/20260719190000_scenario_explanation.sql`, `supabase/migrations/20260719191000_start_game_scenario_reveal.sql`, `docs/architecture.md`.
+
 ### `<current>` — Diseased, Cursed, Doppelgänger: 3 new roles (official rulebook)
 - **3 new roles** (verified against official PDFs in `game_archives/`):
   - **Diseased (Doente)** `diseased` (+2 pts, village): When wolves kill the Diseased, wolves' next night kill is skipped (`game_state.diseased_skip_wolves = true`). Triggered in `resolve_night` when victim has `role = 'diseased'`. Flag is consumed next night (same function checks and clears it before wolves resolve).
