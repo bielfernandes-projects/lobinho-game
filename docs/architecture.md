@@ -3,6 +3,19 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — Crash prevention + scenario explanation RLS fix (commit `97d79fd`)
+- **Fix: Scenario Explanation vazia para jogadores** — RLS impedia jogadores não-host de lerem a coluna `role` na tabela `players`. Query direta `from('players').select('id, role, is_host')` retornava `role = null` para não-hosts, causando "Nenhum papel encontrado". Solução: nova RPC `get_scenario_composition(p_room_id)` (`SECURITY DEFINER`) retorna `{role_id, player_count}` agregado (sem expor quem tem qual papel). `ScenarioExplanation` agora usa a RPC em vez de query direta.
+- **Fix: Vercel crash "This page couldn't load"** — Múltiplas causas de unhandled promise rejection:
+  - `error.tsx` + `global-error.tsx` criados (error boundaries) — erros agora são contidos e mostram fallback "Algo deu errado".
+  - 4 polling useEffects no `page.tsx` (night roles, winner players, vote count, night actions) envoltos em try/catch.
+  - 15+ componentes (seer-panel, witch-panel, bodyguard-panel, aura-seer-panel, priest-panel, doppelganger-panel, hunter-retaliate-panel, marksman-panel, sorceress-panel, tribunal-panel, tribunal-reveal, tribunal-voting, cupid-panel, cult-leader-panel, mason-panel) convertidos de `.then()` sem tratamento para async IIFE com try/catch.
+  - `setResolvedActions`/`setActedRoles` movidos do corpo do render para `useEffect` (causavam setState durante render).
+  - `sorceress-panel`: `supabase` removido das deps do useEffect (causava re-renders infinitos).
+  - `useCurrentPlayer`: `.catch()` adicionado no `.then()` do `load()`.
+- **Database** (migration via CLI, arquivo deletado):
+  - Nova RPC `get_scenario_composition(p_room_id UUID)` — `SECURITY DEFINER`, retorna composição do cenário (roles + contagem) sem expor atribuições individuais.
+- **Files**: `src/app/error.tsx`, `src/app/global-error.tsx`, `src/app/game/[id]/page.tsx`, `src/components/scenario-explanation.tsx`, `src/components/seer-panel.tsx`, `src/components/witch-panel.tsx`, `src/components/bodyguard-panel.tsx`, `src/components/aura-seer-panel.tsx`, `src/components/priest-panel.tsx`, `src/components/doppelganger-panel.tsx`, `src/components/hunter-retaliate-panel.tsx`, `src/components/marksman-panel.tsx`, `src/components/sorceress-panel.tsx`, `src/components/tribunal-panel.tsx`, `src/components/tribunal-reveal.tsx`, `src/components/tribunal-voting.tsx`, `src/components/cupid-panel.tsx`, `src/components/cult-leader-panel.tsx`, `src/components/mason-panel.tsx`, `src/hooks/use-player.ts`, `docs/architecture.md`.
+
 ### `<current>` — Critical audit fixes: host visibility, rule corrections, constraint fix, collapsible strikes
 - **Fix: host aparecia na lista de jogadores** — `start_game` agora seta `role = 'moderator'` no host. `HostRolePanel` filtra por `is_host` em vez de `role !== 'moderator'`. `fetch_roles_for_host` agora retorna `is_host` no JSON.
 - **Fix: constraint `game_state_current_phase_check`** — Adicionado `'scenario_reveal'` à constraint CHECK (antes era `card_reveal, night, day, vote, ended`). Sem isso, `start_game` falhava com erro de constraint.
