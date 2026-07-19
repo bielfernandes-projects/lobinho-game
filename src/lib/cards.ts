@@ -32,6 +32,9 @@ export const ROLE_STYLE: Record<string, string> = {
   hunter: 'bg-orange-100 text-orange-700 border-orange-300',
   squire: 'bg-cyan-100 text-cyan-700 border-cyan-300',
   marksman: 'bg-red-100 text-red-700 border-red-300',
+  diseased: 'bg-lime-100 text-lime-700 border-lime-300',
+  cursed: 'bg-blue-100 text-blue-700 border-blue-300',
+  doppelganger: 'bg-violet-100 text-violet-700 border-violet-300',
 }
 
 export const ROLE_LABEL: Record<string, string> = {
@@ -59,6 +62,9 @@ export const ROLE_LABEL: Record<string, string> = {
   hunter: '🔫 Caçador',
   squire: '🛡️ Escudeiro',
   marksman: '🎯 Atirador',
+  diseased: '🤢 Doente',
+  cursed: '🔮 Amaldiçoado',
+  doppelganger: '🎭 Doppelgänger',
 }
 
 export const ROLE_TRANSLATION: Record<string, string> = {
@@ -86,6 +92,9 @@ export const ROLE_TRANSLATION: Record<string, string> = {
   hunter: 'Caçador',
   squire: 'Escudeiro',
   marksman: 'Atirador',
+  diseased: 'Doente',
+  cursed: 'Amaldiçoado',
+  doppelganger: 'Doppelgänger',
 }
 
 export const CARD_CATALOG: CardDefinition[] = [
@@ -266,5 +275,29 @@ export const CARD_CATALOG: CardDefinition[] = [
     team: 'village',
     description:
       'Uma vez por jogo, durante o dia, você pode atirar em um jogador antes do tribunal.',
+  },
+  {
+    id: 'diseased',
+    name: 'Diseased',
+    points: 3,
+    team: 'village',
+    description:
+      'Se você for morto por lobos, eles não matam ninguém na noite seguinte.',
+  },
+  {
+    id: 'cursed',
+    name: 'Cursed',
+    points: -3,
+    team: 'village',
+    description:
+      'Se os lobos te atacarem, você não morre — se torna um Lobisomem na noite seguinte.',
+  },
+  {
+    id: 'doppelganger',
+    name: 'Doppelgänger',
+    points: -2,
+    team: 'independent',
+    description:
+      'Na 1ª noite, escolha um jogador. Se ele for morto, você assume secretamente esse papel. Enquanto seu alvo estiver vivo, você é do time dos Aldeões.',
   },
 ]

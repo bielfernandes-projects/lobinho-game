@@ -3,6 +3,25 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — Diseased, Cursed, Doppelgänger: 3 new roles (official rulebook)
+- **3 new roles** (verified against official PDFs in `game_archives/`):
+  - **Diseased (Doente)** `diseased` (+2 pts, village): When wolves kill the Diseased, wolves' next night kill is skipped (`game_state.diseased_skip_wolves = true`). Triggered in `resolve_night` when victim has `role = 'diseased'`. Flag is consumed next night (same function checks and clears it before wolves resolve).
+  - **Cursed (Amaldiçoado)** `cursed` (+3 pts, village→wolf): When attacked by wolves OR lynched, the Cursed is NOT killed — instead their role is updated to `werewolf` and they join the wolf team. Banner shown to player via `cursed_converted` event data. Seer sees as Villager until conversion. Logic in `resolve_night`, `host_execute_accused`, `resolve_day_vote`.
+  - **Doppelgänger (Doppelgänger)** `doppelganger` (+2 pts, village→target's team): Night 1 only — picks a target via `doppelganger_select` RPC. When target dies (any cause), Doppelgänger secretly becomes target's role. Until then, they're on Village team and Seer sees as Villager. Logic in `resolve_night` (copies role on target death) and `host_execute_accused` / `resolve_day_vote` (same copy on lynch). `players.doppelganger_target_id` column tracks the bond.
+- **Database** (`20260719200000_diseased_cursed_doppelganger.sql`):
+  - `game_state` gained `diseased_skip_wolves BOOLEAN DEFAULT FALSE`.
+  - `players` gained `doppelganger_target_id UUID REFERENCES players(id)`.
+  - `players_role_check` updated with `diseased`, `cursed`, `doppelganger`.
+  - `night_actions_action_type_check` updated with `doppelganger_select`.
+  - New RPC: `doppelganger_select(p_room_id, p_target_id)`.
+  - Updated RPCs: `resolve_night` (diseased skip, cursed conversion, doppelgänger copy), `host_execute_accused` (cursed on lynch, doppelgänger copy), `resolve_day_vote` (cursed on lynch, doppelgänger copy).
+- **Frontend**:
+  - `src/lib/cards.ts`: entries for `diseased`, `cursed`, `doppelganger` in `CARD_CATALOG`, `ROLE_STYLE`, `ROLE_LABEL`, `ROLE_TRANSLATION`.
+  - `src/components/doppelganger-panel.tsx`: Night 1 target selection panel (like cupid — only appears night 1).
+  - `src/app/game/[id]/page.tsx`: `WAKE_ORDER` + `doppelganger`; `STEP_TO_ACTION_TYPES` + `doppelganger: ['doppelganger_select']`; `NIGHT_ROLE_LABELS` + `doppelganger`; `availableNightRoles` query includes `doppelganger`; host button for doppelganger (night 1 only); `renderNightPanel()` block for doppelganger; `showCursedBanner` state + banner JSX.
+  - `src/components/host-action-log.tsx`: `doppelganger_select: '🎭 selecionou'` label.
+- **Files**: `supabase/migrations/20260719200000_diseased_cursed_doppelganger.sql`, `src/lib/cards.ts`, `src/components/doppelganger-panel.tsx`, `src/app/game/[id]/page.tsx`, `src/components/host-action-log.tsx`, `docs/architecture.md`.
+
 ### `<current>` — Hunter, Squire, Marksman: 3 new village roles
 - **3 new VILLAGE roles** (no new win conditions):
   - **Hunter (Caçador)** `hunter` (+2 pts): When killed (lynch or night), enters `hunter_pending` state. Dead Hunter chooses a revenge target or skips. Retaliation kills the target instantly. Triggered via new `day_step = 'hunter_reveal'` (lynch path) or during `announcement` (night death path).

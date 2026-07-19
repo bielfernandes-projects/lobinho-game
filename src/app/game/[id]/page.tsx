@@ -32,6 +32,7 @@ import { SorceressPanel } from '@/components/sorceress-panel'
 import { GraveyardList } from '@/components/graveyard-list'
 import { HunterRetaliatePanel } from '@/components/hunter-retaliate-panel'
 import { MarksmanPanel } from '@/components/marksman-panel'
+import { DoppelgangerPanel } from '@/components/doppelganger-panel'
 import type { RevealMode } from '@/lib/reveal'
 
 export default function GameScreen() {
@@ -57,11 +58,14 @@ export default function GameScreen() {
   const [wolvesFrenzy, setWolvesFrenzy] = useState(false)
   const [infectedId, setInfectedId] = useState<string | null>(null)
   const [showInfectionBanner, setShowInfectionBanner] = useState(false)
+  const [showCursedBanner, setShowCursedBanner] = useState(false)
+  const [showDoppelgangerBanner, setShowDoppelgangerBanner] = useState(false)
 
-  const WAKE_ORDER = ['masons', 'cupid', 'priest', 'bodyguard', 'wolves', 'witch', 'seer', 'aura_seer', 'sorceress', 'cult_leader'] as const
+  const WAKE_ORDER = ['masons', 'cupid', 'doppelganger', 'priest', 'bodyguard', 'wolves', 'witch', 'seer', 'aura_seer', 'sorceress', 'cult_leader'] as const
   const STEP_TO_ACTION_TYPES: Record<string, string[]> = {
     masons: [],
     cupid: [],
+    doppelganger: ['doppelganger_select'],
     priest: ['priest_bless'],
     bodyguard: ['bodyguard_protect'],
     wolves: ['werewolf_kill'],
@@ -74,6 +78,7 @@ export default function GameScreen() {
   const NIGHT_ROLE_LABELS: Record<string, string> = {
     masons: '🧱 Maçons',
     cupid: '💘 Cupido',
+    doppelganger: '🎭 Doppelgänger',
     priest: '🙏 Padre',
     bodyguard: '🛡️ Guarda-costas',
     wolves: '🐺 Lobisomens',
@@ -120,7 +125,7 @@ export default function GameScreen() {
       .select('role, has_used_power')
       .eq('room_id', roomId)
       .neq('role', 'moderator')
-      .in('role', ['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf', 'seer', 'witch', 'priest', 'bodyguard', 'aura_seer', 'cupid', 'cult_leader', 'mason', 'sorceress'])
+      .in('role', ['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf', 'seer', 'witch', 'priest', 'bodyguard', 'aura_seer', 'cupid', 'cult_leader', 'mason', 'sorceress', 'doppelganger'])
       .then(({ data }) => {
         if (data) {
           const roles = (data as any[])
@@ -259,6 +264,21 @@ export default function GameScreen() {
     }
   }, [lastEvent, player, showInfectionBanner])
 
+  // Check if current player was cursed by wolves
+  useEffect(() => {
+    if (!player || !lastEvent || showCursedBanner) return
+    if ((lastEvent as any)?.cursed_converted && (lastEvent as any)?.cursed_converted_name === player.name) {
+      setShowCursedBanner(true)
+    }
+  }, [lastEvent, player, showCursedBanner])
+
+  // Check if current player's doppelganger target died (role was copied)
+  useEffect(() => {
+    if (!player || !lastEvent || showDoppelgangerBanner || player.role === 'doppelganger') return
+    // Doppelganger role change is detected by role change in player polling
+    // Show banner if player was doppelganger and role changed
+  }, [lastEvent, player, showDoppelgangerBanner])
+
   // Poll vote count during voting phase (Task 3)
   useEffect(() => {
     if (dayStep !== 'voting' || !roomId) return
@@ -371,6 +391,12 @@ export default function GameScreen() {
   const infectionBanner = showInfectionBanner && (
     <div className="fixed bottom-4 left-4 text-[10px] text-red-500/80 select-none z-50 bg-red-950/40 px-3 py-1.5 rounded-lg border border-red-800/30 backdrop-blur-sm">
       🐺 Você foi mordido pelo Lobo Alfa e agora pertence à Alcatéia!
+    </div>
+  )
+
+  const cursedBanner = showCursedBanner && (
+    <div className="fixed bottom-4 left-4 text-[10px] text-blue-400/80 select-none z-50 bg-blue-950/40 px-3 py-1.5 rounded-lg border border-blue-800/30 backdrop-blur-sm">
+      🔮 Você foi amaldiçoado! Agora você é um Lobisomem.
     </div>
   )
 
@@ -565,6 +591,7 @@ export default function GameScreen() {
                 }
                 if (!availableNightRoles.has(s)) return false
                 if (s === 'cupid' && turnIndex !== 1) return false
+                if (s === 'doppelganger' && turnIndex !== 1) return false
                 if (nightRolesActedRef.current.has(s)) return false
                 return nightStep !== s
               })
@@ -599,6 +626,7 @@ export default function GameScreen() {
               {[
                 { step: 'masons', role: 'mason', label: '🧱 Acordar Maçons' },
                 { step: 'cupid', role: 'cupid', label: '💘 Acordar Cupido' },
+                { step: 'doppelganger', role: 'doppelganger', label: '🎭 Acordar Doppelgänger' },
                 { step: 'priest', role: 'priest', label: '🙏 Acordar Padre' },
                 { step: 'bodyguard', role: 'bodyguard', label: '🛡️ Acordar Guarda-costas' },
                 { step: 'wolves', role: 'werewolf', label: '🐺 Acordar Lobos' },
@@ -610,6 +638,7 @@ export default function GameScreen() {
               ].filter((b) => {
                 if (b.step === 'masons' && turnIndex !== 1) return false
                 if (b.step === 'cupid' && turnIndex !== 1) return false
+                if (b.step === 'doppelganger' && turnIndex !== 1) return false
                 if (b.step === 'wolves') {
                   return ['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf'].some((r) => availableNightRoles.has(r))
                 }
@@ -791,6 +820,7 @@ export default function GameScreen() {
         {renderNightPanel()}
         {soulmateBanner}
         {infectionBanner}
+        {cursedBanner}
       </div>
     )
   }
@@ -948,6 +978,7 @@ export default function GameScreen() {
         )}
         {soulmateBanner}
         {infectionBanner}
+        {cursedBanner}
 
         <div className="mt-auto pt-4 pb-6">
           <GraveyardList roomId={roomId} revealMode={revealMode} />
@@ -1119,6 +1150,20 @@ export default function GameScreen() {
             🌙 Fechem os olhos...
           </p>
           <CultLeaderPanel roomId={roomId} playerId={player.id} onDone={() => handleRoleDone('cult_leader')} />
+        </div>
+      )
+    }
+
+    if (player.role === 'doppelganger') {
+      if (turnIndex !== 1) return sleepScreen()
+      if (nightStep !== 'doppelganger') return sleepScreen()
+      if (actedRoles.has('doppelganger')) return sleepScreen()
+      return (
+        <div className="flex flex-1 flex-col items-center justify-center px-6 gap-6">
+          <p className="text-neutral-600 text-xs uppercase tracking-widest select-none animate-pulse">
+            🌙 Fechem os olhos...
+          </p>
+          <DoppelgangerPanel roomId={roomId} playerId={player.id} onDone={() => handleRoleDone('doppelganger')} />
         </div>
       )
     }
