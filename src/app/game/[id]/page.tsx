@@ -97,7 +97,6 @@ export default function GameScreen() {
   const accusedId = gameState?.current_accused_id ?? null
   const gameWinner = gameState?.winner ?? null
   const hunterPending = gameState?.hunter_pending ?? false
-  const hunterId = gameState?.hunter_id ?? null
   const lastEvent = gameState?.last_event ?? null
   const lastVoteResult = gameState?.last_vote_result ?? null
   const timerRemaining = gameState?.timer_remaining ?? null
@@ -335,14 +334,11 @@ export default function GameScreen() {
     return renderEnded()
   }
 
+  const isHunterPending = player.role === 'hunter' && hunterPending
   // Dead players (non-moderator) only see the death screen
   // Exception: dead Hunter gets a chance to retaliate
-  if (!player.isAlive && player.role !== 'moderator') {
-    if (player.role === 'hunter' && hunterPending) {
-      // Allow through — hunter panel rendered below
-    } else {
-      return <DeadPlayerScreen />
-    }
+  if (!player.isAlive && player.role !== 'moderator' && !isHunterPending) {
+    return <DeadPlayerScreen />
   }
 
   // Reset night role tracking on new turn
@@ -405,7 +401,7 @@ export default function GameScreen() {
   }
 
   async function handleAdvanceAfterHunter() {
-    await supabase.rpc('advance_after_host', { p_room_id: roomId })
+    await supabase.rpc('advance_after_hunter', { p_room_id: roomId })
   }
 
   // ── Moderator / Host Dashboard ──────────────────────────

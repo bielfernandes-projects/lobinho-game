@@ -37,12 +37,13 @@ export function MarksmanPanel({ roomId, playerId, onShot }: MarksmanPanelProps) 
     setBusy(true)
     setError('')
     try {
-      const { data, error: rpcErr } = await supabase.rpc('marksman_shoot', {
+      const { error: rpcErr } = await supabase.rpc('marksman_shoot', {
         p_room_id: roomId,
         p_target_id: targetId,
       })
       if (rpcErr) {
         setError(rpcErr.message)
+        setShowModal(false)
         setBusy(false)
         return
       }
@@ -51,6 +52,7 @@ export function MarksmanPanel({ roomId, playerId, onShot }: MarksmanPanelProps) 
       onShot?.()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro inesperado')
+      setShowModal(false)
     }
     setBusy(false)
   }
@@ -59,7 +61,7 @@ export function MarksmanPanel({ roomId, playerId, onShot }: MarksmanPanelProps) 
     return (
       <div className="w-full max-w-sm text-center space-y-2">
         <p className="text-red-500 text-sm font-semibold">🎯 Tiro Disparado</p>
-        <p className="text-neutral-500 text-xs">Seu poder foi usedo. Agora participe da discussão.</p>
+        <p className="text-neutral-500 text-xs">Seu poder foi usado. Agora participe da discussão.</p>
       </div>
     )
   }

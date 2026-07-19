@@ -32,11 +32,11 @@ export function HunterRetaliatePanel({ roomId, hunterId, onDone }: HunterRetalia
       })
   }, [roomId, hunterId])
 
-  async function handleShoot(targetId: string, targetName: string) {
+  async function handleShoot(targetId: string, _targetName: string) {
     setBusy(true)
     setError('')
     try {
-      const { data, error: rpcErr } = await supabase.rpc('hunter_retaliate', {
+      const { error: rpcErr } = await supabase.rpc('hunter_retaliate', {
         p_room_id: roomId,
         p_target_id: targetId,
       })
@@ -57,7 +57,7 @@ export function HunterRetaliatePanel({ roomId, hunterId, onDone }: HunterRetalia
     setBusy(true)
     setError('')
     try {
-      const { error: rpcErr } = await supabase.rpc('advance_after_hunter', {
+      const { error: rpcErr } = await supabase.rpc('hunter_skip', {
         p_room_id: roomId,
       })
       if (rpcErr) {
