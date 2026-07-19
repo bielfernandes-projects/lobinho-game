@@ -9,7 +9,8 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ## Documentation imperative
 **Before any change**: read `docs/architecture.md` to understand the full context, business rules, and existing patterns.
-**Before every commit**: update `docs/architecture.md` with what changed (new feature, bugfix, refactor — include commit hash, rationale, files touched).
+**Before any change involving roles, game mechanics, win conditions, or scenario rules**: read `docs/game_rules.md` in FULL — it is the single source of truth for ALL Werewolf rules (official, expansion, and fan-made) and MUST be the basis for your plan.
+**Before every commit**: update `docs/architecture.md` with what changed (new feature, bugfix, refactor — include commit hash, rationale, files touched). If the change affects a role or mechanic, also update the "Status note" in `docs/game_rules.md` section 7.2.
 
 ## Deployment rules (SEMPRE SEGUIR)
 1. **Mudanças no banco**: criar migration SQL em `supabase/migrations/` com timestamp e rodar `supabase db push --linked`.
