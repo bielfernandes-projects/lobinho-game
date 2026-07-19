@@ -24,6 +24,18 @@ A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, S
   - `src/components/host-action-log.tsx`: `hunter_shot: '🔫 atirou em'` label added.
 - **Files**: `supabase/migrations/20260719120000_hunter_squire_marksman.sql`, `src/lib/cards.ts`, `src/hooks/use-room.ts`, `src/components/hunter-retaliate-panel.tsx`, `src/components/marksman-panel.tsx`, `src/app/game/[id]/page.tsx`, `src/components/host-action-log.tsx`, `docs/architecture.md`.
 
+### `<current>` — Bugfix: Hunter/Squire/Marksman critical fixes (migration `20260719171231`)
+- **Critical**: `page.tsx` called `advance_after_host` instead of `advance_after_hunter` — host advance button was broken. Fixed.
+- **Critical**: `marksman_shoot` RPC lacked self-target check. Added `IF p_target_id = v_marksman_id THEN RAISE EXCEPTION`.
+- **Critical**: Hunter skip button called `advance_after_hunter` (host-only RPC). Created new `hunter_skip` RPC (non-host) that clears `hunter_pending` without changing `day_step`. Updated `hunter-retaliate-panel.tsx` to call it.
+- **High**: `resolve_night` never called `check_game_over()` — could leave `winner` unset. Added call.
+- **High**: Dead code removed from `host_execute_accused` and `resolve_day_vote` (Squire promotion after Prince early-return was unreachable).
+- **High**: Dead player bypass race condition fixed — `isHunterPending` computed before `DeadPlayerScreen` check to prevent brief flash.
+- **Medium**: `marksman_panel.tsx` modal stays open on error; fixed to close on error. Typo "usedo" → "usado".
+- **Medium**: Squire promotion deferred until after all deaths processed in `resolve_night`, `host_execute_accused`, `resolve_day_vote` — fixes simultaneous Prince+Squire death (frenzy).
+- **Medium**: `resolve_day_vote` return JSON now includes `hunter_pending` (consistency with `host_execute_accused`).
+- **Files**: `supabase/migrations/20260719171231_bugfix_hunter_squire_marksman.sql`, `src/app/game/[id]/page.tsx`, `src/components/hunter-retaliate-panel.tsx`, `src/components/marksman-panel.tsx`, `docs/architecture.md`.
+
 ### `<current>` — Player limits 6-78, nomes em inglês, player list /78
 - **Mínimo de jogadores 6**: `scenario-builder.tsx` validação e mensagem de erro alteradas de 4 para 6.
 - **Máximo de jogadores 78** (77 jogadores + 1 mestre): `max_players: 78` na criação da sala (`page.tsx`); `player-list.tsx` mostra `{total}/78`; ScenarioBuilder valida `playerCount <= 77` (exclui host).
