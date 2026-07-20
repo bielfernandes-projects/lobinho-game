@@ -3,7 +3,7 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
-### `<current>` — "Ajude o Dev" support footer (commit `TBD`)
+### `<current>` — "Ajude o Dev" support footer (commit `10794b5`)
 - **Support footer on home page** — New `SupportFooter` component added below the install button on the entry screen:
   - Dark theme card (`bg-neutral-900/60`, border `neutral-800`) consistent with app design.
   - 💛 **Pix link** — opens Nubank cobrar URL (`nubank.com.br/cobrar/33flp/...`) in new tab.
