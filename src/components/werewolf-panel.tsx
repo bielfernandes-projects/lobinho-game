@@ -20,6 +20,7 @@ interface ConsensusVote {
   voter_name: string
   target_id: string | null
   target_name: string | null
+  target_index: number
 }
 
 export function WerewolfPanel({
@@ -37,7 +38,6 @@ export function WerewolfPanel({
   const [hasActed, setHasActed] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const [selectedTargets, setSelectedTargets] = useState<string[]>([])
   const [infectTarget, setInfectTarget] = useState(false)
   const [consensusVotes, setConsensusVotes] = useState<ConsensusVote[]>([])
   const supabase = createClient()
@@ -145,17 +145,20 @@ export function WerewolfPanel({
     return () => { supabase.removeChannel(channel) }
   }, [roomId, isFirstNight, fetchConsensus])
 
-  // Compute consensus state
+  // Compute alive wolves and expected voter count
   const aliveWolves = wolves.filter((w) => w.isAlive)
   const expectedVoters = aliveWolves.length
 
-  function computeConsensus(): { hasConsensus: boolean; consensusTarget: string | null; consensusTargetName: string | null } {
-    const validVotes = consensusVotes.filter((v) => v.target_id != null)
+  // Compute consensus for a given target_index, optionally excluding a target
+  function computeConsensus(targetIndex: number = 1, excludeTargetId?: string | null) {
+    const validVotes = consensusVotes
+      .filter((v) => v.target_id != null && v.target_index === targetIndex)
+      .filter((v) => !excludeTargetId || v.target_id !== excludeTargetId)
+
     if (validVotes.length < expectedVoters || expectedVoters === 0) {
       return { hasConsensus: false, consensusTarget: null, consensusTargetName: null }
     }
 
-    // Check if all votes are for the same target
     const firstTargetId = validVotes[0].target_id
     const allSame = validVotes.every((v) => v.target_id === firstTargetId)
     if (allSame) {
@@ -169,22 +172,56 @@ export function WerewolfPanel({
     return { hasConsensus: false, consensusTarget: null, consensusTargetName: null }
   }
 
-  const { hasConsensus, consensusTarget, consensusTargetName } = computeConsensus()
+  // Normal mode: single-target consensus
+  const { hasConsensus, consensusTarget, consensusTargetName } = computeConsensus(1)
 
-  // My vote
-  const myVote = consensusVotes.find((v) => v.voter_id === playerId)
+  // Frenzy mode: two-phase consensus
+  const frenzyHasConsensus1 = wolvesFrenzy ? computeConsensus(1).hasConsensus : false
+  const frenzyConsensusTarget1 = wolvesFrenzy ? computeConsensus(1).consensusTarget : null
+  const frenzyConsensusTargetName1 = wolvesFrenzy ? computeConsensus(1).consensusTargetName : null
 
-  // Votes grouped by target for inline display
+  // Frenzy phase: 1 = choosing first target, 2 = choosing second target
+  const frenzyPhase = wolvesFrenzy ? (frenzyConsensusTarget1 ? 2 : 1) : 1
+
+  const { hasConsensus: frenzyHasConsensus2, consensusTarget: frenzyConsensusTarget2, consensusTargetName: frenzyConsensusTargetName2 } =
+    frenzyPhase === 2 ? computeConsensus(2, frenzyConsensusTarget1) : { hasConsensus: false, consensusTarget: null, consensusTargetName: null }
+
+  const frenzyAllConsensus = wolvesFrenzy && frenzyConsensusTarget1 && frenzyConsensusTarget2
+
+  // My vote for current phase
+  const currentTargetIndex = wolvesFrenzy ? (frenzyPhase) : 1
+  const myVote = consensusVotes.find((v) => v.voter_id === playerId && v.target_index === currentTargetIndex)
+
+  // Votes grouped by target for inline display (current phase only)
   const votesByTarget = new Map<string, { voter_id: string; voter_name: string }[]>()
-  consensusVotes.forEach((v) => {
-    if (v.target_id) {
-      const entry = { voter_id: v.voter_id, voter_name: v.voter_name }
-      const existing = votesByTarget.get(v.target_id)
-      if (existing) existing.push(entry)
-      else votesByTarget.set(v.target_id, [entry])
-    }
-  })
+  consensusVotes
+    .filter((v) => v.target_index === currentTargetIndex)
+    .forEach((v) => {
+      if (v.target_id) {
+        const entry = { voter_id: v.voter_id, voter_name: v.voter_name }
+        const existing = votesByTarget.get(v.target_id)
+        if (existing) existing.push(entry)
+        else votesByTarget.set(v.target_id, [entry])
+      }
+    })
 
+  // Current phase consensus status
+  const currentHasConsensus = wolvesFrenzy
+    ? (frenzyPhase === 1 ? frenzyHasConsensus1 : frenzyHasConsensus2)
+    : hasConsensus
+  const currentConsensusTarget = wolvesFrenzy
+    ? (frenzyPhase === 1 ? frenzyConsensusTarget1 : frenzyConsensusTarget2)
+    : consensusTarget
+  const currentConsensusTargetName = wolvesFrenzy
+    ? (frenzyPhase === 1 ? frenzyConsensusTargetName1 : frenzyConsensusTargetName2)
+    : consensusTargetName
+
+  // Targets for current phase (exclude target 1 in frenzy phase 2)
+  const currentTargets = wolvesFrenzy && frenzyPhase === 2 && frenzyConsensusTarget1
+    ? targets.filter((t) => t.id !== frenzyConsensusTarget1)
+    : targets
+
+  // Submit a kill action
   async function submitKill(targetId: string, shouldInfect: boolean) {
     const { error: rpcErr } = await supabase.rpc('execute_night_action', {
       p_room_id: roomId,
@@ -203,12 +240,15 @@ export function WerewolfPanel({
     }
   }
 
+  // Vote for a target in the current consensus phase
   async function handleVote(targetId: string) {
     setError('')
     try {
+      const targetIndex = wolvesFrenzy ? frenzyPhase : 1
       const { error: rpcErr } = await supabase.rpc('upsert_consensus_vote', {
         p_room_id: roomId,
         p_target_id: targetId,
+        p_target_index: targetIndex,
       })
       if (rpcErr) throw new Error(rpcErr.message)
     } catch (err) {
@@ -217,19 +257,36 @@ export function WerewolfPanel({
     }
   }
 
+  // Confirm kill(s)
   async function handleConsensusConfirm() {
-    if (!consensusTarget) return
-    setBusy(true)
-    setError('')
-    try {
-      await submitKill(consensusTarget, infectTarget)
-      setHasActed(true)
-      onDone?.()
-    } catch (err) {
-      console.error('[WerewolfPanel] RPC error:', err)
-      setError(err instanceof Error ? err.message : 'Erro inesperado')
+    if (wolvesFrenzy) {
+      if (!frenzyConsensusTarget1 || !frenzyConsensusTarget2) return
+      setBusy(true)
+      setError('')
+      try {
+        await submitKill(frenzyConsensusTarget1, false)
+        await submitKill(frenzyConsensusTarget2, infectTarget)
+        setHasActed(true)
+        onDone?.()
+      } catch (err) {
+        console.error('[WerewolfPanel] RPC error:', err)
+        setError(err instanceof Error ? err.message : 'Erro inesperado')
+      }
+      setBusy(false)
+    } else {
+      if (!consensusTarget) return
+      setBusy(true)
+      setError('')
+      try {
+        await submitKill(consensusTarget, infectTarget)
+        setHasActed(true)
+        onDone?.()
+      } catch (err) {
+        console.error('[WerewolfPanel] RPC error:', err)
+        setError(err instanceof Error ? err.message : 'Erro inesperado')
+      }
+      setBusy(false)
     }
-    setBusy(false)
   }
 
   async function handleFirstNightConfirm() {
@@ -251,33 +308,6 @@ export function WerewolfPanel({
       onDone?.()
     } catch (err) {
       console.error('[WerewolfPanel] Unexpected:', err)
-      setError(err instanceof Error ? err.message : 'Erro inesperado')
-    }
-    setBusy(false)
-  }
-
-  async function handleFrenzyVote(targetId: string) {
-    setError('')
-    setSelectedTargets((prev) => {
-      if (prev.includes(targetId)) {
-        return prev.filter((t) => t !== targetId)
-      }
-      if (prev.length >= 2) return prev
-      return [...prev, targetId]
-    })
-  }
-
-  async function handleFrenzyConfirm() {
-    if (selectedTargets.length !== 2) return
-    setBusy(true)
-    setError('')
-    try {
-      await submitKill(selectedTargets[0], infectTarget)
-      await submitKill(selectedTargets[1], false)
-      setHasActed(true)
-      onDone?.()
-    } catch (err) {
-      console.error('[WerewolfPanel] RPC error:', err)
       setError(err instanceof Error ? err.message : 'Erro inesperado')
     }
     setBusy(false)
@@ -338,108 +368,24 @@ export function WerewolfPanel({
     )
   }
 
-  // ── FRENZY MODE ────────────────────────────────────────────
-  if (wolvesFrenzy) {
-    return (
-      <div className="w-full max-w-sm text-center space-y-4">
-        <p className="text-red-500 text-sm uppercase tracking-widest font-bold">
-          🐺 Lobisomens
-        </p>
-
-        <p className="text-yellow-400 text-xs uppercase tracking-wider font-bold animate-pulse">
-          🔥 FRENESI — Matem 2 vítimas esta noite!
-        </p>
-
-        {aliveWolves.length > 1 && (
-          <div>
-            <p className="text-neutral-600 text-[10px] uppercase tracking-wider mb-2">
-              Seus aliados (vivos)
-            </p>
-            <div className="flex flex-wrap justify-center gap-2">
-              {aliveWolves
-                .filter((w) => w.id !== playerId)
-                .map((w) => (
-                  <span
-                    key={w.id}
-                    className="px-3 py-1 rounded-full bg-red-950/40 border border-red-900/30 text-red-400 text-xs"
-                  >
-                    {w.name}
-                  </span>
-                ))}
-            </div>
-          </div>
-        )}
-
-        <div>
-          <p className="text-neutral-500 text-xs mb-3">
-            {selectedTargets.length === 0
-              ? 'Selecione o 1º alvo:'
-              : selectedTargets.length === 1
-                ? 'Selecione o 2º alvo:'
-                : 'Alvos definidos:'}
-          </p>
-          <div className="space-y-2">
-            {targets.map((t) => {
-              const isSelected = selectedTargets.includes(t.id)
-              return (
-                <button
-                  key={t.id}
-                  onClick={() => handleFrenzyVote(t.id)}
-                  disabled={busy}
-                  className={`
-                    w-full py-3 px-4 rounded-xl text-sm font-medium
-                    transition-all duration-200 cursor-pointer
-                    ${isSelected
-                      ? 'bg-red-900/30 border border-red-700/50 text-red-300'
-                      : 'bg-neutral-900 border border-neutral-800 text-neutral-300 hover:border-red-800 hover:text-red-400'
-                    }
-                    disabled:opacity-40
-                  `}
-                >
-                  {isSelected ? `✓ ${t.name}` : t.name}
-                </button>
-              )
-            })}
-          </div>
-
-          {isAlpha && alphaHasPower && selectedTargets.length >= 1 && (
-            <label className="flex items-center justify-center gap-2 mt-3 px-3 py-2 rounded-lg bg-neutral-900/40 border border-neutral-800 cursor-pointer hover:bg-neutral-800/40 transition-colors">
-              <input
-                type="checkbox"
-                checked={infectTarget}
-                onChange={(e) => setInfectTarget(e.target.checked)}
-                className="accent-red-600 cursor-pointer"
-              />
-              <span className="text-neutral-400 text-xs">
-                🐺 Infectar {targets.find((t) => t.id === selectedTargets[0])?.name ?? 'o 1º alvo'} (Poder do Lobo Alfa)
-              </span>
-            </label>
-          )}
-
-          {selectedTargets.length === 2 && (
-            <button
-              onClick={handleFrenzyConfirm}
-              disabled={busy}
-              className="w-full mt-3 py-3 px-4 rounded-xl text-sm font-bold bg-red-900/30 border border-red-700/50 text-red-400 hover:bg-red-800/40 disabled:opacity-40 transition-all duration-200 cursor-pointer"
-            >
-              {busy ? 'Atacando...' : `⚔️ Atacar ${selectedTargets.length} alvos`}
-            </button>
-          )}
-        </div>
-
-        {error && (
-          <p className="text-red-500 text-xs text-center">{error}</p>
-        )}
-      </div>
-    )
-  }
-
-  // ── NORMAL MODE (with consensus voting) ────────────────────
+  // ── CONSOLIDATED MODE (normal + frenzy both use consensus) ─────────
   return (
     <div className="w-full max-w-sm text-center space-y-4">
       <p className="text-red-500 text-sm uppercase tracking-widest font-bold">
         🐺 Lobisomens
       </p>
+
+      {wolvesFrenzy && (
+        <p className="text-yellow-400 text-xs uppercase tracking-wider font-bold animate-pulse">
+          🔥 FRENESI — Matem 2 vítimas esta noite!
+        </p>
+      )}
+
+      {wolvesFrenzy && frenzyPhase === 2 && frenzyConsensusTargetName1 && (
+        <p className="text-emerald-500 text-xs font-bold">
+          ✅ 1º alvo definido: {frenzyConsensusTargetName1}
+        </p>
+      )}
 
       {aliveWolves.length > 1 && (
         <div>
@@ -464,14 +410,18 @@ export function WerewolfPanel({
       {/* Target list with inline votes */}
       <div>
         <p className="text-neutral-500 text-xs mb-3">
-          {aliveWolves.length > 1
-            ? myVote?.target_id
-              ? 'Seu voto — clique para mudar:'
-              : 'Escolha seu voto:'
-            : 'Escolha a vítima:'}
+          {wolvesFrenzy
+            ? frenzyPhase === 1
+              ? 'Escolha o 1º alvo:'
+              : 'Escolha o 2º alvo:'
+            : aliveWolves.length > 1
+              ? myVote?.target_id
+                ? 'Seu voto — clique para mudar:'
+                : 'Escolha seu voto:'
+              : 'Escolha a vítima:'}
         </p>
         <div className="space-y-2">
-          {targets.map((t) => {
+          {currentTargets.map((t) => {
             const isMyVote = myVote?.target_id === t.id
             const votersForTarget = votesByTarget.get(t.id) || []
             return (
@@ -503,8 +453,8 @@ export function WerewolfPanel({
         </div>
       </div>
 
-      {/* Alpha wolf infection option */}
-      {isAlpha && alphaHasPower && hasConsensus && consensusTarget && (
+      {/* Alpha wolf infection option (only during frenzy when picking target 1) */}
+      {isAlpha && alphaHasPower && currentHasConsensus && currentConsensusTarget && (
         <label className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-neutral-900/40 border border-neutral-800 cursor-pointer hover:bg-neutral-800/40 transition-colors">
           <input
             type="checkbox"
@@ -513,7 +463,7 @@ export function WerewolfPanel({
             className="accent-red-600 cursor-pointer"
           />
           <span className="text-neutral-400 text-xs">
-            🐺 Infectar {consensusTargetName} (Poder do Lobo Alfa — Uso Único)
+            🐺 Infectar {currentConsensusTargetName} (Poder do Lobo Alfa — Uso Único)
           </span>
         </label>
       )}
@@ -521,22 +471,58 @@ export function WerewolfPanel({
       {/* Consensus status + confirm button */}
       {aliveWolves.length > 1 && (
         <div className="space-y-2">
-          {hasConsensus ? (
-            <p className="text-emerald-500 text-xs font-bold uppercase tracking-wider">
-              ✅ Consenso — todos votaram em {consensusTargetName}
-            </p>
+          {wolvesFrenzy ? (
+            // Frenzy: show progress
+            frenzyAllConsensus ? (
+              <p className="text-emerald-500 text-xs font-bold uppercase tracking-wider">
+                ✅ Consenso —1º: {frenzyConsensusTargetName1}, 2º: {frenzyConsensusTargetName2}
+              </p>
+            ) : frenzyPhase === 2 ? (
+              frenzyHasConsensus2 ? (
+                <p className="text-emerald-500 text-xs font-bold uppercase tracking-wider">
+                  ✅ 2º alvo: {frenzyConsensusTargetName2} — aguardando confirmação
+                </p>
+              ) : (
+                <p className="text-yellow-500 text-xs uppercase tracking-wider">
+                  ⚠️ Fase 2/2 — Aguardando consenso no 2º alvo...
+                </p>
+              )
+            ) : frenzyHasConsensus1 ? (
+              <p className="text-emerald-500 text-xs font-bold uppercase tracking-wider">
+                ✅ 1º alvo: {frenzyConsensusTargetName1} — avançando...
+              </p>
+            ) : (
+              <p className="text-yellow-500 text-xs uppercase tracking-wider">
+                ⚠️ Fase 1/2 — Aguardando consenso no 1º alvo...
+              </p>
+            )
           ) : (
-            <p className="text-yellow-500 text-xs uppercase tracking-wider">
-              ⚠️ Aguardando consenso...
-            </p>
+            // Normal: single consensus
+            hasConsensus ? (
+              <p className="text-emerald-500 text-xs font-bold uppercase tracking-wider">
+                ✅ Consenso — todos votaram em {consensusTargetName}
+              </p>
+            ) : (
+              <p className="text-yellow-500 text-xs uppercase tracking-wider">
+                ⚠️ Aguardando consenso...
+              </p>
+            )
           )}
 
           <button
             onClick={handleConsensusConfirm}
-            disabled={busy || !hasConsensus}
+            disabled={busy || !(wolvesFrenzy ? frenzyAllConsensus : hasConsensus)}
             className="w-full py-3 px-4 rounded-xl text-sm font-bold bg-red-900/30 border border-red-700/50 text-red-400 hover:bg-red-800/40 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer"
           >
-            {busy ? 'Atacando...' : hasConsensus ? `⚔️ Confirmar Ataque a ${consensusTargetName}` : '⚔️ Confirmar (consenso necessário)'}
+            {busy
+              ? 'Atacando...'
+              : wolvesFrenzy && frenzyAllConsensus
+                ? `⚔️ Confirmar Ataque — ${frenzyConsensusTargetName1} & ${frenzyConsensusTargetName2}`
+                : wolvesFrenzy
+                  ? `⚔️ Confirmar (2 alvos necessários)`
+                  : hasConsensus
+                    ? `⚔️ Confirmar Ataque a ${consensusTargetName}`
+                    : '⚔️ Confirmar (consenso necessário)'}
           </button>
         </div>
       )}

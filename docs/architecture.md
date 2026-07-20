@@ -3,6 +3,13 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — Frenzy consensus voting (two-phase, same UI as normal)
+- **Frenzy uses consensus voting, not per-wolf voting** — Replaced the old frenzy consensus logic (which was never fully wired) with a two-phase consensus system reusing the same UI and DB RPCs as normal mode. Phase 1: wolves agree on target 1. Phase 2: wolves agree on target 2 (excluding target 1). Each phase uses `upsert_consensus_vote` with `target_index=1` or `target_index=2`.
+- **DB: `target_index` column on `consensus_votes`** — Added `target_index SMALLINT NOT NULL DEFAULT 1`. Primary key expanded to `(room_id, turn_index, voter_id, target_index)` so a wolf can vote for one target per phase.
+- **DB: role-filtered RPCs** — `get_wolf_consensus` now filters by wolf roles only (excludes sorceress, etc.) so non-wolf voters can't break the `allSame` check. `upsert_consensus_vote` adds a role guard.
+- **Frontend: `werewolf-panel.tsx` rewrite** — Unified rendering block handles both normal and frenzy modes. `computeConsensus(targetIndex, excludeTargetId)` is parameterized. `handleVote` passes `target_index`. Frenzy shows "🔥 FRENESI" header, phase 1/2 progress, completed target locked, inline voter names on each target button.
+- **Files**: `src/components/werewolf-panel.tsx`, `supabase/migrations/20260720124441_consensus_role_filter_target_index.sql`, `docs/architecture.md`.
+
 ### `<current>` — Fix: Realtime crash + Frenzy trigger race condition
 
 - **Realtime crash fix** — Removed re-subscribe `setTimeout` logic from `useCurrentPlayer`, `useRoomPlayers`, and `useGameState`. When the WebSocket flaps, the old code tried to recreate channels, which threw `cannot add postgres_changes callbacks after subscribe()` and crashed the app via Error Boundary. Polling (2-5s) already serves as fallback — re-subscribe was redundant and buggy. Now logs `console.warn` and relies on polling.
