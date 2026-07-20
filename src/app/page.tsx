@@ -4,6 +4,7 @@ import { useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { InstallButton } from '@/components/install-button'
+import { SupportFooter } from '@/components/support-footer'
 
 function gerarPin(): string {
   return String(Math.floor(1000 + Math.random() * 9000))
@@ -245,6 +246,8 @@ export default function EntryScreen() {
           <div className="flex justify-center mt-2">
             <InstallButton />
           </div>
+
+          <SupportFooter />
         </div>
       </div>
     </div>
