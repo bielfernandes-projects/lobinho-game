@@ -3,6 +3,16 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — Wolf consensus voting fix: dead wolves excluded from count
+- **Fix: dead wolves counted in consensus UI** — `wolves.length` included dead wolves (from `get_werewolf_teammates`), so the consensus panel was shown even when only 1 wolf remained alive (because dead wolves inflated the count). Changed all UI conditions from `wolves.length` to `aliveWolves.length` (alive wolves only). This ensures:
+  - When only 1 wolf is alive, the direct confirm button appears (no consensus needed).
+  - When 2+ wolves are alive, the consensus panel shows with vote tracking.
+  - Dead wolves no longer appear in the "Seus aliados" list (label updated to "Seus aliados (vivos)").
+  - The frenzy section also uses `aliveWolves` for allies display.
+- **Cleanup: dead code removed** — Removed ~100 lines of commented-out frenzy consensus analysis in `computeConsensus()` that never returned `hasConsensus: true` (frenzy uses its own UI path with `handleFrenzyConfirm`).
+- **All wolf variants included** — `get_werewolf_teammates` returns `werewolf`, `wolf_cub`, `alpha_wolf`, `lone_wolf`. All participate in consensus voting per game rules 4.6 and 7.4. `sorceress` correctly excluded (does not wake with wolves).
+- **Files**: `src/components/werewolf-panel.tsx`, `docs/architecture.md`.
+
 ### `<current>` — "Ajude o Dev" support footer (commit `10794b5`)
 - **Support footer on home page** — New `SupportFooter` component added below the install button on the entry screen:
   - Dark theme card (`bg-neutral-900/60`, border `neutral-800`) consistent with app design.

@@ -166,113 +166,6 @@ export function WerewolfPanel({
       }
     }
 
-    // For frenzy: check if all votes agree on exactly 2 targets
-    if (wolvesFrenzy) {
-      const targetIds = [...new Set(validVotes.map((v) => v.target_id))]
-      if (targetIds.length === 2 && validVotes.length === expectedVoters) {
-        // Check that every voter voted for the same pair (order doesn't matter)
-        const sortedVotes = validVotes.map((v) => v.target_id).sort()
-        const allSamePair = validVotes.every((v, i) => {
-          // Each voter should have voted for both targets... but they only vote for 1
-          // Actually in frenzy, each wolf still votes for their chosen targets
-          // We need a different approach for frenzy
-          return true
-        })
-        // For frenzy, we just check if all votes are for exactly 2 targets
-        // and every wolf has cast both their votes... but our current model only has 1 target per vote
-        // Let's simplify: frenzy consensus = all wolves voted and there are exactly 2 unique targets
-        if (targetIds.length === 2) {
-          const target1Votes = validVotes.filter((v) => v.target_id === targetIds[0]).length
-          const target2Votes = validVotes.filter((v) => v.target_id === targetIds[1]).length
-          // Each wolf should vote for both targets... but with our DB model, each wolf can only vote once
-          // So for frenzy, we need each wolf to have 2 rows? No, that's complex.
-          // Let me re-think frenzy consensus...
-          // Actually, with the current DB model (one vote per wolf per turn),
-          // frenzy consensus means all wolves agree on the SAME pair of targets.
-          // But each wolf can only cast ONE vote. So this doesn't work well.
-          // 
-          // Alternative: In frenzy mode, wolves vote for 2 targets sequentially.
-          // First round: vote for target 1. Second round: vote for target 2.
-          // This is complex. Let me simplify:
-          // For frenzy, consensus = at least one target has ALL wolves voting for it,
-          // and the second target is implied or chosen by the host.
-          //
-          // Actually, the simplest approach for frenzy:
-          // Each wolf selects 2 targets (stored in selectedTargets state, NOT in DB).
-          // They click "confirm" and the votes are submitted.
-          // The Realtime part is just showing who has confirmed vs not.
-          //
-          // But the user's spec says wolves should see each other's votes.
-          // For frenzy, let's just use a simpler model:
-          // All wolves must select the same 2 targets, then confirm.
-          // The "consensus" check is: all wolves' selectedTargets arrays match.
-          //
-          // Since the DB only supports 1 target per vote, let me change the approach:
-          // For frenzy, use the DB only for confirmation (wolves signal they're ready).
-          // The actual target selection happens client-side.
-          //
-          // Actually, the cleanest approach: for frenzy, wolves still vote on 1 primary target
-          // (the first victim), and the host handles the second victim separately.
-          // OR: we store 2 votes per wolf in frenzy mode.
-          //
-          // Let me go with: in frenzy mode, the UI shows target selection for 2 targets,
-          // and wolves must all agree. The consensus check is done client-side by comparing
-          // each wolf's selectedTargets. The DB votes are used for a "confirm" signal.
-          //
-          // For simplicity, let me just handle frenzy as: all wolves must vote for the same
-          // primary target. The host can then ask for the second target or the wolves can
-          // discuss. This is simpler and still achieves the goal.
-          //
-          // Actually, re-reading the user's spec: "Frenesi: mesma lógica, mas precisa de 2
-          // alvos com consenso. A UI permite selecionar 2 vítimas, mostra os pares de votos
-          // dos aliados, e só habilita confirmar quando todos concordam nos mesmos 2 alvos."
-          //
-          // OK so for frenzy, each wolf votes for 2 targets. The DB model needs to support this.
-          // I'll use 2 rows per wolf in frenzy mode (one for each target).
-          // But the PRIMARY KEY is (room_id, turn_index, voter_id) - only 1 row per wolf.
-          //
-          // I think the cleanest solution is: in frenzy mode, use target_id as an array
-          // or store the 2 targets as a combined string. But that breaks the FK.
-          //
-          // Let me just handle frenzy differently in the UI:
-          // - Each wolf selects 2 targets locally
-          // - They submit via a "vote" button which stores their selection
-          // - The Realtime subscription shows who has voted and their selections
-          // - Consensus = all wolves' selections match
-          //
-          // For the DB, in frenzy mode, I'll store the first target in target_id
-          // and the second target as metadata. But this is hacky.
-          //
-          // Simplest approach that works: in frenzy mode, wolves don't use the consensus
-          // system. They just select targets and confirm. The host handles resolution.
-          // This matches the current behavior but with better UX.
-          //
-          // Actually, let me re-read the current frenzy behavior:
-          // Currently, each wolf independently selects 2 targets and confirms.
-          // The host then resolves. If wolves disagree, the host has to redo.
-          //
-          // The improvement is: with consensus voting, wolves can see each other's choices
-          // and align before confirming.
-          //
-          // For the DB, I'll keep it simple: in frenzy mode, each wolf stores their
-          // 2 targets as two separate votes (using action_type or a different approach).
-          //
-          // Actually, the simplest approach: for frenzy, each wolf votes for their
-          // FIRST target using the consensus system. The second target is handled
-          // after the first is confirmed. This is a two-round process.
-          //
-          // OR: I just don't use consensus for frenzy. The UI shows who has confirmed
-          // (acted) and who hasn't. Wolves can discuss in chat. The host resolves.
-          //
-          // I think the best approach is: consensus voting only for normal (non-frenzy) mode.
-          // For frenzy, keep the current UI but add a visual indicator of who has acted.
-          // This is simpler and still provides value.
-          //
-          // Let me go with this approach.
-        }
-      }
-    }
-
     return { hasConsensus: false, consensusTarget: null, consensusTargetName: null }
   }
 
@@ -395,13 +288,13 @@ export function WerewolfPanel({
           🐺 Lobisomens
         </p>
 
-        {wolves.length > 1 && (
+        {aliveWolves.length > 1 && (
           <div>
             <p className="text-neutral-600 text-[10px] uppercase tracking-wider mb-2">
-              Seus aliados
+              Seus aliados (vivos)
             </p>
             <div className="flex flex-wrap justify-center gap-2">
-              {wolves
+              {aliveWolves
                 .filter((w) => w.id !== playerId)
                 .map((w) => (
                   <span
@@ -446,13 +339,13 @@ export function WerewolfPanel({
           🔥 FRENESI — Matem 2 vítimas esta noite!
         </p>
 
-        {wolves.length > 1 && (
+        {aliveWolves.length > 1 && (
           <div>
             <p className="text-neutral-600 text-[10px] uppercase tracking-wider mb-2">
-              Seus aliados
+              Seus aliados (vivos)
             </p>
             <div className="flex flex-wrap justify-center gap-2">
-              {wolves
+              {aliveWolves
                 .filter((w) => w.id !== playerId)
                 .map((w) => (
                   <span
@@ -537,13 +430,13 @@ export function WerewolfPanel({
         🐺 Lobisomens
       </p>
 
-      {wolves.length > 1 && (
+      {aliveWolves.length > 1 && (
         <div>
           <p className="text-neutral-600 text-[10px] uppercase tracking-wider mb-2">
-            Seus aliados
+            Seus aliados (vivos)
           </p>
           <div className="flex flex-wrap justify-center gap-2">
-            {wolves
+            {aliveWolves
               .filter((w) => w.id !== playerId)
               .map((w) => (
                 <span
@@ -558,7 +451,7 @@ export function WerewolfPanel({
       )}
 
       {/* Consensus vote display */}
-      {wolves.length > 1 && (
+      {aliveWolves.length > 1 && (
         <div className="rounded-xl border border-neutral-800 bg-neutral-900/60 px-4 py-3 space-y-2">
           <p className="text-neutral-500 text-[10px] uppercase tracking-widest font-bold">
             🗳️ Votos
@@ -604,7 +497,7 @@ export function WerewolfPanel({
       {/* Target selection */}
       <div>
         <p className="text-neutral-500 text-xs mb-3">
-          {wolves.length > 1
+          {aliveWolves.length > 1
             ? myVote?.target_id
               ? 'Seu voto — clique para mudar:'
               : 'Escolha seu voto:'
@@ -651,7 +544,7 @@ export function WerewolfPanel({
       )}
 
       {/* Consensus status + confirm button */}
-      {wolves.length > 1 && (
+      {aliveWolves.length > 1 && (
         <div className="space-y-2">
           {hasConsensus ? (
             <p className="text-emerald-500 text-xs font-bold uppercase tracking-wider">
@@ -674,7 +567,7 @@ export function WerewolfPanel({
       )}
 
       {/* Single wolf — direct confirm */}
-      {wolves.length <= 1 && myVote?.target_id && (
+      {aliveWolves.length <= 1 && myVote?.target_id && (
         <button
           onClick={handleConsensusConfirm}
           disabled={busy}
