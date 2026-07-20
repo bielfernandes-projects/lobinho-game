@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { RoomProfile } from '@/hooks/use-room'
 
@@ -40,7 +40,19 @@ export function WerewolfPanel({
   const [error, setError] = useState('')
   const [infectTarget, setInfectTarget] = useState(false)
   const [consensusVotes, setConsensusVotes] = useState<ConsensusVote[]>([])
+  const [frenzyPhase, setFrenzyPhase] = useState<1 | 2>(1)
+  const prevTurnRef = useRef(turnIndex)
   const supabase = createClient()
+
+  // Reset frenzy phase + consensus when turn changes
+  useEffect(() => {
+    if (prevTurnRef.current !== turnIndex) {
+      prevTurnRef.current = turnIndex
+      setFrenzyPhase(1)
+      setConsensusVotes([])
+      setHasActed(false)
+    }
+  }, [turnIndex])
 
   // Fetch wolves + targets
   useEffect(() => {
@@ -175,21 +187,24 @@ export function WerewolfPanel({
   // Normal mode: single-target consensus
   const { hasConsensus, consensusTarget, consensusTargetName } = computeConsensus(1)
 
-  // Frenzy mode: two-phase consensus
+  // Frenzy mode: phase 1 always uses target_index=1
   const frenzyHasConsensus1 = wolvesFrenzy ? computeConsensus(1).hasConsensus : false
   const frenzyConsensusTarget1 = wolvesFrenzy ? computeConsensus(1).consensusTarget : null
   const frenzyConsensusTargetName1 = wolvesFrenzy ? computeConsensus(1).consensusTargetName : null
 
-  // Frenzy phase: 1 = choosing first target, 2 = choosing second target
-  const frenzyPhase = wolvesFrenzy ? (frenzyConsensusTarget1 ? 2 : 1) : 1
-
+  // Frenzy phase 2: only compute if we're actually in phase 2 AND have a locked target 1
+  const frenzyLockedTarget1 = wolvesFrenzy && frenzyPhase === 2 ? frenzyConsensusTarget1 : null
   const { hasConsensus: frenzyHasConsensus2, consensusTarget: frenzyConsensusTarget2, consensusTargetName: frenzyConsensusTargetName2 } =
-    frenzyPhase === 2 ? computeConsensus(2, frenzyConsensusTarget1) : { hasConsensus: false, consensusTarget: null, consensusTargetName: null }
+    frenzyPhase === 2 && frenzyLockedTarget1
+      ? computeConsensus(2, frenzyLockedTarget1)
+      : { hasConsensus: false, consensusTarget: null, consensusTargetName: null }
 
-  const frenzyAllConsensus = wolvesFrenzy && frenzyConsensusTarget1 && frenzyConsensusTarget2
+  const frenzyAllConsensus = wolvesFrenzy && frenzyLockedTarget1 && frenzyConsensusTarget2
 
   // My vote for current phase
-  const currentTargetIndex = wolvesFrenzy ? (frenzyPhase) : 1
+  const currentTargetIndex = wolvesFrenzy
+    ? (frenzyPhase === 2 ? 2 : 1)
+    : 1
   const myVote = consensusVotes.find((v) => v.voter_id === playerId && v.target_index === currentTargetIndex)
 
   // Votes grouped by target for inline display (current phase only)
@@ -217,9 +232,16 @@ export function WerewolfPanel({
     : consensusTargetName
 
   // Targets for current phase (exclude target 1 in frenzy phase 2)
-  const currentTargets = wolvesFrenzy && frenzyPhase === 2 && frenzyConsensusTarget1
-    ? targets.filter((t) => t.id !== frenzyConsensusTarget1)
+  const currentTargets = wolvesFrenzy && frenzyPhase === 2 && frenzyLockedTarget1
+    ? targets.filter((t) => t.id !== frenzyLockedTarget1)
     : targets
+
+  // Advance from frenzy phase 1 → 2
+  function handleAdvanceFrenzyPhase2() {
+    if (frenzyHasConsensus1 && frenzyConsensusTarget1) {
+      setFrenzyPhase(2)
+    }
+  }
 
   // Submit a kill action
   async function submitKill(targetId: string, shouldInfect: boolean) {
@@ -244,7 +266,7 @@ export function WerewolfPanel({
   async function handleVote(targetId: string) {
     setError('')
     try {
-      const targetIndex = wolvesFrenzy ? frenzyPhase : 1
+      const targetIndex = wolvesFrenzy ? (frenzyPhase === 2 ? 2 : 1) : 1
       const { error: rpcErr } = await supabase.rpc('upsert_consensus_vote', {
         p_room_id: roomId,
         p_target_id: targetId,
@@ -260,11 +282,11 @@ export function WerewolfPanel({
   // Confirm kill(s)
   async function handleConsensusConfirm() {
     if (wolvesFrenzy) {
-      if (!frenzyConsensusTarget1 || !frenzyConsensusTarget2) return
+      if (!frenzyLockedTarget1 || !frenzyConsensusTarget2) return
       setBusy(true)
       setError('')
       try {
-        await submitKill(frenzyConsensusTarget1, false)
+        await submitKill(frenzyLockedTarget1, false)
         await submitKill(frenzyConsensusTarget2, infectTarget)
         setHasActed(true)
         onDone?.()
@@ -368,7 +390,67 @@ export function WerewolfPanel({
     )
   }
 
-  // ── CONSOLIDATED MODE (normal + frenzy both use consensus) ─────────
+  // ── FRENZY PHASE 1 → 2 TRANSITION ────────────────────────────────
+  // If frenzy is active and all wolves agreed on target 1, but we haven't
+  // advanced to phase 2 yet, show a confirmation screen.
+  if (wolvesFrenzy && frenzyPhase === 1 && frenzyHasConsensus1 && frenzyConsensusTargetName1) {
+    return (
+      <div className="w-full max-w-sm text-center space-y-4">
+        <p className="text-red-500 text-sm uppercase tracking-widest font-bold">
+          🐺 Lobisomens
+        </p>
+        <p className="text-yellow-400 text-xs uppercase tracking-wider font-bold animate-pulse">
+          🔥 FRENESI — Matem 2 vítimas esta noite!
+        </p>
+
+        {aliveWolves.length > 1 && (
+          <div>
+            <p className="text-neutral-600 text-[10px] uppercase tracking-wider mb-2">
+              Seus aliados (vivos)
+            </p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {aliveWolves
+                .filter((w) => w.id !== playerId)
+                .map((w) => (
+                  <span
+                    key={w.id}
+                    className="px-3 py-1 rounded-full bg-red-950/40 border border-red-900/30 text-red-400 text-xs"
+                  >
+                    {w.name}
+                  </span>
+                ))}
+            </div>
+          </div>
+        )}
+
+        <div className="py-4 px-6 rounded-xl bg-emerald-950/30 border border-emerald-800/40 space-y-2">
+          <p className="text-emerald-400 text-xs uppercase tracking-wider font-bold">
+            ✅ 1º alvo definido — consenso
+          </p>
+          <p className="text-emerald-300 text-lg font-bold">
+            {frenzyConsensusTargetName1}
+          </p>
+          <p className="text-neutral-500 text-[10px] uppercase tracking-wider">
+            Todos os lobos concordaram
+          </p>
+        </div>
+
+        <button
+          onClick={handleAdvanceFrenzyPhase2}
+          disabled={busy}
+          className="w-full py-3 px-4 rounded-xl text-sm font-bold bg-red-900/30 border border-red-700/50 text-red-400 hover:bg-red-800/40 disabled:opacity-40 transition-all duration-200 cursor-pointer"
+        >
+          🔥 Prosseguir ao 2º alvo
+        </button>
+
+        {error && (
+          <p className="text-red-500 text-xs text-center">{error}</p>
+        )}
+      </div>
+    )
+  }
+
+  // ── CONSOLIDATED MODE (normal + frenzy phase 2) ───────────────────
   return (
     <div className="w-full max-w-sm text-center space-y-4">
       <p className="text-red-500 text-sm uppercase tracking-widest font-bold">
@@ -411,9 +493,7 @@ export function WerewolfPanel({
       <div>
         <p className="text-neutral-500 text-xs mb-3">
           {wolvesFrenzy
-            ? frenzyPhase === 1
-              ? 'Escolha o 1º alvo:'
-              : 'Escolha o 2º alvo:'
+            ? 'Escolha o 2º alvo:'
             : aliveWolves.length > 1
               ? myVote?.target_id
                 ? 'Seu voto — clique para mudar:'
@@ -453,8 +533,8 @@ export function WerewolfPanel({
         </div>
       </div>
 
-      {/* Alpha wolf infection option (only during frenzy when picking target 1) */}
-      {isAlpha && alphaHasPower && currentHasConsensus && currentConsensusTarget && (
+      {/* Alpha wolf infection option (only during frenzy when picking target 2) */}
+      {isAlpha && alphaHasPower && wolvesFrenzy && frenzyPhase === 2 && currentHasConsensus && currentConsensusTarget && (
         <label className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-neutral-900/40 border border-neutral-800 cursor-pointer hover:bg-neutral-800/40 transition-colors">
           <input
             type="checkbox"
@@ -472,28 +552,18 @@ export function WerewolfPanel({
       {aliveWolves.length > 1 && (
         <div className="space-y-2">
           {wolvesFrenzy ? (
-            // Frenzy: show progress
+            // Frenzy phase 2: show consensus
             frenzyAllConsensus ? (
               <p className="text-emerald-500 text-xs font-bold uppercase tracking-wider">
-                ✅ Consenso —1º: {frenzyConsensusTargetName1}, 2º: {frenzyConsensusTargetName2}
+                ✅ Consenso — 1º: {frenzyConsensusTargetName1}, 2º: {frenzyConsensusTargetName2}
               </p>
-            ) : frenzyPhase === 2 ? (
-              frenzyHasConsensus2 ? (
-                <p className="text-emerald-500 text-xs font-bold uppercase tracking-wider">
-                  ✅ 2º alvo: {frenzyConsensusTargetName2} — aguardando confirmação
-                </p>
-              ) : (
-                <p className="text-yellow-500 text-xs uppercase tracking-wider">
-                  ⚠️ Fase 2/2 — Aguardando consenso no 2º alvo...
-                </p>
-              )
-            ) : frenzyHasConsensus1 ? (
+            ) : frenzyHasConsensus2 ? (
               <p className="text-emerald-500 text-xs font-bold uppercase tracking-wider">
-                ✅ 1º alvo: {frenzyConsensusTargetName1} — avançando...
+                ✅ 2º alvo: {frenzyConsensusTargetName2} — aguardando confirmação
               </p>
             ) : (
               <p className="text-yellow-500 text-xs uppercase tracking-wider">
-                ⚠️ Fase 1/2 — Aguardando consenso no 1º alvo...
+                ⚠️ Aguardando consenso no 2º alvo...
               </p>
             )
           ) : (
