@@ -3,6 +3,13 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — Fix: stale consensus_votes leaking between frenzy nights (comprehensive)
+
+- **Root cause (confirmed)**: `trg_reset_game` did NOT delete `consensus_votes` or reset `rooms.wolves_frenzy`. Old votes from a previous game with matching `turn_index` leaked into the next game, making `computeConsensus()` return true instantly on mount. Additionally, `get_wolf_consensus` did not filter by `is_alive`, so dead wolves' votes inflated the count.
+- **DB fix** (`20260720143500`): One-time `DELETE FROM consensus_votes` to clear all stale data. `get_wolf_consensus` now filters `AND vp.is_alive = true`. `trg_reset_game` now cleans `consensus_votes` and resets `rooms.wolves_frenzy = false` on lobby return. Improved trigger fires on `INSERT OR UPDATE` of `game_state`.
+- **Frontend fix** (`werewolf-panel.tsx`): New `wolvesLoaded` state — `computeConsensus` returns `false` until wolves are fetched (prevents `expectedVoters = 0` race). Header in frenzy phase 1 corrected from "Escolha o 2º alvo" to "Escolha o 1º alvo". `wolvesLoaded` resets on `wolvesFrenzy` toggle.
+- **Files**: `supabase/migrations/20260720143500_fix_consensus_alive_filter_cleanup.sql`, `src/components/werewolf-panel.tsx`, `docs/architecture.md`.
+
 ### `<current>` — Fix: stale consensus_votes leaking between frenzy nights
 
 - **Root cause**: `resolve_night` does NOT increment `turn_index` (it preserves the current value). The advance functions (`advance_to_night`, `advance_phase`) should increment it, but there was NO cleanup of `consensus_votes` between turns. If `turn_index` doesn't change (or has a race condition), old votes with `target_index=1` from a previous night leak into `get_wolf_consensus` and make `computeConsensus(1)` return immediate consensus in frenzy mode — the 1st target appears auto-selected.

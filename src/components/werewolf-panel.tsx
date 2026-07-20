@@ -41,6 +41,7 @@ export function WerewolfPanel({
   const [infectTarget, setInfectTarget] = useState(false)
   const [consensusVotes, setConsensusVotes] = useState<ConsensusVote[]>([])
   const [frenzyPhase, setFrenzyPhase] = useState<1 | 2>(1)
+  const [wolvesLoaded, setWolvesLoaded] = useState(false)
   const prevTurnRef = useRef(turnIndex)
   const supabase = createClient()
 
@@ -58,6 +59,7 @@ export function WerewolfPanel({
   useEffect(() => {
     setConsensusVotes([])
     setFrenzyPhase(1)
+    setWolvesLoaded(false)
   }, [wolvesFrenzy])
 
   // Fetch wolves + targets
@@ -113,11 +115,12 @@ export function WerewolfPanel({
               p.isAlive && !wolfIds.has(p.id) && !p.isHost && p.id !== playerId
           )
         )
+        setWolvesLoaded(true)
       }
     }
 
     load()
-    return () => { cancelled = true }
+    return () => { cancelled = true; setWolvesLoaded(false) }
   }, [roomId, playerId, wolvesFrenzy])
 
   // Fetch consensus votes
@@ -165,15 +168,19 @@ export function WerewolfPanel({
 
   // Compute alive wolves and expected voter count
   const aliveWolves = wolves.filter((w) => w.isAlive)
-  const expectedVoters = aliveWolves.length
+  const expectedVoters = wolvesLoaded ? aliveWolves.length : -1
 
   // Compute consensus for a given target_index, optionally excluding a target
   function computeConsensus(targetIndex: number = 1, excludeTargetId?: string | null) {
+    if (expectedVoters <= 0) {
+      return { hasConsensus: false, consensusTarget: null, consensusTargetName: null }
+    }
+
     const validVotes = consensusVotes
       .filter((v) => v.target_id != null && v.target_index === targetIndex)
       .filter((v) => !excludeTargetId || v.target_id !== excludeTargetId)
 
-    if (validVotes.length < expectedVoters || expectedVoters === 0) {
+    if (validVotes.length < expectedVoters) {
       return { hasConsensus: false, consensusTarget: null, consensusTargetName: null }
     }
 
@@ -499,7 +506,9 @@ export function WerewolfPanel({
       <div>
         <p className="text-neutral-500 text-xs mb-3">
           {wolvesFrenzy
-            ? 'Escolha o 2º alvo:'
+            ? frenzyPhase === 1
+              ? 'Escolha o 1º alvo:'
+              : 'Escolha o 2º alvo:'
             : aliveWolves.length > 1
               ? myVote?.target_id
                 ? 'Seu voto — clique para mudar:'
