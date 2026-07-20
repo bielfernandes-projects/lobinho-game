@@ -3,6 +3,13 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — Night button pulse animation (commit pendente)
+- **Pulse animation on night controls** — Host's night buttons now pulse with `animate-pulse` to guide the sequence:
+  - When `nightStep === 'sleeping'` and there's a `nextRoleToWake`, the button for that role pulses (e.g., "🐺 Acordar Lobos").
+  - When `nightStep !== 'sleeping'` (a role is active), the "😴 Todos Dormindo" button pulses, prompting the host to return to sleeping state.
+  - `nextRoleToWake` computation extracted from IIFE into accessible scope for both text display and button styling.
+- **Files**: `src/app/game/[id]/page.tsx`, `docs/architecture.md`.
+
 ### `<current>` — Crash prevention + scenario explanation RLS fix (commit `97d79fd`)
 - **Fix: Scenario Explanation vazia para jogadores** — RLS impedia jogadores não-host de lerem a coluna `role` na tabela `players`. Query direta `from('players').select('id, role, is_host')` retornava `role = null` para não-hosts, causando "Nenhum papel encontrado". Solução: nova RPC `get_scenario_composition(p_room_id)` (`SECURITY DEFINER`) retorna `{role_id, player_count}` agregado (sem expor quem tem qual papel). `ScenarioExplanation` agora usa a RPC em vez de query direta.
 - **Fix: Vercel crash "This page couldn't load"** — Múltiplas causas de unhandled promise rejection:

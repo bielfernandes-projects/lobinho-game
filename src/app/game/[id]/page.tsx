@@ -611,7 +611,7 @@ export default function GameScreen() {
             </p>
             {(() => {
               const WOLF_ROLES = ['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf']
-              const nextRoleToWake = WAKE_ORDER.find((s) => {
+              const _nextRoleToWake = WAKE_ORDER.find((s) => {
                 if (s === 'wolves') {
                   if (!WOLF_ROLES.some((r) => availableNightRoles.has(r))) return false
                   return nightStep !== 'wolves' && !wolvesResolved
@@ -629,10 +629,10 @@ export default function GameScreen() {
                 return nightStep !== s
               })
               if (nightStep === 'sleeping') {
-                if (nextRoleToWake) {
+                if (_nextRoleToWake) {
                   return (
                     <p className="text-yellow-400 text-xs text-center">
-                      📍 Vez de acordar: {NIGHT_ROLE_LABELS[nextRoleToWake]}
+                      📍 Vez de acordar: {NIGHT_ROLE_LABELS[_nextRoleToWake]}
                     </p>
                   )
                 }
@@ -648,52 +648,75 @@ export default function GameScreen() {
                 </p>
               )
             })()}
-            <div className="flex flex-wrap gap-2 justify-center">
-              <button
-                onClick={() => handleSetNightStep('sleeping')}
-                disabled={nightStep === 'sleeping'}
-                className="px-3 py-2 rounded-lg text-xs font-bold tracking-wider bg-neutral-900 border border-white/30 text-neutral-500 hover:text-neutral-400 cursor-pointer transition-all duration-200"
-              >
-                😴 Todos Dormindo
-              </button>
-              {[
-                { step: 'masons', role: 'mason', label: '🧱 Acordar Maçons' },
-                { step: 'cupid', role: 'cupid', label: '💘 Acordar Cupido' },
-                { step: 'doppelganger', role: 'doppelganger', label: '🎭 Acordar Doppelgänger' },
-                { step: 'priest', role: 'priest', label: '🙏 Acordar Padre' },
-                { step: 'bodyguard', role: 'bodyguard', label: '🛡️ Acordar Guarda-costas' },
-                { step: 'wolves', role: 'werewolf', label: '🐺 Acordar Lobos' },
-                { step: 'witch', role: 'witch', label: '🧪 Acordar Bruxa' },
-                { step: 'seer', role: 'seer', label: '🔮 Acordar Vidente' },
-                { step: 'aura_seer', role: 'aura_seer', label: '👁️ Acordar Vidente de Aura' },
-                { step: 'sorceress', role: 'sorceress', label: '🔮 Acordar Feiticeira' },
-                { step: 'cult_leader', role: 'cult_leader', label: '🔮 Acordar Líder de Culto' },
-              ].filter((b) => {
-                if (b.step === 'masons' && turnIndex !== 1) return false
-                if (b.step === 'cupid' && turnIndex !== 1) return false
-                if (b.step === 'doppelganger' && turnIndex !== 1) return false
-                if (b.step === 'wolves') {
-                  return ['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf'].some((r) => availableNightRoles.has(r))
+            {(() => {
+              const WOLF_ROLES = ['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf']
+              const nextRoleToWake = WAKE_ORDER.find((s) => {
+                if (s === 'wolves') {
+                  if (!WOLF_ROLES.some((r) => availableNightRoles.has(r))) return false
+                  return nightStep !== 'wolves' && !wolvesResolved
                 }
-                return availableNightRoles.has(b.role)
-              }).map((b) => {
-                const isWolves = b.step === 'wolves'
-                const actionDone = !isWolves && resolvedActions.has(b.step)
-                const disabled = isWolves
-                  ? nightStep === 'wolves' || wolvesResolved
-                  : nightStep === b.step || actionDone
-                return (
+                if (s === 'masons') {
+                  if (!availableNightRoles.has('mason')) return false
+                  if (turnIndex !== 1) return false
+                  if (nightRolesActedRef.current.has(s)) return false
+                  return nightStep !== s
+                }
+                if (!availableNightRoles.has(s)) return false
+                if (s === 'cupid' && turnIndex !== 1) return false
+                if (s === 'doppelganger' && turnIndex !== 1) return false
+                if (nightRolesActedRef.current.has(s)) return false
+                return nightStep !== s
+              })
+              return (
+                <div className="flex flex-wrap gap-2 justify-center">
                   <button
-                    key={b.step}
-                    onClick={() => handleSetNightStep(b.step)}
-                    disabled={disabled}
-                    className={`px-3 py-2 rounded-lg text-xs font-bold tracking-wider border ${ROLE_STYLE[b.role] ?? 'text-neutral-500 border-neutral-700'} disabled:opacity-30 transition-all duration-200 ${actionDone ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                    onClick={() => handleSetNightStep('sleeping')}
+                    disabled={nightStep === 'sleeping'}
+                    className={`px-3 py-2 rounded-lg text-xs font-bold tracking-wider bg-neutral-900 border border-white/30 text-neutral-500 hover:text-neutral-400 cursor-pointer transition-all duration-200 ${nightStep !== 'sleeping' ? 'animate-pulse' : ''}`}
                   >
-                    {b.label}
+                    😴 Todos Dormindo
                   </button>
-                )
-              })}
-            </div>
+                  {[
+                    { step: 'masons', role: 'mason', label: '🧱 Acordar Maçons' },
+                    { step: 'cupid', role: 'cupid', label: '💘 Acordar Cupido' },
+                    { step: 'doppelganger', role: 'doppelganger', label: '🎭 Acordar Doppelgänger' },
+                    { step: 'priest', role: 'priest', label: '🙏 Acordar Padre' },
+                    { step: 'bodyguard', role: 'bodyguard', label: '🛡️ Acordar Guarda-costas' },
+                    { step: 'wolves', role: 'werewolf', label: '🐺 Acordar Lobos' },
+                    { step: 'witch', role: 'witch', label: '🧪 Acordar Bruxa' },
+                    { step: 'seer', role: 'seer', label: '🔮 Acordar Vidente' },
+                    { step: 'aura_seer', role: 'aura_seer', label: '👁️ Acordar Vidente de Aura' },
+                    { step: 'sorceress', role: 'sorceress', label: '🔮 Acordar Feiticeira' },
+                    { step: 'cult_leader', role: 'cult_leader', label: '🔮 Acordar Líder de Culto' },
+                  ].filter((b) => {
+                    if (b.step === 'masons' && turnIndex !== 1) return false
+                    if (b.step === 'cupid' && turnIndex !== 1) return false
+                    if (b.step === 'doppelganger' && turnIndex !== 1) return false
+                    if (b.step === 'wolves') {
+                      return ['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf'].some((r) => availableNightRoles.has(r))
+                    }
+                    return availableNightRoles.has(b.role)
+                  }).map((b) => {
+                    const isWolves = b.step === 'wolves'
+                    const actionDone = !isWolves && resolvedActions.has(b.step)
+                    const disabled = isWolves
+                      ? nightStep === 'wolves' || wolvesResolved
+                      : nightStep === b.step || actionDone
+                    const isNextToWake = nightStep === 'sleeping' && nextRoleToWake === b.step
+                    return (
+                      <button
+                        key={b.step}
+                        onClick={() => handleSetNightStep(b.step)}
+                        disabled={disabled}
+                        className={`px-3 py-2 rounded-lg text-xs font-bold tracking-wider border ${ROLE_STYLE[b.role] ?? 'text-neutral-500 border-neutral-700'} disabled:opacity-30 transition-all duration-200 ${actionDone ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${isNextToWake ? 'animate-pulse' : ''}`}
+                      >
+                        {b.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              )
+            })()}
 
             {!wolvesResolved && (
               <HostControls
