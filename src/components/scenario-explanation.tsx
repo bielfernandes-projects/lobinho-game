@@ -114,7 +114,7 @@ export function ScenarioExplanation({
                       )}
                     </div>
                     <p className="text-xs opacity-90 leading-relaxed">
-                      {getRevealedRoleText(entry.role_id, 'total')}
+                      {card.description}
                     </p>
                   </div>
                 </div>
