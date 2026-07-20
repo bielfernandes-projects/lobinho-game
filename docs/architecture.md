@@ -3,7 +3,7 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
-### `<current>` — 5 Playtest Improvements (commit pendente)
+### `<current>` — 5 Playtest Improvements (commit `9b94f56`)
 - **Witch doesn't play on Night 1** — Added `turnIndex === 1` guards in 3 places in `page.tsx`:
   - `renderNightPanel()` witch block returns `sleepScreen()` on first night.
   - Both `nextRoleToWake` IIFEs skip witch when `turnIndex === 1`.
@@ -30,7 +30,7 @@ A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, S
   - New RPCs: `upsert_consensus_vote`, `get_wolf_consensus`.
 - **Files**: `src/app/game/[id]/page.tsx`, `src/lib/reveal.ts`, `src/components/scenario-builder.tsx`, `src/components/scenario-explanation.tsx`, `src/components/witch-panel.tsx`, `src/components/werewolf-panel.tsx`, `docs/architecture.md`.
 
-### `<current>` — Night button pulse animation (commit pendente)
+### `<current>` — Night button pulse animation (commit `386b45b`)
 - **Pulse animation on night controls** — Host's night buttons now pulse with `animate-pulse` to guide the sequence:
   - When `nightStep === 'sleeping'` and there's a `nextRoleToWake`, the button for that role pulses (e.g., "🐺 Acordar Lobos").
   - When `nightStep !== 'sleeping'` (a role is active), the "😴 Todos Dormindo" button pulses, prompting the host to return to sleeping state.
@@ -197,7 +197,7 @@ A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, S
 - **Vercel**: Redeploy manual necessário (CLI sem credenciais). Use o dashboard com "Use existing Build Cache" DESATIVADO.
 - **Files**: `docs/architecture.md`.
 
-### `<current-1>` — Hotfixes: Lobo Solitário paridade + constraint witch_skip (commit pendente)
+### `<current-1>` — Hotfixes: Lobo Solitário paridade + constraint witch_skip (commit `fe84b05`)
 - **Bug 1 — Lobo Solitário paridade**: `check_game_over` e `trg_check_game_over` impediam `villagers_win` quando Solitário vivo, mas não declaravam `lone_wolf_win` na paridade (Solitário + 1 outro = 2 vivos, sem lobos de time). Adicionado `IF v_alive_count <= 2 THEN ... lone_wolf_win` no bloco `v_wolves = 0` de ambas as funções. Agora: `v_wolves = 0` + Solitário vivo + `<= 2` vivos → `lone_wolf_win`; `> 2` vivos → jogo continua.
 - **Bug 2 — Constraint `night_actions_action_type_check` sem `witch_skip`**: A RPC `execute_night_action` já tinha o branch `witch_skip` mas a constraint CHECK da tabela `night_actions` não incluía o valor. Resultado: "deixar morrer" na bruxa causava erro `violates check constraint`. Corrigido via SQL Editor.
 - **Bug 3 — Feiticeira sem resultado**: Removida guarda `actedRoles.has('sorceress')` do `renderNightPanel`. Painel agora fica visível com o resultado até o host avançar o `nightStep`.
