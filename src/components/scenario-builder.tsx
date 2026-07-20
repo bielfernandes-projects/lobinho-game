@@ -116,7 +116,7 @@ export function ScenarioBuilder({ roomId, playerCount }: ScenarioBuilderProps) {
         <div className="space-y-1.5">
           {[
             { value: 'total' as const, label: '🃏 Revelação Total', desc: 'Todos os papéis são revelados exatamente como são.' },
-            { value: 'team' as const, label: '👥 Apenas o Time', desc: 'Mostra apenas Time da Vila, Time dos Lobos ou Facção Independente.' },
+            { value: 'team' as const, label: '👥 Apenas Time Vila', desc: 'Mostra se a vítima era da Vila ou não.' },
             { value: 'hidden' as const, label: '❓ Identidade Oculta', desc: 'Nenhuma informação sobre a identidade é revelada.' },
           ].map((opt) => (
             <label

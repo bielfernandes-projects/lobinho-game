@@ -17,7 +17,7 @@ export function getRevealedRoleText(roleId: string, revealMode: RevealMode): str
 
   if (revealMode === 'team') {
     if (!card) return roleId
-    return TEAM_LABELS[card.team] ?? 'Time Desconhecido'
+    return card.team === 'village' ? 'Era da Vila' : 'Não era da Vila'
   }
 
   return 'Identidade Oculta'

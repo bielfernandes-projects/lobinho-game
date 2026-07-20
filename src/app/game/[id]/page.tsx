@@ -128,7 +128,6 @@ export default function GameScreen() {
           .from('players')
           .select('role, has_used_power')
           .eq('room_id', roomId)
-          .eq('is_alive', true)
           .neq('role', 'moderator')
           .in('role', ['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf', 'seer', 'witch', 'priest', 'bodyguard', 'aura_seer', 'cupid', 'cult_leader', 'mason', 'sorceress', 'doppelganger'])
         if (data) {
@@ -623,6 +622,7 @@ export default function GameScreen() {
                   return nightStep !== s
                 }
                 if (!availableNightRoles.has(s)) return false
+                if (s === 'witch' && turnIndex === 1) return false
                 if (s === 'cupid' && turnIndex !== 1) return false
                 if (s === 'doppelganger' && turnIndex !== 1) return false
                 if (nightRolesActedRef.current.has(s)) return false
@@ -662,6 +662,7 @@ export default function GameScreen() {
                   return nightStep !== s
                 }
                 if (!availableNightRoles.has(s)) return false
+                if (s === 'witch' && turnIndex === 1) return false
                 if (s === 'cupid' && turnIndex !== 1) return false
                 if (s === 'doppelganger' && turnIndex !== 1) return false
                 if (nightRolesActedRef.current.has(s)) return false
@@ -688,10 +689,11 @@ export default function GameScreen() {
                     { step: 'aura_seer', role: 'aura_seer', label: '👁️ Acordar Vidente de Aura' },
                     { step: 'sorceress', role: 'sorceress', label: '🔮 Acordar Feiticeira' },
                     { step: 'cult_leader', role: 'cult_leader', label: '🔮 Acordar Líder de Culto' },
-                  ].filter((b) => {
+                  ]                  .filter((b) => {
                     if (b.step === 'masons' && turnIndex !== 1) return false
                     if (b.step === 'cupid' && turnIndex !== 1) return false
                     if (b.step === 'doppelganger' && turnIndex !== 1) return false
+                    if (b.step === 'witch' && turnIndex === 1) return false
                     if (b.step === 'wolves') {
                       return ['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf'].some((r) => availableNightRoles.has(r))
                     }
@@ -1186,6 +1188,7 @@ export default function GameScreen() {
     }
 
     if (player.role === 'witch') {
+      if (turnIndex === 1) return sleepScreen()
       if (!wolvesResolved) return sleepScreen()
       if (nightStep !== 'witch') return sleepScreen()
       if (actedRoles.has('witch')) return sleepScreen()

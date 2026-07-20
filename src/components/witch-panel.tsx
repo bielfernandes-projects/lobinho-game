@@ -20,6 +20,7 @@ export function WitchPanel({ roomId, playerId, turnIndex, victimName, onDone }: 
   const [poisonBusy, setPoisonBusy] = useState(false)
   const [usedLife, setUsedLife] = useState(false)
   const [usedDeath, setUsedDeath] = useState(false)
+  const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState('')
   const supabase = createClient()
 
@@ -38,9 +39,7 @@ export function WitchPanel({ roomId, playerId, turnIndex, victimName, onDone }: 
           )
         }
       } catch {}
-    })()
 
-    ;(async () => {
       try {
         const { data } = await supabase
           .from('players')
@@ -52,8 +51,33 @@ export function WitchPanel({ roomId, playerId, turnIndex, victimName, onDone }: 
           setUsedDeath(data.has_used_death_potion)
         }
       } catch {}
+      setLoaded(true)
     })()
   }, [roomId, playerId])
+
+  // Auto-skip when both potions are used or when appropriate
+  useEffect(() => {
+    if (!loaded) return
+    if (usedLife && usedDeath) {
+      // Both potions used — auto-skip entirely
+      ;(async () => {
+        try {
+          await supabase.rpc('execute_night_action', {
+            p_room_id: roomId,
+            p_action_type: 'witch_skip',
+            p_target_id: null,
+          })
+        } catch {}
+        onDone?.()
+      })()
+      setStep('done')
+      return
+    }
+    if (usedLife) {
+      // Life potion used — skip save step, go directly to poison
+      setStep('poison')
+    }
+  }, [loaded, usedLife, usedDeath])
 
   async function handleSave(save: boolean) {
     setSaveBusy(true)
@@ -98,8 +122,15 @@ export function WitchPanel({ roomId, playerId, turnIndex, victimName, onDone }: 
         return
       }
     }
-    setStep('poison')
     setSaveBusy(false)
+
+    // If death potion already used, auto-skip poison too
+    if (usedDeath) {
+      setStep('done')
+      onDone?.()
+      return
+    }
+    setStep('poison')
   }
 
   async function handlePoison(targetId: string | null) {
@@ -158,6 +189,14 @@ export function WitchPanel({ roomId, playerId, turnIndex, victimName, onDone }: 
       <div className="w-full max-w-sm text-center space-y-2">
         <p className="text-neutral-500 text-sm font-semibold">✅ Ação Registrada</p>
         <p className="text-neutral-700 text-xs">Aguarde a noite passar...</p>
+      </div>
+    )
+  }
+
+  if (!loaded) {
+    return (
+      <div className="w-full max-w-sm text-center space-y-2">
+        <p className="text-neutral-500 text-sm">Carregando...</p>
       </div>
     )
   }
@@ -234,42 +273,55 @@ export function WitchPanel({ roomId, playerId, turnIndex, victimName, onDone }: 
 
       {step === 'poison' && (
         <>
-          <p className="text-neutral-500 text-xs">
-            Quer envenenar alguém?
-          </p>
+          {usedDeath ? (
+            <div className="py-4 space-y-2">
+              <p className="text-neutral-400 text-sm font-semibold">
+                🧪 Ambas as poções já foram utilizadas
+              </p>
+              <p className="text-neutral-600 text-xs">
+                Aguarde a instrução do mestre...
+              </p>
+            </div>
+          ) : (
+            <>
+              <p className="text-neutral-500 text-xs">
+                Quer envenenar alguém?
+              </p>
 
-          <div className="space-y-2">
-            {targets
-              .filter((t) => t.id !== playerId && !t.isHost)
-              .map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => handlePoison(t.id)}
-                  disabled={poisonBusy || usedDeath}
-                  className="
-                    w-full py-3 px-4 rounded-xl text-sm font-medium
-                    bg-neutral-900 border border-neutral-800 text-neutral-300
-                    hover:border-purple-700 hover:text-purple-400
-                    active:bg-purple-950/20
-                    disabled:opacity-30 disabled:cursor-not-allowed
-                    transition-all duration-200 cursor-pointer
-                  "
-                >
-                  {t.name}
-                </button>
-              ))}
-          </div>
+              <div className="space-y-2">
+                {targets
+                  .filter((t) => t.id !== playerId && !t.isHost)
+                  .map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => handlePoison(t.id)}
+                      disabled={poisonBusy}
+                      className="
+                        w-full py-3 px-4 rounded-xl text-sm font-medium
+                        bg-neutral-900 border border-neutral-800 text-neutral-300
+                        hover:border-purple-700 hover:text-purple-400
+                        active:bg-purple-950/20
+                        disabled:opacity-30 disabled:cursor-not-allowed
+                        transition-all duration-200 cursor-pointer
+                      "
+                    >
+                      {t.name}
+                    </button>
+                  ))}
+              </div>
 
-          <button
-            onClick={() => handlePoison(null)}
-            disabled={poisonBusy}
-            className="
-              text-neutral-600 text-xs hover:text-neutral-400
-              transition-colors cursor-pointer disabled:opacity-30
-            "
-          >
-            {usedDeath ? 'Poção já usada' : 'Pular (não envenenar)'}
-          </button>
+              <button
+                onClick={() => handlePoison(null)}
+                disabled={poisonBusy}
+                className="
+                  text-neutral-600 text-xs hover:text-neutral-400
+                  transition-colors cursor-pointer disabled:opacity-30
+                "
+              >
+                Pular (não envenenar)
+              </button>
+            </>
+          )}
 
           {error && (
             <p className="text-red-500 text-xs text-center">{error}</p>

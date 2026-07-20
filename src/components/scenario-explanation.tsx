@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { CARD_CATALOG, ROLE_STYLE, ROLE_TRANSLATION } from '@/lib/cards'
-import { getRevealedRoleText } from '@/lib/reveal'
 
 interface ScenarioExplanationProps {
   roomId: string
@@ -106,12 +105,8 @@ export function ScenarioExplanation({
                         {ptName !== card.name && (
                           <span className="text-xs opacity-70 ml-1">({ptName})</span>
                         )}
+                        <span className="text-sm opacity-80 ml-1">({entry.player_count})</span>
                       </h3>
-                      {entry.player_count > 1 && (
-                        <span className="text-[10px] font-black tracking-widest uppercase opacity-80">
-                          ×{entry.player_count}
-                        </span>
-                      )}
                     </div>
                     <p className="text-xs opacity-90 leading-relaxed">
                       {card.description}

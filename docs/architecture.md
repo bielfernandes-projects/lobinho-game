@@ -3,12 +3,40 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — 5 Playtest Improvements (commit pendente)
+- **Witch doesn't play on Night 1** — Added `turnIndex === 1` guards in 3 places in `page.tsx`:
+  - `renderNightPanel()` witch block returns `sleepScreen()` on first night.
+  - Both `nextRoleToWake` IIFEs skip witch when `turnIndex === 1`.
+  - Host button filter hides witch button on first night.
+  - Matches official Werewolf rules: Witch only acts from Night 2 onward.
+- **Dead role buttons visible for host** — Removed `.eq('is_alive', true)` from `availableNightRoles` query. Host can now wake dead roles (for confusion/TPA). Dead players still see `sleepScreen()` via the `isAlive` check in `renderNightPanel()`.
+- **Binary reveal mode "Apenas Time Vila"** — `getRevealedRoleText` in `reveal.ts` now returns `'Era da Vila'` / `'Não era da Vila'` instead of team-specific labels. `ScenarioBuilder` label updated to "👥 Apenas Time Vila". Removed unused `getRevealedRoleText` import from `scenario-explanation.tsx`.
+- **Witch UX when potions already used** — `witch-panel.tsx` rewritten:
+  - Both potions used → auto-sends `witch_skip` and calls `onDone()` immediately.
+  - Life potion used → skips save step, goes directly to poison.
+  - Death potion used → shows save step, then auto-skips poison.
+  - Neither used → normal flow.
+  - Added `loaded` state to prevent premature rendering.
+- **Wolf consensus voting** — New DB table + RPCs + complete `werewolf-panel.tsx` rewrite:
+  - New table `consensus_votes` (PK: room_id + turn_index + voter_id) with RLS.
+  - New RPC `upsert_consensus_vote(room_id, target_id)` — SECURITY DEFINER.
+  - New RPC `get_wolf_consensus(room_id)` — SECURITY DEFINER, returns voter/target names.
+  - Realtime subscription on `consensus_votes` for live vote updates.
+  - Confirm button only enables when ALL alive wolves voted for the same target.
+  - Frenzy mode unchanged (direct target selection, no consensus — per-wolf).
+  - Single wolf mode: direct confirm after voting.
+- **Database** (migration `20260719220000_consensus_votes.sql`, applied via CLI, file deleted):
+  - `consensus_votes` table with RLS policy `players_can_read_consensus_votes`.
+  - New RPCs: `upsert_consensus_vote`, `get_wolf_consensus`.
+- **Files**: `src/app/game/[id]/page.tsx`, `src/lib/reveal.ts`, `src/components/scenario-builder.tsx`, `src/components/scenario-explanation.tsx`, `src/components/witch-panel.tsx`, `src/components/werewolf-panel.tsx`, `docs/architecture.md`.
+
 ### `<current>` — Night button pulse animation (commit pendente)
 - **Pulse animation on night controls** — Host's night buttons now pulse with `animate-pulse` to guide the sequence:
   - When `nightStep === 'sleeping'` and there's a `nextRoleToWake`, the button for that role pulses (e.g., "🐺 Acordar Lobos").
   - When `nightStep !== 'sleeping'` (a role is active), the "😴 Todos Dormindo" button pulses, prompting the host to return to sleeping state.
   - `nextRoleToWake` computation extracted from IIFE into accessible scope for both text display and button styling.
-- **Files**: `src/app/game/[id]/page.tsx`, `docs/architecture.md`.
+- **Scenario explanation count display** — Role count now always appears next to the name as `Name (N)` (e.g., "Lobisomem (2)", "Seer (1)") instead of the conditional `×N` badge.
+- **Files**: `src/app/game/[id]/page.tsx`, `src/components/scenario-explanation.tsx`, `docs/architecture.md`.
 
 ### `<current>` — Crash prevention + scenario explanation RLS fix (commit `97d79fd`)
 - **Fix: Scenario Explanation vazia para jogadores** — RLS impedia jogadores não-host de lerem a coluna `role` na tabela `players`. Query direta `from('players').select('id, role, is_host')` retornava `role = null` para não-hosts, causando "Nenhum papel encontrado". Solução: nova RPC `get_scenario_composition(p_room_id)` (`SECURITY DEFINER`) retorna `{role_id, player_count}` agregado (sem expor quem tem qual papel). `ScenarioExplanation` agora usa a RPC em vez de query direta.
