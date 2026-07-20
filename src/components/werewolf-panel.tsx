@@ -135,17 +135,17 @@ export function WerewolfPanel({
     } catch {}
   }, [roomId])
 
-  // Initial fetch + polling fallback
+  // Initial fetch + polling fallback — ONLY after wolves loaded
   useEffect(() => {
-    if (isFirstNight) return
+    if (isFirstNight || !wolvesLoaded) return
     fetchConsensus()
     const iv = setInterval(fetchConsensus, 1500)
     return () => clearInterval(iv)
-  }, [fetchConsensus, isFirstNight])
+  }, [fetchConsensus, isFirstNight, wolvesLoaded])
 
-  // Realtime subscription for consensus votes
+  // Realtime subscription for consensus votes — ONLY after wolves loaded
   useEffect(() => {
-    if (isFirstNight) return
+    if (isFirstNight || !wolvesLoaded) return
 
     const channel = supabase
       .channel(`consensus:${roomId}`)
@@ -164,7 +164,7 @@ export function WerewolfPanel({
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [roomId, isFirstNight, fetchConsensus])
+  }, [roomId, isFirstNight, wolvesLoaded, fetchConsensus])
 
   // Compute alive wolves and expected voter count
   const aliveWolves = wolves.filter((w) => w.isAlive)
@@ -179,6 +179,20 @@ export function WerewolfPanel({
     const validVotes = consensusVotes
       .filter((v) => v.target_id != null && v.target_index === targetIndex)
       .filter((v) => !excludeTargetId || v.target_id !== excludeTargetId)
+
+    const hasConsensus = validVotes.length >= expectedVoters && validVotes.length > 0 && validVotes.every((v) => v.target_id === validVotes[0].target_id)
+
+    if (hasConsensus) {
+      console.log('[CONSENSUS DEBUG]', {
+        targetIndex,
+        wolvesLoaded,
+        expectedVoters,
+        aliveWolvesCount: aliveWolves.length,
+        aliveWolvesNames: aliveWolves.map(w => w.name),
+        validVotesCount: validVotes.length,
+        allVotes: consensusVotes.map(v => ({ voter: v.voter_name, target: v.target_name, ti: v.target_index })),
+      })
+    }
 
     if (validVotes.length < expectedVoters) {
       return { hasConsensus: false, consensusTarget: null, consensusTargetName: null }
