@@ -3,6 +3,13 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — Fix: Realtime crash + Frenzy trigger race condition
+
+- **Realtime crash fix** — Removed re-subscribe `setTimeout` logic from `useCurrentPlayer`, `useRoomPlayers`, and `useGameState`. When the WebSocket flaps, the old code tried to recreate channels, which threw `cannot add postgres_changes callbacks after subscribe()` and crashed the app via Error Boundary. Polling (2-5s) already serves as fallback — re-subscribe was redundant and buggy. Now logs `console.warn` and relies on polling.
+- **Frenzy race condition fix** — When Wolf Cub dies *inside* `resolve_night` (witch poison or frenzy second kill), `trg_wolf_cub_death` sets `rooms.wolves_frenzy = true` mid-function, but the unconditional cleanup `UPDATE rooms SET wolves_frenzy = false` at the end immediately erases it. Next night sees `v_frenzy=false` and wolves only kill 1. Fixed by wrapping cleanup in `IF v_frenzy THEN` — only clears when frenzy was consumed this night (was true before deaths). New cub deaths during the function correctly persist for the next night.
+- **Migration** (`20260720112500_fix_frenzy_conditional_cleanup.sql`): `resolve_night` recreated with conditional frenzy cleanup. Verified deployed.
+- **Files**: `src/hooks/use-player.ts`, `src/hooks/use-room.ts`, `supabase/migrations/20260720112500_fix_frenzy_conditional_cleanup.sql`, `docs/architecture.md`.
+
 ### `<current>` — Wolf consensus inline votes + witch exhausted state + diseased/frenzy DB fix
 
 - **Wolf panel: inline votes on target buttons** — Replaced separate "🗳️ Votos" panel with voter names shown inline on each target button (e.g. `(Você)`, `(Lobo1)`). Removed ~140 lines of old vote panel code. Uses `votesByTarget` Map to group consensus votes by target.

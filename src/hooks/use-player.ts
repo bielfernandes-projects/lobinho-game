@@ -98,11 +98,7 @@ export function useCurrentPlayer(roomId: string) {
         )
         .subscribe((status: string) => {
           if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-            console.warn('[useCurrentPlayer] channel error, re-subscribing in 3s')
-            setTimeout(() => {
-              if (channelRef) supabase.removeChannel(channelRef)
-              setupChannel()
-            }, 3000)
+            console.warn(`[useCurrentPlayer] channel ${status} — relying on polling fallback`)
           }
         })
       channelRef = channel

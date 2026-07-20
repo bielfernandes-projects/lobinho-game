@@ -114,23 +114,7 @@ export function useRoomPlayers(roomId: string) {
       )
       .subscribe((status) => {
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-          // Tenta re-subscribe após 3s
-          setTimeout(() => {
-            supabase.removeChannel(channel)
-            channelRef.current = supabase
-              .channel(`room-players:${roomId}`)
-              .on(
-                'postgres_changes',
-                {
-                  event: '*',
-                  schema: 'public',
-                  table: 'players',
-                  filter: `room_id=eq.${roomId}`,
-                },
-                () => poll()
-              )
-              .subscribe()
-          }, 3000)
+          console.warn(`[useRoomPlayers] channel ${status} — relying on polling fallback`)
         }
       })
     channelRef.current = channel
@@ -194,27 +178,7 @@ export function useGameState(roomId: string) {
       )
       .subscribe((status) => {
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-          console.warn('[useGameState] channel error, attempting re-subscribe in 3s')
-          setTimeout(() => {
-            supabase.removeChannel(channel)
-            channelRef.current = supabase
-              .channel(`game-state:${roomId}`)
-              .on(
-                'postgres_changes',
-                {
-                  event: '*',
-                  schema: 'public',
-                  table: 'game_state',
-                  filter: `room_id=eq.${roomId}`,
-                },
-                (payload) => {
-                  if (payload.new) {
-                    setState(payload.new as GameStateRow)
-                  }
-                }
-              )
-              .subscribe()
-          }, 3000)
+          console.warn(`[useGameState] channel ${status} — relying on polling fallback`)
         }
       })
     channelRef.current = channel
