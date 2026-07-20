@@ -54,6 +54,12 @@ export function WerewolfPanel({
     }
   }, [turnIndex])
 
+  // Clear stale consensus when frenzy toggles on/off
+  useEffect(() => {
+    setConsensusVotes([])
+    setFrenzyPhase(1)
+  }, [wolvesFrenzy])
+
   // Fetch wolves + targets
   useEffect(() => {
     let cancelled = false

@@ -3,6 +3,13 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — Fix: stale consensus_votes leaking between frenzy nights
+
+- **Root cause**: `resolve_night` does NOT increment `turn_index` (it preserves the current value). The advance functions (`advance_to_night`, `advance_phase`) should increment it, but there was NO cleanup of `consensus_votes` between turns. If `turn_index` doesn't change (or has a race condition), old votes with `target_index=1` from a previous night leak into `get_wolf_consensus` and make `computeConsensus(1)` return immediate consensus in frenzy mode — the 1st target appears auto-selected.
+- **DB fix** (`20260720133000_fix_stale_consensus_votes_leak.sql`): New trigger `trg_cleanup_consensus_on_night_start` on `game_state` — when `current_phase` changes to `night`, deletes ALL `consensus_votes` for that room. This ensures a clean slate every night regardless of `turn_index` behavior.
+- **Frontend defense** — `werewolf-panel.tsx`: `consensusVotes` cleared and `frenzyPhase` reset to 1 when `wolvesFrenzy` toggles (frenzy on/off). Combined with existing `prevTurnRef` reset on `turnIndex` change, this provides 3 layers of protection: DB trigger, turn-based reset, and frenzy-toggle reset.
+- **Files**: `supabase/migrations/20260720133000_fix_stale_consensus_votes_leak.sql`, `src/components/werewolf-panel.tsx`, `docs/architecture.md`.
+
 ### `<current>` — Frenzy consensus: explicit phase transition + state isolation
 - **Bugfix: frenzy phase auto-jumping to phase 2** — `frenzyPhase` was derived from `computeConsensus(1)`. If stale votes with `target_index=1` existed from a previous turn (or wolves voted instantly), `frenzyConsensusTarget1` was truthy on mount and the UI skipped phase 1 entirely. Fixed by: (a) `frenzyPhase` is now explicit `useState<1 | 2>(1)`, (b) `prevTurnRef` resets `frenzyPhase` to 1 + clears `consensusVotes` + resets `hasActed` when `turnIndex` changes, (c) new render block between phase 1 consensus and phase 2: shows "✅ 1º alvo definido — consenso" + "🔥 Prosseguir ao 2º alvo" button. Wolves must explicitly click to advance to phase 2.
 - **Frenzy locked target 1** — `frenzyLockedTarget1` only resolves when `frenzyPhase === 2`, preventing phase 2 consensus from being computed before the user confirms the transition. Confirm button uses `frenzyLockedTarget1` instead of raw `frenzyConsensusTarget1`.
