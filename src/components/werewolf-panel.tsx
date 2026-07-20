@@ -167,8 +167,10 @@ export function WerewolfPanel({
   }, [roomId, isFirstNight, wolvesLoaded, fetchConsensus])
 
   // Compute alive wolves and expected voter count
+  // get_werewolf_teammates returns OTHER wolves (excludes caller), so +1 for current player
   const aliveWolves = wolves.filter((w) => w.isAlive)
-  const expectedVoters = wolvesLoaded ? aliveWolves.length : -1
+  const totalAliveWolves = aliveWolves.length + 1
+  const expectedVoters = wolvesLoaded ? totalAliveWolves : -1
 
   // Compute consensus for a given target_index, optionally excluding a target
   function computeConsensus(targetIndex: number = 1, excludeTargetId?: string | null) {
@@ -187,7 +189,8 @@ export function WerewolfPanel({
         targetIndex,
         wolvesLoaded,
         expectedVoters,
-        aliveWolvesCount: aliveWolves.length,
+        totalAliveWolves,
+        aliveWolvesFromRPC: aliveWolves.length,
         aliveWolvesNames: aliveWolves.map(w => w.name),
         validVotesCount: validVotes.length,
         allVotes: consensusVotes.map(v => ({ voter: v.voter_name, target: v.target_name, ti: v.target_index })),
@@ -378,7 +381,7 @@ export function WerewolfPanel({
           🐺 Lobisomens
         </p>
 
-        {aliveWolves.length > 1 && (
+        {totalAliveWolves >= 2 && (
           <div>
             <p className="text-neutral-600 text-[10px] uppercase tracking-wider mb-2">
               Seus aliados (vivos)
@@ -430,7 +433,7 @@ export function WerewolfPanel({
           🔥 FRENESI — Matem 2 vítimas esta noite!
         </p>
 
-        {aliveWolves.length > 1 && (
+        {totalAliveWolves >= 2 && (
           <div>
             <p className="text-neutral-600 text-[10px] uppercase tracking-wider mb-2">
               Seus aliados (vivos)
@@ -496,7 +499,7 @@ export function WerewolfPanel({
         </p>
       )}
 
-      {aliveWolves.length > 1 && (
+      {totalAliveWolves >= 2 && (
         <div>
           <p className="text-neutral-600 text-[10px] uppercase tracking-wider mb-2">
             Seus aliados (vivos)
@@ -523,7 +526,7 @@ export function WerewolfPanel({
             ? frenzyPhase === 1
               ? 'Escolha o 1º alvo:'
               : 'Escolha o 2º alvo:'
-            : aliveWolves.length > 1
+            : totalAliveWolves >= 2
               ? myVote?.target_id
                 ? 'Seu voto — clique para mudar:'
                 : 'Escolha seu voto:'
@@ -578,7 +581,7 @@ export function WerewolfPanel({
       )}
 
       {/* Consensus status + confirm button */}
-      {aliveWolves.length > 1 && (
+      {totalAliveWolves >= 2 && (
         <div className="space-y-2">
           {wolvesFrenzy ? (
             // Frenzy phase 2: show consensus
@@ -627,7 +630,7 @@ export function WerewolfPanel({
       )}
 
       {/* Single wolf — direct confirm */}
-      {aliveWolves.length <= 1 && myVote?.target_id && (
+      {totalAliveWolves < 2 && myVote?.target_id && (
         <button
           onClick={handleConsensusConfirm}
           disabled={busy}

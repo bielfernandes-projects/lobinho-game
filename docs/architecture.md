@@ -3,6 +3,13 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — Fix: frenzy consensus auto-selected with 1 vote (root cause: get_werewolf_teammates excludes caller)
+
+- **Root cause (confirmed)**: `get_werewolf_teammates` RPC returns OTHER wolves EXCLUDING the current player. `wolves` array = only teammates, not including the caller. So `aliveWolves.length = 1` when there are actually 2 alive wolves (1 caller + 1 other). `expectedVoters = aliveWolves.length = 1`, meaning 1 vote = instant consensus. The same bug affected normal mode (single wolf direct confirm shown instead of consensus panel when 2 wolves alive).
+- **Frontend fix** (`werewolf-panel.tsx`): `totalAliveWolves = aliveWolves.length + 1` (adds current player who is always a wolf in this component). `expectedVoters` uses `totalAliveWolves`. All UI condition checks (`aliveWolves.length > 1`) changed to `totalAliveWolves >= 2` for: consensus panel visibility, allies display, target label text ("Seu voto" vs "Escolha a vítima"), direct confirm button. Debug log updated to show both `totalAliveWolves` and `aliveWolvesFromRPC`.
+- **DB fix** (`20260720160000`): `upsert_consensus_vote` now checks `is_alive = true` before allowing a vote (defense in depth — dead wolves cannot insert votes).
+- **Files**: `src/components/werewolf-panel.tsx`, `supabase/migrations/20260720160000_fix_consensus_expected_voters_rpc.sql`, `docs/architecture.md`.
+
 ### `<current>` — Fix: stale consensus_votes leaking between frenzy nights (comprehensive)
 
 - **Root cause (confirmed)**: `trg_reset_game` did NOT delete `consensus_votes` or reset `rooms.wolves_frenzy`. Old votes from a previous game with matching `turn_index` leaked into the next game, making `computeConsensus()` return true instantly on mount. Additionally, `get_wolf_consensus` did not filter by `is_alive`, so dead wolves' votes inflated the count.
@@ -745,3 +752,5 @@ lobby → card_reveal → night → day (announcement → discussion → trial �
 16. **Winner players via `get_revealed_players`** — instead of a new RPC, `get_revealed_players` was updated to return `in_cult` and `soulmate_id`. Frontend filters locally for `soulmates_win` (soulmate_id != null) and `cult_win` (in_cult || role === 'cult_leader'). All identities are revealed post-game anyway.
 
 17. **Werewolf first night** — uses `turnIndex === 0` (no `night_number` column). WerewolfPanel receives `isFirstNight` prop. Registers `execute_night_action('werewolf_kill', null)` to advance the action queue without killing anyone.
+
+18. **`get_werewolf_teammates` excludes caller** — The RPC returns teammates only (other wolves), not the current player. Frontend compensates with `totalAliveWolves = aliveWolves.length + 1` since the current player is always a wolf in `WerewolfPanel`.
