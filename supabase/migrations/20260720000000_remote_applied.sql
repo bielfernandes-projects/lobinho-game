@@ -1,0 +1,1 @@
+-- Remote migration applied via SQL Editor — no local change needed.

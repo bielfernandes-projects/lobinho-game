@@ -3,6 +3,14 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — Wolf consensus inline votes + witch exhausted state + diseased/frenzy DB fix
+
+- **Wolf panel: inline votes on target buttons** — Replaced separate "🗳️ Votos" panel with voter names shown inline on each target button (e.g. `(Você)`, `(Lobo1)`). Removed ~140 lines of old vote panel code. Uses `votesByTarget` Map to group consensus votes by target.
+- **Witch panel: "Poções esgotadas" persistent state** — When both potions are used, witch panel now shows "Poções esgotadas — Aguarde a noite passar..." instead of auto-calling `onDone()`. Added `'exhausted'` step type. Witch sees this until host advances nightStep.
+- **DB fix: `wolves_frenzy` leak on diseased skip** — `resolve_night` PASSO 0 did early RETURN when `diseased_skip_wolves=true` but did NOT clear `rooms.wolves_frenzy`. If Wolf Cub died before Diseased, frenzy persisted to next night, forcing wolves to pick 2 targets incorrectly. Added `UPDATE rooms SET wolves_frenzy = false WHERE id = p_room_id AND wolves_frenzy = true;` in diseased_skip block.
+- **Migration** (`20260720111422_fix_diseased_skip_frenzy_leak.sql`): Recreated `resolve_night` with the one-line fix. Verified deployed function contains the fix.
+- **Files**: `src/components/werewolf-panel.tsx`, `src/components/witch-panel.tsx`, `supabase/migrations/20260720111422_fix_diseased_skip_frenzy_leak.sql`, `docs/architecture.md`.
+
 ### `<current>` — Wolf consensus voting fix: dead wolves excluded from count
 - **Fix: dead wolves counted in consensus UI** — `wolves.length` included dead wolves (from `get_werewolf_teammates`), so the consensus panel was shown even when only 1 wolf remained alive (because dead wolves inflated the count). Changed all UI conditions from `wolves.length` to `aliveWolves.length` (alive wolves only). This ensures:
   - When only 1 wolf is alive, the direct confirm button appears (no consensus needed).
@@ -30,7 +38,7 @@ A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, S
 - **Dead role buttons visible for host** — Removed `.eq('is_alive', true)` from `availableNightRoles` query. Host can now wake dead roles (for confusion/TPA). Dead players still see `sleepScreen()` via the `isAlive` check in `renderNightPanel()`.
 - **Binary reveal mode "Apenas Time Vila"** — `getRevealedRoleText` in `reveal.ts` now returns `'Era da Vila'` / `'Não era da Vila'` instead of team-specific labels. `ScenarioBuilder` label updated to "👥 Apenas Time Vila". Removed unused `getRevealedRoleText` import from `scenario-explanation.tsx`.
 - **Witch UX when potions already used** — `witch-panel.tsx` rewritten:
-  - Both potions used → auto-sends `witch_skip` and calls `onDone()` immediately.
+  - Both potions used → shows "Poções esgotadas" persistent message (does NOT auto-call `onDone()`; waits for host to advance nightStep).
   - Life potion used → skips save step, goes directly to poison.
   - Death potion used → shows save step, then auto-skips poison.
   - Neither used → normal flow.

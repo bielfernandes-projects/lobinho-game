@@ -118,7 +118,7 @@ export function WerewolfPanel({
   useEffect(() => {
     if (isFirstNight) return
     fetchConsensus()
-    const iv = setInterval(fetchConsensus, 3000)
+    const iv = setInterval(fetchConsensus, 1500)
     return () => clearInterval(iv)
   }, [fetchConsensus, isFirstNight])
 
@@ -173,6 +173,17 @@ export function WerewolfPanel({
 
   // My vote
   const myVote = consensusVotes.find((v) => v.voter_id === playerId)
+
+  // Votes grouped by target for inline display
+  const votesByTarget = new Map<string, { voter_id: string; voter_name: string }[]>()
+  consensusVotes.forEach((v) => {
+    if (v.target_id) {
+      const entry = { voter_id: v.voter_id, voter_name: v.voter_name }
+      const existing = votesByTarget.get(v.target_id)
+      if (existing) existing.push(entry)
+      else votesByTarget.set(v.target_id, [entry])
+    }
+  })
 
   async function submitKill(targetId: string, shouldInfect: boolean) {
     const { error: rpcErr } = await supabase.rpc('execute_night_action', {
@@ -450,51 +461,7 @@ export function WerewolfPanel({
         </div>
       )}
 
-      {/* Consensus vote display */}
-      {aliveWolves.length > 1 && (
-        <div className="rounded-xl border border-neutral-800 bg-neutral-900/60 px-4 py-3 space-y-2">
-          <p className="text-neutral-500 text-[10px] uppercase tracking-widest font-bold">
-            🗳️ Votos
-          </p>
-          <div className="space-y-1.5">
-            {consensusVotes.map((v) => (
-              <div key={v.voter_id} className="flex items-center justify-between text-xs">
-                <span className="text-neutral-400">
-                  {v.voter_id === playerId ? (
-                    <span className="text-red-400 font-bold">Você</span>
-                  ) : (
-                    v.voter_name
-                  )}
-                </span>
-                <span className="text-neutral-300">
-                  {v.target_name ? (
-                    <>→ <span className="text-red-400">{v.target_name}</span></>
-                  ) : (
-                    <span className="text-neutral-600">—</span>
-                  )}
-                </span>
-              </div>
-            ))}
-            {/* Show wolves who haven't voted yet */}
-            {aliveWolves
-              .filter((w) => !consensusVotes.some((v) => v.voter_id === w.id))
-              .map((w) => (
-                <div key={w.id} className="flex items-center justify-between text-xs">
-                  <span className="text-neutral-400">
-                    {w.id === playerId ? (
-                      <span className="text-red-400 font-bold">Você</span>
-                    ) : (
-                      w.name
-                    )}
-                  </span>
-                  <span className="text-neutral-600">aguardando...</span>
-                </div>
-              ))}
-          </div>
-        </div>
-      )}
-
-      {/* Target selection */}
+      {/* Target list with inline votes */}
       <div>
         <p className="text-neutral-500 text-xs mb-3">
           {aliveWolves.length > 1
@@ -506,6 +473,7 @@ export function WerewolfPanel({
         <div className="space-y-2">
           {targets.map((t) => {
             const isMyVote = myVote?.target_id === t.id
+            const votersForTarget = votesByTarget.get(t.id) || []
             return (
               <button
                 key={t.id}
@@ -513,7 +481,7 @@ export function WerewolfPanel({
                 disabled={busy}
                 className={`
                   w-full py-3 px-4 rounded-xl text-sm font-medium
-                  transition-all duration-200 cursor-pointer
+                  transition-all duration-200 cursor-pointer flex items-center justify-between gap-2
                   ${isMyVote
                     ? 'bg-red-900/30 border border-red-700/50 text-red-300'
                     : 'bg-neutral-900 border border-neutral-800 text-neutral-300 hover:border-red-800 hover:text-red-400'
@@ -521,7 +489,14 @@ export function WerewolfPanel({
                   disabled:opacity-40
                 `}
               >
-                {isMyVote ? `✓ ${t.name}` : t.name}
+                <span>{isMyVote ? `✓ ${t.name}` : t.name}</span>
+                {votersForTarget.length > 0 && (
+                  <span className="text-neutral-500 text-[10px] shrink-0">
+                    {votersForTarget.map((v) =>
+                      v.voter_id === playerId ? '(Você)' : `(${v.voter_name})`
+                    ).join(' ')}
+                  </span>
+                )}
               </button>
             )
           })}

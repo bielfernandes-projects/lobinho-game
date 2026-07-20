@@ -11,7 +11,7 @@ interface WitchPanelProps {
   onDone?: () => void
 }
 
-type Step = 'save' | 'poison' | 'done'
+type Step = 'save' | 'poison' | 'done' | 'exhausted'
 
 export function WitchPanel({ roomId, playerId, turnIndex, victimName, onDone }: WitchPanelProps) {
   const [step, setStep] = useState<Step>('save')
@@ -59,18 +59,7 @@ export function WitchPanel({ roomId, playerId, turnIndex, victimName, onDone }: 
   useEffect(() => {
     if (!loaded) return
     if (usedLife && usedDeath) {
-      // Both potions used — auto-skip entirely
-      ;(async () => {
-        try {
-          await supabase.rpc('execute_night_action', {
-            p_room_id: roomId,
-            p_action_type: 'witch_skip',
-            p_target_id: null,
-          })
-        } catch {}
-        onDone?.()
-      })()
-      setStep('done')
+      setStep('exhausted')
       return
     }
     if (usedLife) {
@@ -124,10 +113,9 @@ export function WitchPanel({ roomId, playerId, turnIndex, victimName, onDone }: 
     }
     setSaveBusy(false)
 
-    // If death potion already used, auto-skip poison too
+    // If death potion already used, show exhausted state
     if (usedDeath) {
-      setStep('done')
-      onDone?.()
+      setStep('exhausted')
       return
     }
     setStep('poison')
@@ -182,6 +170,18 @@ export function WitchPanel({ roomId, playerId, turnIndex, victimName, onDone }: 
     setStep('done')
     onDone?.()
     setPoisonBusy(false)
+  }
+
+  if (step === 'exhausted') {
+    return (
+      <div className="w-full max-w-sm text-center space-y-2">
+        <p className="text-emerald-500 text-sm uppercase tracking-widest font-bold">
+          🧪 Bruxa
+        </p>
+        <p className="text-neutral-500 text-sm font-semibold">Poções esgotadas</p>
+        <p className="text-neutral-700 text-xs">Aguarde a noite passar...</p>
+      </div>
+    )
   }
 
   if (step === 'done') {
