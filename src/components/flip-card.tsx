@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef } from 'react'
 import { motion } from 'framer-motion'
+import Image from 'next/image'
 
 interface FlipCardProps {
   playerName: string
@@ -52,19 +53,17 @@ export function FlipCard({ playerName, role, description, points, onFirstFlip }:
       >
         {/* Frente — costas da carta */}
         <div
-          className="absolute inset-0 rounded-2xl border-2 border-red-800 bg-gradient-to-br from-neutral-900 via-red-950 to-neutral-950 flex items-center justify-center"
+          className="absolute inset-0 overflow-hidden rounded-2xl"
           style={{ backfaceVisibility: 'hidden' }}
         >
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-20 h-28 rounded-lg border-2 border-red-700/40 bg-neutral-950 flex items-center justify-center">
-              <span className="text-red-700 text-4xl font-black tracking-widest select-none">
-                ?
-              </span>
-            </div>
-            <span className="text-neutral-500 text-xs tracking-widest uppercase select-none">
-              Lobinho
-            </span>
-          </div>
+          <Image
+            src="/verse-card.jpeg"
+            alt=""
+            fill
+            sizes="224px"
+            priority
+            className="object-cover"
+          />
         </div>
 
         {/* Verso — revela a role */}

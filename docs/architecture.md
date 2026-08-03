@@ -3,6 +3,12 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — Card back art: replaced CSS gradient with `verse-card.jpeg`
+
+- **Feature**: The card back in the reveal phase (`FlipCard`) was a CSS gradient with a "?" box and "Lobinho" text. Replaced it with the cover art `public/verse-card.jpeg` (1163×1600) using `next/image` (`fill`, `sizes="224px"`, `object-cover`). Wrapper keeps `overflow-hidden rounded-2xl` for clipped corners; `backfaceVisibility: 'hidden'` preserved. "?" badge and "Lobinho" text fully removed.
+- **No gameplay impact**: pure visual change; no DB/migration involved.
+- **Files**: `src/components/flip-card.tsx`, `docs/architecture.md`.
+
 ### `<current>` — Fix: frenzy consensus auto-selected with 1 vote (root cause: get_werewolf_teammates excludes caller)
 
 - **Root cause (confirmed)**: `get_werewolf_teammates` RPC returns OTHER wolves EXCLUDING the current player. `wolves` array = only teammates, not including the caller. So `aliveWolves.length = 1` when there are actually 2 alive wolves (1 caller + 1 other). `expectedVoters = aliveWolves.length = 1`, meaning 1 vote = instant consensus. The same bug affected normal mode (single wolf direct confirm shown instead of consensus panel when 2 wolves alive).
