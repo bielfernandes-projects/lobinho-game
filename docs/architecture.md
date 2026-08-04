@@ -3,6 +3,13 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — Card back art: bigger card + long-press context menu disabled
+
+- **Feature**: `FlipCard` increased from `w-56 h-80` (224×320) to `w-64 aspect-[7/10]` (256px wide, keeps 7:10 ratio) so the `verse-card.jpeg` back art renders larger for better visibility. `sizes` updated `224px` → `256px`.
+- **Fix**: mobile long-press context menu on the card image ("copiar link / compartilhar / salvar imagem") disabled via `draggable={false}`, `onContextMenu={(e) => e.preventDefault()}`, and classes `pointer-events-none select-none [-webkit-touch-callout:none]` (blocks iOS Safari callout). Flip still works because pointer handlers live on the parent `motion.div`.
+- **No gameplay impact**: pure visual/UX change; no DB/migration involved.
+- **Files**: `src/components/flip-card.tsx`, `docs/architecture.md`.
+
 ### `<current>` — Card back art: replaced CSS gradient with `verse-card.jpeg`
 
 - **Feature**: The card back in the reveal phase (`FlipCard`) was a CSS gradient with a "?" box and "Lobinho" text. Replaced it with the cover art `public/verse-card.jpeg` (1163×1600) using `next/image` (`fill`, `sizes="224px"`, `object-cover`). Wrapper keeps `overflow-hidden rounded-2xl` for clipped corners; `backfaceVisibility: 'hidden'` preserved. "?" badge and "Lobinho" text fully removed.

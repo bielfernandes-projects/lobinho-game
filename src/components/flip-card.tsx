@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, type MouseEvent } from 'react'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 
@@ -41,7 +41,7 @@ export function FlipCard({ playerName, role, description, points, onFirstFlip }:
    */
 
   return (
-    <div className="perspective-[1000px] w-56 h-80 select-none">
+    <div className="perspective-[1000px] w-64 aspect-[7/10] select-none">
       <motion.div
         className="relative w-full h-full cursor-pointer"
         style={{ transformStyle: 'preserve-3d' }}
@@ -60,9 +60,11 @@ export function FlipCard({ playerName, role, description, points, onFirstFlip }:
             src="/verse-card.jpeg"
             alt=""
             fill
-            sizes="224px"
+            sizes="256px"
             priority
-            className="object-cover"
+            draggable={false}
+            onContextMenu={(e: MouseEvent<HTMLImageElement>) => e.preventDefault()}
+            className="object-cover pointer-events-none select-none [-webkit-touch-callout:none]"
           />
         </div>
 
