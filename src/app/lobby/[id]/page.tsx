@@ -228,7 +228,7 @@ export default function LobbyScreen() {
           <p className="text-neutral-600 text-xs uppercase tracking-widest mb-1">
             Sala
           </p>
-          <p className="text-3xl font-bold tracking-[0.3em] text-red-500">
+          <p className="font-display text-4xl tracking-[0.25em] text-red-500 drop-shadow-[0_0_15px_rgba(220,38,38,0.3)]">
             {roomPin}
           </p>
         </div>

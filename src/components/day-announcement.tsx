@@ -28,7 +28,7 @@ export function DayAnnouncement({ victims, turnIndex, isHost = false, revealMode
       {ninguemMorreu ? (
         <div className="text-center">
           <p className="text-5xl mb-4">🌅</p>
-          <p className="text-green-500 text-xl font-bold tracking-wider">
+          <p className="text-green-500 font-display text-3xl tracking-[0.12em] uppercase">
             Ninguém morreu
           </p>
           <p className="text-neutral-600 text-sm mt-2">
@@ -41,7 +41,7 @@ export function DayAnnouncement({ victims, turnIndex, isHost = false, revealMode
           <div className="space-y-3">
             {victims.map((v, i) => (
               <div key={i}>
-                <p className="text-red-500 text-2xl font-black tracking-widest uppercase drop-shadow-[0_0_15px_rgba(220,38,38,0.5)]">
+                <p className="text-red-500 font-display text-3xl tracking-[0.12em] uppercase drop-shadow-[0_0_15px_rgba(220,38,38,0.5)]">
                   {v.name}
                 </p>
                 {v.role && (

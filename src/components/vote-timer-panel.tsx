@@ -122,7 +122,7 @@ function VoteTimer({ label }: VoteTimerProps) {
       )}
       <div className="flex items-center gap-3 justify-center">
         <span
-          className={`text-3xl font-black tracking-widest tabular-nums select-none min-w-[5ch] text-center ${
+          className={`font-display text-4xl tracking-widest tabular-nums select-none min-w-[5ch] text-center ${
             expired
               ? 'text-red-600 animate-pulse'
               : running

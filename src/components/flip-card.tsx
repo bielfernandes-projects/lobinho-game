@@ -77,7 +77,7 @@ export function FlipCard({ playerName, role, description, points, onFirstFlip }:
             {playerName}
           </span>
           <div className="w-16 h-0.5 bg-red-800/60 rounded-full" />
-          <span className="text-red-500 text-2xl font-bold text-center select-none">
+          <span className="text-red-500 font-display text-3xl tracking-[0.1em] text-center select-none">
             {role}
           </span>
           {description && (

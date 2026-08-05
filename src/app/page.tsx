@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { InstallButton } from '@/components/install-button'
 import { SupportFooter } from '@/components/support-footer'
@@ -164,7 +165,17 @@ export default function EntryScreen() {
     <div className="flex flex-1 flex-col items-center justify-center px-6 min-h-dvh">
       <div className="w-full max-w-xs flex flex-col items-center gap-10">
         <div className="text-center">
-          <h1 className="text-5xl font-black tracking-widest text-red-600 drop-shadow-[0_0_20px_rgba(220,38,38,0.3)]">
+          <div className="relative w-24 h-24 mx-auto mb-5">
+            <Image
+              src="/icon-192x192.png"
+              alt="Lobinho"
+              fill
+              sizes="96px"
+              priority
+              className="rounded-3xl shadow-lg shadow-red-900/30"
+            />
+          </div>
+          <h1 className="font-display text-6xl tracking-[0.18em] text-red-600 drop-shadow-[0_0_20px_rgba(220,38,38,0.3)]">
             LOBINHO
           </h1>
           <p className="text-neutral-600 text-xs tracking-widest uppercase mt-2">
@@ -218,8 +229,7 @@ export default function EntryScreen() {
               disabled={busy}
               className="
                 flex-1 py-3.5 rounded-2xl font-bold text-sm tracking-wider
-                bg-red-700 text-white
-                hover:bg-red-600 active:bg-red-800
+                bg-primary hover:bg-primary-hover active:bg-primary-active text-white
                 disabled:opacity-40 disabled:cursor-not-allowed
                 shadow-lg shadow-red-900/30
                 transition-all duration-200 cursor-pointer
@@ -233,7 +243,7 @@ export default function EntryScreen() {
               disabled={busy}
               className="
                 flex-1 py-3.5 rounded-2xl font-bold text-sm tracking-wider
-                border border-red-700 text-red-400
+                border border-primary text-primary-light
                 hover:bg-red-950/30 active:bg-red-950/50
                 disabled:opacity-40 disabled:cursor-not-allowed
                 transition-all duration-200 cursor-pointer

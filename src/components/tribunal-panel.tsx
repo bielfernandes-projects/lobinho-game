@@ -167,7 +167,7 @@ export function TribunalPanel({ roomId, dayStep, accusedId, turnIndex }: Tribuna
         <div className="space-y-3">
           <div className="rounded-xl border border-red-800/60 bg-red-950/20 px-4 py-3 text-center">
             <p className="text-neutral-500 text-[10px] uppercase tracking-widest">Acusado</p>
-            <p className="text-red-400 text-lg font-bold mt-1">
+            <p className="text-red-400 font-display text-2xl tracking-[0.12em] mt-1 uppercase">
               {accusedName ?? '...'}
             </p>
           </div>

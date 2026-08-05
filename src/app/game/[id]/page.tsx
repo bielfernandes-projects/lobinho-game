@@ -452,7 +452,7 @@ export default function GameScreen() {
       <div className="flex flex-1 flex-col items-center min-h-dvh">
         <div className="w-full px-6 pt-8 pb-4 text-center">
           <p className="text-neutral-600 text-[10px] uppercase tracking-widest mb-1">Fase</p>
-          <p className="text-sm font-bold tracking-wider uppercase">
+          <p className="font-display text-2xl tracking-[0.15em] uppercase">
             {phase === 'scenario_reveal' && '📜 Cenário'}
             {phase === 'card_reveal' && '🎴 Revelação'}
             {phase === 'night' && '🌙 Noite'}
@@ -879,7 +879,7 @@ export default function GameScreen() {
             <p className="text-neutral-600 text-[10px] uppercase tracking-widest mb-1">
               Fase
             </p>
-            <p className="text-sm font-bold tracking-wider text-red-500 uppercase">
+            <p className="font-display text-xl tracking-[0.15em] text-red-500 uppercase">
               🎴 Revelação
             </p>
           </div>
@@ -1042,7 +1042,7 @@ export default function GameScreen() {
             </p>
             <div className="rounded-xl border border-red-800/60 bg-red-950/20 px-4 py-3 text-center">
               <p className="text-neutral-500 text-[10px] uppercase tracking-widest">Acusado</p>
-              <p className="text-red-400 text-lg font-bold mt-1">
+              <p className="text-red-400 font-display text-2xl tracking-[0.12em] mt-1 uppercase">
                 {players.find((p) => p.id === accusedId)?.name ?? '...'}
               </p>
             </div>
@@ -1315,7 +1315,7 @@ export default function GameScreen() {
           Fim de Jogo
         </p>
         <p
-          className={`text-3xl font-black tracking-widest uppercase text-center ${colors}`}
+          className={`font-display text-4xl tracking-[0.12em] uppercase text-center ${colors}`}
         >
           {displayText}
         </p>

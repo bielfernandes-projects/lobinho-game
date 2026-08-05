@@ -1,0 +1,110 @@
+/*
+ * Lobinho — Design Tokens (v1.0.0)
+ * Generated from docs/brand-guidelines.md (source of truth).
+ * Primitive → Semantic → Component.
+ */
+
+:root {
+  /* ── Primitive: Blood Red ─────────────────────────── */
+  --color-blood-red-50: #FEF2F2;
+  --color-blood-red-100: #FEE2E2;
+  --color-blood-red-200: #FECACA;
+  --color-blood-red-300: #FCA5A5;
+  --color-blood-red-400: #F87171;
+  --color-blood-red-500: #EF4444;
+  --color-blood-red-600: #DC2626;
+  --color-blood-red-700: #B91C1C;
+  --color-blood-red-800: #991B1B;
+  --color-blood-red-900: #7F1D1D;
+  --color-blood-red-950: #450A0A;
+
+  /* ── Primitive: Moon Silver ───────────────────────── */
+  --color-moon-silver-50: #F8FAFC;
+  --color-moon-silver-100: #F1F5F9;
+  --color-moon-silver-200: #E2E8F0;
+  --color-moon-silver-300: #CBD5E1;
+  --color-moon-silver-400: #94A3B8;
+  --color-moon-silver-500: #64748B;
+  --color-moon-silver-600: #475569;
+  --color-moon-silver-700: #334155;
+  --color-moon-silver-800: #1E293B;
+  --color-moon-silver-900: #0F172A;
+  --color-moon-silver-950: #020617;
+
+  /* ── Primitive: Twilight Violet ───────────────────── */
+  --color-twilight-violet-50: #F5F3FF;
+  --color-twilight-violet-100: #EDE9FE;
+  --color-twilight-violet-200: #DDD6FE;
+  --color-twilight-violet-300: #C4B5FD;
+  --color-twilight-violet-400: #A78BFA;
+  --color-twilight-violet-500: #8B5CF6;
+  --color-twilight-violet-600: #7C3AED;
+  --color-twilight-violet-700: #6D28D9;
+  --color-twilight-violet-800: #5B21B6;
+  --color-twilight-violet-900: #4C1D95;
+  --color-twilight-violet-950: #2E1065;
+
+  /* ── Primitive: Midnight (neutrals) ───────────────── */
+  --color-midnight-950: #0A0A0A;
+  --color-midnight-900: #171717;
+  --color-midnight-800: #262626;
+
+  /* ── Primitive: Status ────────────────────────────── */
+  --color-success-green-500: #22C55E;
+  --color-warning-amber-500: #F59E0B;
+  --color-info-blue-500: #3B82F6;
+
+  /* ── Semantic ─────────────────────────────────────── */
+  --color-primary: var(--color-blood-red-600);
+  --color-primary-hover: var(--color-blood-red-700);
+  --color-primary-active: var(--color-blood-red-800);
+  --color-primary-light: var(--color-blood-red-400);
+  --color-primary-dark: var(--color-blood-red-800);
+
+  --color-secondary: var(--color-moon-silver-300);
+  --color-secondary-dark: var(--color-moon-silver-500);
+  --color-secondary-light: var(--color-moon-silver-100);
+
+  --color-accent: var(--color-twilight-violet-500);
+  --color-accent-light: var(--color-twilight-violet-400);
+
+  --color-background: var(--color-midnight-950);
+  --color-surface: var(--color-midnight-900);
+  --color-surface-raised: var(--color-midnight-800);
+  --color-border: var(--color-midnight-800);
+
+  --color-text-primary: #E5E5E5;
+  --color-text-secondary: #A3A3A3;
+  --color-text-muted: #737373;
+
+  --color-success: var(--color-success-green-500);
+  --color-warning: var(--color-warning-amber-500);
+  --color-error: var(--color-blood-red-600);
+  --color-error-light: var(--color-blood-red-400);
+  --color-info: var(--color-info-blue-500);
+
+  --color-team-village: var(--color-info-blue-500);
+  --color-team-wolf: var(--color-blood-red-600);
+  --color-team-independent: var(--color-twilight-violet-500);
+
+  /* ── Typography ───────────────────────────────────── */
+  --font-display: "Bebas Neue", "Geist", system-ui, sans-serif;
+  --font-sans: "Geist", system-ui, -apple-system, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, monospace;
+
+  /* ── Components ───────────────────────────────────── */
+  --btn-primary-bg: var(--color-primary-hover);
+  --btn-primary-bg-hover: var(--color-primary);
+  --btn-primary-bg-active: var(--color-primary-active);
+  --btn-primary-text: #FFFFFF;
+  --btn-radius: 16px;
+
+  --card-bg: var(--color-surface);
+  --card-border: var(--color-border);
+  --card-radius: 16px;
+
+  --input-bg: var(--color-surface);
+  --input-border: var(--color-border);
+  --input-focus-ring: var(--color-primary);
+  --input-placeholder: var(--color-text-muted);
+}
