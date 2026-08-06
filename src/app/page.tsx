@@ -167,7 +167,7 @@ export default function EntryScreen() {
         <div className="text-center">
           <div className="relative w-24 h-24 mx-auto mb-5">
             <Image
-              src="/icon-192x192.png"
+              src="/logo.png"
               alt="Lobinho"
               fill
               sizes="96px"

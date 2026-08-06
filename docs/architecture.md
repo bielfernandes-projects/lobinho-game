@@ -3,6 +3,15 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — New logo + favicon set applied
+
+- **Feature**: Replaced the generated "L" PNG icons with a full favicon/logo set dropped into `public/` (real-favicon-generator output): `logo.png` (2000×2000), `favicon.ico`, `favicon-16x16.png`, `favicon-32x32.png`, `apple-touch-icon.png` (180×180), `android-chrome-192x192.png`, `android-chrome-512x512.png`. Old icons (`icon-*.png/svg`, `icon-maskable-*.png`) and unused default SVGs (file/globe/next/vercel/window) removed.
+- **Home screen**: landing-page mark swapped to `/logo.png` (was `/icon-192x192.png`).
+- **Metadata** (`src/app/layout.tsx`): `icons.icon` now points to `favicon.ico` + `favicon-16/32` + `android-chrome-192/512`; `icons.apple` points to `apple-touch-icon.png`. Old `src/app/favicon.ico` removed so Next.js serves the new `public/favicon.ico`.
+- **Manifests**: `public/manifest.json` and `public/site.webmanifest` both now reference the new android-chrome PNGs with `purpose: "any maskable"` (maskable/any variants no longer exist separately).
+- **No gameplay impact**: pure branding/asset change; no DB/migration involved.
+- **Files**: `src/app/page.tsx`, `src/app/layout.tsx`, `src/app/favicon.ico` (rm), `public/` (new logo/favicons, `manifest.json`, `site.webmanifest`), `docs/architecture.md`.
+
 ### `<current>` — Brand identity rollout (v1.0)
 
 - **Guidelines**: `docs/brand-guidelines.md` created as single source of truth — concept/positioning, logo system (geometric "L" in Blood Red `#DC2626` on Midnight `#0A0A0A` rounded square), full color palette with WCAG AA contrast numbers, type scale (Geist UI + Bebas Neue display), voice (Sinistro/Direto/Divertido/Claro), tone-by-context table, forbidden terms, AI image-gen prompt pack, component specs.
