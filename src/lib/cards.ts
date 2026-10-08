@@ -36,6 +36,8 @@ export const ROLE_STYLE: Record<string, string> = {
   cursed: 'bg-blue-100 text-blue-700 border-blue-300',
   doppelganger: 'bg-violet-100 text-violet-700 border-violet-300',
   chupacabra: 'bg-lime-100 text-lime-700 border-lime-300',
+  minion: 'bg-red-100 text-red-700 border-red-300',
+  huntress: 'bg-rose-100 text-rose-700 border-rose-300',
 }
 
 export const ROLE_LABEL: Record<string, string> = {
@@ -67,6 +69,8 @@ export const ROLE_LABEL: Record<string, string> = {
   cursed: '🔮 Amaldiçoado',
   doppelganger: '🎭 Doppelgänger',
   chupacabra: '🦇 Chupacu',
+  minion: '😈 Lacaio',
+  huntress: '🏹 Caçadora',
 }
 
 export const ROLE_TRANSLATION: Record<string, string> = {
@@ -98,6 +102,8 @@ export const ROLE_TRANSLATION: Record<string, string> = {
   cursed: 'Amaldiçoado',
   doppelganger: 'Doppelgänger',
   chupacabra: 'Chupacu',
+  minion: 'Lacaio',
+  huntress: 'Caçadora',
 }
 
 export const CARD_CATALOG: CardDefinition[] = [
@@ -306,9 +312,25 @@ export const CARD_CATALOG: CardDefinition[] = [
   {
     id: 'chupacabra',
     name: 'Chupacabra',
-    points: -4,
+    points: 4,
     team: 'independent',
     description:
       'Toda noite, escolha um jogador: se for lobisomem, ele morre; se não, nada acontece (você não saberá). Com todos os lobos mortos, mata qualquer alvo. Vence se for o último vivo.',
+  },
+  {
+    id: 'minion',
+    name: 'Minion',
+    points: -6,
+    team: 'wolf',
+    description:
+      'Na 1ª noite você descobre quem são os lobos, mas não acorda com eles e eles não sabem quem você é. Vence com o time dos lobos.',
+  },
+  {
+    id: 'huntress',
+    name: 'Huntress',
+    points: 3,
+    team: 'village',
+    description:
+      'Uma vez por jogo, durante a noite, você pode eliminar um jogador.',
   },
 ]

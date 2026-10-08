@@ -3,6 +3,21 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — Witch panel clarity + no cause for Chupacu/Huntress deaths
+
+- **Death cause**: removed host-visible causes `chupacabra`/`cacadora` from `DayAnnouncement` — those deaths show only as dead; the moderator decides whether to say the cause aloud.
+- **Witch panel**: when only one potion is left it shows "Poção da vida/morte já utilizada. Apenas a poção da morte/vida sobrando."; when both are spent a single screen: "Todas as poções já foram usadas. Pode voltar a dormir ao comando do mestre." (also reached right after spending the second potion). If death potion was already used and she declines to save, the step just finishes.
+- **Files**: `src/components/witch-panel.tsx`, `src/components/day-announcement.tsx`, `docs/architecture.md`.
+
+### `<current>` — New roles: Minion + Huntress; Chupacu rules corrected
+
+- **Chupacu corrected** (per official ruling): +4 pts (was -4). Bodyguard protects his target; Witch `witch_save` also saves his victim (global flag — limitation: the Witch panel only shows the wolf victim); Priest does NOT protect.
+- **Minion (Lacaio)** `minion` (wolf, -6): night 1 only, a wake step shows him the wolves (reuses `get_wolves_for_sorceress`, now also allowed for `minion`) via `minion-panel.tsx`; wolves don't know him. Counted as wolf team in `check_game_over`/`trg_check_game_over` (like sorceress). Seer sees him as Villager. Dealt as a normal card (official alternate rule) — the "wolves pick the Minion" variant is not implemented.
+- **Huntress (Caçadora)** `huntress` (village, +3): one-shot night kill (`huntress_kill`, sets `has_used_power`), `resolve_night` step 3c; Bodyguard protects, Priest does not; hunter/prince flags handled; cause `cacadora`. Panel has "Não usar agora" (keeps the shot). Wake button hidden once used.
+- **DB** (`20260721140000_minion_huntress_chupa_protection.sql`, applied via SQL Editor): constraints, win-condition lists, `execute_night_action`, `resolve_night`, `get_wolves_for_sorceress`.
+- **Files**: migration, `cards.ts`, `minion-panel.tsx`, `huntress-panel.tsx`, `page.tsx` (WAKE_ORDER, buttons, panels, availability), `day-announcement.tsx`, `host-action-log.tsx`.
+- **Not done**: Tough Guy (deferred death needs a new state across nights).
+
 ### `<current>` — New role: Chupacabra (Chupacu)
 
 - **Role** `chupacabra` (independent, -4 pts): each night picks a player; dies only if `werewolf`/`wolf_cub`/`alpha_wolf`/`lone_wolf` (sorceress is not a werewolf), or ANY player if no wolves were alive at night start. No feedback to the Chupacu. Wins as last alive, or 1v1 once no team wolves remain (mirrors Lone Wolf). Villagers/wolves win checks are blocked while he lives with >2 alive and no wolves. Not blockable by Bodyguard/Priest/Witch (simplification).

@@ -113,9 +113,15 @@ export function WitchPanel({ roomId, playerId, turnIndex, victimName, onDone }: 
     }
     setSaveBusy(false)
 
-    // If death potion already used, show exhausted state
+    // Death potion already used: nothing left to ask. Both gone only if life was just spent.
     if (usedDeath) {
-      setStep('exhausted')
+      if (save && !usedLife) {
+        setUsedLife(true)
+        setStep('exhausted')
+      } else {
+        setStep('done')
+        onDone?.()
+      }
       return
     }
     setStep('poison')
@@ -178,8 +184,8 @@ export function WitchPanel({ roomId, playerId, turnIndex, victimName, onDone }: 
         <p className="text-emerald-500 text-sm uppercase tracking-widest font-bold">
           🧪 Bruxa
         </p>
-        <p className="text-neutral-500 text-sm font-semibold">Poções esgotadas</p>
-        <p className="text-neutral-700 text-xs">Aguarde a noite passar...</p>
+        <p className="text-neutral-400 text-sm font-semibold">Todas as poções já foram usadas.</p>
+        <p className="text-neutral-600 text-xs">Pode voltar a dormir ao comando do mestre.</p>
       </div>
     )
   }
@@ -206,6 +212,14 @@ export function WitchPanel({ roomId, playerId, turnIndex, victimName, onDone }: 
       <p className="text-emerald-500 text-sm uppercase tracking-widest font-bold">
         🧪 Bruxa
       </p>
+
+      {usedLife !== usedDeath && (
+        <p className="text-neutral-400 text-xs border border-neutral-800 rounded-lg px-3 py-2">
+          {usedLife
+            ? 'Poção da vida já utilizada. Apenas a poção da morte sobrando.'
+            : 'Poção da morte já utilizada. Apenas a poção da vida sobrando.'}
+        </p>
+      )}
 
       {step === 'save' && (
         <>
@@ -258,12 +272,6 @@ export function WitchPanel({ roomId, playerId, turnIndex, victimName, onDone }: 
               {victimName ? 'Deixar Morrer' : 'Continuar'}
             </button>
           </div>
-
-          {usedLife && victimName && (
-            <p className="text-neutral-600 text-[10px] uppercase tracking-wider">
-              Poção da vida já usada
-            </p>
-          )}
 
           {error && (
             <p className="text-red-500 text-xs text-center">{error}</p>

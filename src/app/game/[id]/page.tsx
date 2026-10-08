@@ -34,6 +34,8 @@ import { HunterRetaliatePanel } from '@/components/hunter-retaliate-panel'
 import { MarksmanPanel } from '@/components/marksman-panel'
 import { DoppelgangerPanel } from '@/components/doppelganger-panel'
 import { ChupacabraPanel } from '@/components/chupacabra-panel'
+import { HuntressPanel } from '@/components/huntress-panel'
+import { MinionPanel } from '@/components/minion-panel'
 import { StrikePanel } from '@/components/strike-panel'
 import { ScenarioExplanation } from '@/components/scenario-explanation'
 import type { RevealMode } from '@/lib/reveal'
@@ -64,7 +66,7 @@ export default function GameScreen() {
   const [showCursedBanner, setShowCursedBanner] = useState(false)
   const [showDoppelgangerBanner, setShowDoppelgangerBanner] = useState(false)
 
-  const WAKE_ORDER = ['masons', 'cupid', 'doppelganger', 'priest', 'bodyguard', 'wolves', 'witch', 'seer', 'aura_seer', 'sorceress', 'chupacabra', 'cult_leader'] as const
+  const WAKE_ORDER = ['masons', 'cupid', 'doppelganger', 'minion', 'priest', 'bodyguard', 'wolves', 'witch', 'seer', 'aura_seer', 'sorceress', 'chupacabra', 'huntress', 'cult_leader'] as const
   const STEP_TO_ACTION_TYPES: Record<string, string[]> = {
     masons: [],
     cupid: [],
@@ -77,6 +79,8 @@ export default function GameScreen() {
     aura_seer: ['aura_investigate'],
     sorceress: ['sorceress_search'],
     chupacabra: ['chupacabra_kill'],
+    huntress: ['huntress_kill'],
+    minion: [],
     cult_leader: ['cult_convert'],
   }
   const NIGHT_ROLE_LABELS: Record<string, string> = {
@@ -91,6 +95,8 @@ export default function GameScreen() {
     aura_seer: '👁️ Vidente de Aura',
     sorceress: '🔮 Feiticeira',
     chupacabra: '🦇 Chupacu',
+    huntress: '🏹 Caçadora',
+    minion: '😈 Lacaio',
     cult_leader: '🔮 Líder de Culto',
   }
   const prevNightStepRef = useRef<string>('sleeping')
@@ -132,10 +138,10 @@ export default function GameScreen() {
           .select('role, has_used_power')
           .eq('room_id', roomId)
           .neq('role', 'moderator')
-          .in('role', ['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf', 'seer', 'witch', 'priest', 'bodyguard', 'aura_seer', 'cupid', 'cult_leader', 'mason', 'sorceress', 'doppelganger', 'chupacabra'])
+          .in('role', ['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf', 'seer', 'witch', 'priest', 'bodyguard', 'aura_seer', 'cupid', 'cult_leader', 'mason', 'sorceress', 'doppelganger', 'chupacabra', 'huntress', 'minion'])
         if (data) {
           const roles = (data as any[])
-            .filter((r) => !(r.role === 'priest' && r.has_used_power))
+            .filter((r) => !((r.role === 'priest' || r.role === 'huntress') && r.has_used_power))
             .map((r) => r.role)
           setAvailableNightRoles(new Set(roles))
         }
@@ -633,6 +639,7 @@ export default function GameScreen() {
                 if (s === 'witch' && turnIndex === 1) return false
                 if (s === 'cupid' && turnIndex !== 1) return false
                 if (s === 'doppelganger' && turnIndex !== 1) return false
+                if (s === 'minion' && turnIndex !== 1) return false
                 if (nightRolesActedRef.current.has(s)) return false
                 return nightStep !== s
               })
@@ -673,6 +680,7 @@ export default function GameScreen() {
                 if (s === 'witch' && turnIndex === 1) return false
                 if (s === 'cupid' && turnIndex !== 1) return false
                 if (s === 'doppelganger' && turnIndex !== 1) return false
+                if (s === 'minion' && turnIndex !== 1) return false
                 if (nightRolesActedRef.current.has(s)) return false
                 return nightStep !== s
               })
@@ -696,12 +704,15 @@ export default function GameScreen() {
                     { step: 'seer', role: 'seer', label: '🔮 Acordar Vidente' },
                     { step: 'aura_seer', role: 'aura_seer', label: '👁️ Acordar Vidente de Aura' },
                     { step: 'sorceress', role: 'sorceress', label: '🔮 Acordar Feiticeira' },
+                    { step: 'minion', role: 'minion', label: '😈 Acordar Lacaio' },
                     { step: 'chupacabra', role: 'chupacabra', label: '🦇 Acordar Chupacu' },
+                    { step: 'huntress', role: 'huntress', label: '🏹 Acordar Caçadora' },
                     { step: 'cult_leader', role: 'cult_leader', label: '🔮 Acordar Líder de Culto' },
                   ]                  .filter((b) => {
                     if (b.step === 'masons' && turnIndex !== 1) return false
                     if (b.step === 'cupid' && turnIndex !== 1) return false
                     if (b.step === 'doppelganger' && turnIndex !== 1) return false
+                    if (b.step === 'minion' && turnIndex !== 1) return false
                     if (b.step === 'witch' && turnIndex === 1) return false
                     if (b.step === 'wolves') {
                       return ['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf'].some((r) => availableNightRoles.has(r))
@@ -1250,6 +1261,33 @@ export default function GameScreen() {
             🌙 Fechem os olhos...
           </p>
           <CultLeaderPanel roomId={roomId} playerId={player.id} onDone={() => handleRoleDone('cult_leader')} />
+        </div>
+      )
+    }
+
+    if (player.role === 'minion') {
+      if (turnIndex !== 1) return sleepScreen()
+      if (nightStep !== 'minion') return sleepScreen()
+      if (actedRoles.has('minion')) return sleepScreen()
+      return (
+        <div className="flex flex-1 flex-col items-center justify-center px-6 gap-6">
+          <p className="text-neutral-600 text-xs uppercase tracking-widest select-none animate-pulse">
+            🌙 Fechem os olhos...
+          </p>
+          <MinionPanel roomId={roomId} onDone={() => handleRoleDone('minion')} />
+        </div>
+      )
+    }
+
+    if (player.role === 'huntress') {
+      if (nightStep !== 'huntress') return sleepScreen()
+      if (actedRoles.has('huntress')) return sleepScreen()
+      return (
+        <div className="flex flex-1 flex-col items-center justify-center px-6 gap-6">
+          <p className="text-neutral-600 text-xs uppercase tracking-widest select-none animate-pulse">
+            🌙 Fechem os olhos...
+          </p>
+          <HuntressPanel roomId={roomId} playerId={player.id} onDone={() => handleRoleDone('huntress')} />
         </div>
       )
     }
