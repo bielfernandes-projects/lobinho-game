@@ -45,6 +45,7 @@ export const ROLE_STYLE: Record<string, string> = {
   drunk: 'bg-yellow-100 text-yellow-700 border-yellow-300',
   dire_wolf: 'bg-red-100 text-red-700 border-red-300',
   virginia_wolf: 'bg-red-100 text-red-700 border-red-300',
+  ghost: 'bg-slate-100 text-slate-700 border-slate-300',
 }
 
 export const ROLE_LABEL: Record<string, string> = {
@@ -85,6 +86,7 @@ export const ROLE_LABEL: Record<string, string> = {
   drunk: '🍺 Bêbado',
   dire_wolf: '🐺 Lobo Aproveitador',
   virginia_wolf: '🐺 Virginia Wolf',
+  ghost: '👻 Fantasma',
 }
 
 export const ROLE_TRANSLATION: Record<string, string> = {
@@ -125,6 +127,7 @@ export const ROLE_TRANSLATION: Record<string, string> = {
   drunk: 'Bêbado',
   dire_wolf: 'Lobo Aproveitador',
   virginia_wolf: 'Virginia Wolf',
+  ghost: 'Fantasma',
 }
 
 export const CARD_CATALOG: CardDefinition[] = [
@@ -408,5 +411,13 @@ export const CARD_CATALOG: CardDefinition[] = [
     team: 'wolf',
     description:
       'Acorda com os lobos. Na 1ª noite escolha um par: se você for eliminada, essa pessoa morre junto.',
+  },
+  {
+    id: 'ghost',
+    name: 'Ghost',
+    points: 2,
+    team: 'village',
+    description:
+      'Você morre obrigatoriamente na 1ª noite. Depois, vê quem é quem na mesa e escreve uma letra por dia como pista para a Vila (sem nomes ou iniciais).',
   },
 ]

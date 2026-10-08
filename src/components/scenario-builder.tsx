@@ -37,6 +37,7 @@ export function ScenarioBuilder({ roomId, playerCount }: ScenarioBuilderProps) {
   const [counts, setCounts] = useState<Record<string, number>>(getInitialCounts)
   const [revealMode, setRevealMode] = useState<RevealMode>('team')
   const [drunkHidden, setDrunkHidden] = useState('random')
+  const [ghostVariant, setGhostVariant] = useState(false)
   const [modalCard, setModalCard] = useState<CardDefinition | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -95,7 +96,11 @@ export function ScenarioBuilder({ roomId, playerCount }: ScenarioBuilderProps) {
 
     const { error: revealError } = await supabase
       .from('rooms')
-      .update({ reveal_mode: revealMode, drunk_hidden_role: hiddenRole })
+      .update({
+        reveal_mode: revealMode,
+        drunk_hidden_role: hiddenRole,
+        ghost_enabled: ghostVariant && (counts.ghost ?? 0) === 0,
+      })
       .eq('id', roomId)
     if (revealError) {
       setError(revealError.message)
@@ -158,6 +163,24 @@ export function ScenarioBuilder({ roomId, playerCount }: ScenarioBuilderProps) {
           ))}
         </div>
       </div>
+
+      <label className="flex items-start gap-3 rounded-xl border border-neutral-800 bg-neutral-900/60 px-4 py-3 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={ghostVariant && (counts.ghost ?? 0) === 0}
+          disabled={(counts.ghost ?? 0) > 0}
+          onChange={(e) => setGhostVariant(e.target.checked)}
+          className="mt-0.5 accent-red-600 cursor-pointer"
+        />
+        <div className="flex flex-col">
+          <span className="text-neutral-300 text-sm font-medium">👻 Variante Fantasma</span>
+          <span className="text-neutral-600 text-[10px] leading-tight">
+            {(counts.ghost ?? 0) > 0
+              ? 'A carta do Fantasma está no cenário (ela tem prioridade).'
+              : 'O primeiro jogador a morrer vira Fantasma: mantém o time e escreve uma letra por dia.'}
+          </span>
+        </div>
+      </label>
 
       {(counts.drunk ?? 0) > 0 && (
         <div className="rounded-xl border border-amber-900/40 bg-amber-950/10 px-4 py-3 space-y-2">

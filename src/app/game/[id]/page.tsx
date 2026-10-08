@@ -39,6 +39,7 @@ import { MinionPanel } from '@/components/minion-panel'
 import { MartyrPanel } from '@/components/martyr-panel'
 import { TargetActionPanel } from '@/components/target-action-panel'
 import { DrunkSoberPanel } from '@/components/drunk-sober-panel'
+import { GhostLetters } from '@/components/ghost-letters'
 import { StrikePanel } from '@/components/strike-panel'
 import { ScenarioExplanation } from '@/components/scenario-explanation'
 import type { RevealMode } from '@/lib/reveal'
@@ -425,7 +426,12 @@ export default function GameScreen() {
   // Dead players (non-moderator) only see the death screen
   // Exception: dead Hunter gets a chance to retaliate
   if (!player.isAlive && player.role !== 'moderator' && !isHunterPending) {
-    return <DeadPlayerScreen />
+    return (
+      <>
+        <DeadPlayerScreen />
+        <GhostLetters roomId={roomId} />
+      </>
+    )
   }
 
   const isHost = player.isHost
@@ -498,6 +504,7 @@ export default function GameScreen() {
   if (isHost || isModerator) {
     return (
       <div className="flex flex-1 flex-col items-center min-h-dvh">
+        <GhostLetters roomId={roomId} />
         <div className="w-full px-6 pt-8 pb-4 text-center">
           <p className="text-neutral-600 text-[10px] uppercase tracking-widest mb-1">Fase</p>
           <p className="font-display text-2xl tracking-[0.15em] uppercase">
@@ -972,6 +979,7 @@ export default function GameScreen() {
     return (
       <div className="flex flex-1 flex-col items-center min-h-dvh">
         {renderNightPanel()}
+        <GhostLetters roomId={roomId} />
         {soulmateBanner}
         {infectionBanner}
         {cursedBanner}
@@ -986,6 +994,7 @@ export default function GameScreen() {
 
     return (
       <div className="flex flex-1 flex-col items-center min-h-dvh">
+        <GhostLetters roomId={roomId} />
         {dayStep === 'announcement' && (
           <DayAnnouncement
             victims={victims}

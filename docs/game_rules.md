@@ -413,8 +413,8 @@ For each role:
 | `moderator` | Moderator | Mestre | (host) | — | (host only) |
 
 > **Status note (as of the most recent code state):**
-> **Implemented** (36 player roles + moderator): `villager`, `seer`, `witch`, `aura_seer`, `bodyguard`, `priest`, `hunter`, `prince`, `mayor`, `mason`, `lycan`, `pacifist`, `idiot`, `werewolf`, `wolf_cub`, `alpha_wolf`, `lone_wolf`, `sorceress`, `cupid`, `cult_leader`, `tanner`, `diseased`, `cursed`, `doppelganger`, `marksman`, `squire`, `chupacabra`, `minion`, `huntress`, `tough_guy`, `martyr`, `apprentice_seer`, `old_witch`, `drunk`, `dire_wolf`, `virginia_wolf`.
-> **NOT yet implemented** (to be added in future iterations): `ghost`, `bad_wolf`, `fruit_brute`, `wolverine`, `hoodlum`, `vampire`.
+> **Implemented** (37 player roles + moderator): `villager`, `seer`, `witch`, `aura_seer`, `bodyguard`, `priest`, `hunter`, `prince`, `mayor`, `mason`, `lycan`, `pacifist`, `idiot`, `werewolf`, `wolf_cub`, `alpha_wolf`, `lone_wolf`, `sorceress`, `cupid`, `cult_leader`, `tanner`, `diseased`, `cursed`, `doppelganger`, `marksman`, `squire`, `chupacabra`, `minion`, `huntress`, `tough_guy`, `martyr`, `apprentice_seer`, `old_witch`, `drunk`, `dire_wolf`, `virginia_wolf`, `ghost` (card + variant).
+> **NOT yet implemented** (to be added in future iterations): `bad_wolf`, `fruit_brute`, `wolverine`, `hoodlum`, `vampire`.
 
 ### 7.3 Village Roles (Aldeia)
 
