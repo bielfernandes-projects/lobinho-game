@@ -38,7 +38,7 @@ import { HuntressPanel } from '@/components/huntress-panel'
 import { MinionPanel } from '@/components/minion-panel'
 import { MartyrPanel } from '@/components/martyr-panel'
 import { TargetActionPanel } from '@/components/target-action-panel'
-import { DrunkRevealPanel } from '@/components/drunk-reveal-panel'
+import { DrunkSoberPanel } from '@/components/drunk-sober-panel'
 import { StrikePanel } from '@/components/strike-panel'
 import { ScenarioExplanation } from '@/components/scenario-explanation'
 import type { RevealMode } from '@/lib/reveal'
@@ -69,8 +69,9 @@ export default function GameScreen() {
   const [showCursedBanner, setShowCursedBanner] = useState(false)
   const [showDoppelgangerBanner, setShowDoppelgangerBanner] = useState(false)
 
-  const WAKE_ORDER = ['masons', 'cupid', 'doppelganger', 'minion', 'priest', 'bodyguard', 'wolves', 'dire_wolf', 'witch', 'seer', 'aura_seer', 'sorceress', 'chupacabra', 'huntress', 'old_witch', 'cult_leader'] as const
+  const WAKE_ORDER = ['drunk', 'masons', 'cupid', 'doppelganger', 'minion', 'priest', 'bodyguard', 'wolves', 'dire_wolf', 'witch', 'seer', 'aura_seer', 'sorceress', 'chupacabra', 'huntress', 'old_witch', 'cult_leader'] as const
   const STEP_TO_ACTION_TYPES: Record<string, string[]> = {
+    drunk: [],
     masons: [],
     cupid: [],
     doppelganger: ['doppelganger_select'],
@@ -89,6 +90,7 @@ export default function GameScreen() {
     cult_leader: ['cult_convert'],
   }
   const NIGHT_ROLE_LABELS: Record<string, string> = {
+    drunk: '🍺 Bêbado',
     masons: '🧱 Maçons',
     cupid: '💘 Cupido',
     doppelganger: '🎭 Doppelgänger',
@@ -145,7 +147,7 @@ export default function GameScreen() {
           .select('role, has_used_power')
           .eq('room_id', roomId)
           .neq('role', 'moderator')
-          .in('role', ['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf', 'seer', 'witch', 'priest', 'bodyguard', 'aura_seer', 'cupid', 'cult_leader', 'mason', 'sorceress', 'doppelganger', 'chupacabra', 'huntress', 'minion', 'dire_wolf', 'old_witch'])
+          .in('role', ['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf', 'seer', 'witch', 'priest', 'bodyguard', 'aura_seer', 'cupid', 'cult_leader', 'mason', 'sorceress', 'doppelganger', 'chupacabra', 'huntress', 'minion', 'dire_wolf', 'old_witch', 'drunk'])
         if (data) {
           const roles = (data as any[])
             .filter((r) => !((r.role === 'priest' || r.role === 'huntress') && r.has_used_power))
@@ -154,7 +156,7 @@ export default function GameScreen() {
         }
       } catch {}
     })()
-  }, [roomId, gameState?.turn_index])
+  }, [roomId, gameState?.turn_index, gameState?.night_step])
 
   // Watch rooms.status for game over (fallback para Realtime)
   useEffect(() => {
@@ -306,6 +308,7 @@ export default function GameScreen() {
   // Drunk: real role revealed by the host (role changes away from 'drunk')
   const prevRoleRef = useRef<string | null>(null)
   const [drunkNewRole, setDrunkNewRole] = useState<string | null>(null)
+  const [soberRole, setSoberRole] = useState<string | null>(null)
   useEffect(() => {
     const role = player?.role ?? null
     if (prevRoleRef.current === 'drunk' && role && role !== 'drunk') setDrunkNewRole(role)
@@ -669,6 +672,7 @@ export default function GameScreen() {
                 if (s === 'cupid' && turnIndex !== 1) return false
                 if (s === 'doppelganger' && turnIndex !== 1) return false
                 if (s === 'minion' && turnIndex !== 1) return false
+                if (s === 'drunk' && turnIndex !== 3) return false
                 if (s === 'dire_wolf' && turnIndex !== 1) return false
                 if (nightRolesActedRef.current.has(s)) return false
                 return nightStep !== s
@@ -711,6 +715,7 @@ export default function GameScreen() {
                 if (s === 'cupid' && turnIndex !== 1) return false
                 if (s === 'doppelganger' && turnIndex !== 1) return false
                 if (s === 'minion' && turnIndex !== 1) return false
+                if (s === 'drunk' && turnIndex !== 3) return false
                 if (s === 'dire_wolf' && turnIndex !== 1) return false
                 if (nightRolesActedRef.current.has(s)) return false
                 return nightStep !== s
@@ -725,6 +730,7 @@ export default function GameScreen() {
                     😴 Todos Dormindo
                   </button>
                   {[
+                    { step: 'drunk', role: 'drunk', label: '🍺 Acordar Bêbado' },
                     { step: 'masons', role: 'mason', label: '🧱 Acordar Maçons' },
                     { step: 'cupid', role: 'cupid', label: '💘 Acordar Cupido' },
                     { step: 'doppelganger', role: 'doppelganger', label: '🎭 Acordar Doppelgänger' },
@@ -746,6 +752,7 @@ export default function GameScreen() {
                     if (b.step === 'cupid' && turnIndex !== 1) return false
                     if (b.step === 'doppelganger' && turnIndex !== 1) return false
                     if (b.step === 'minion' && turnIndex !== 1) return false
+                    if (b.step === 'drunk' && turnIndex !== 3) return false
                     if (b.step === 'dire_wolf' && turnIndex !== 1) return false
                     if (b.step === 'witch' && turnIndex === 1) return false
                     if (b.step === 'wolves') {
@@ -789,7 +796,6 @@ export default function GameScreen() {
               />
             )}
 
-            <DrunkRevealPanel roomId={roomId} turnIndex={turnIndex} />
             <HostActionLog roomId={roomId} turnIndex={turnIndex} />
           </div>
         )}
@@ -1163,6 +1169,21 @@ export default function GameScreen() {
     if (!isAlive) return sleepScreen()
 
     const wolfVictimName = lastEvent?.victim_name ?? null
+
+    if (nightStep === 'drunk' && turnIndex === 3 && (player.role === 'drunk' || soberRole)) {
+      return (
+        <div className="flex flex-1 flex-col items-center justify-center px-6 gap-6">
+          <p className="text-neutral-600 text-xs uppercase tracking-widest select-none animate-pulse">
+            🌙 Fechem os olhos...
+          </p>
+          <DrunkSoberPanel
+            roomId={roomId}
+            onRevealed={(r) => setSoberRole(r)}
+            onDone={() => handleRoleDone('drunk')}
+          />
+        </div>
+      )
+    }
 
     if (player.role === 'priest') {
       if (nightStep !== 'priest') return sleepScreen()

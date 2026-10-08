@@ -13,6 +13,13 @@ interface ScenarioBuilderProps {
 
 const STORAGE_KEY = 'lobinho_last_scenario'
 
+// Reserve roles the Drunk may become: none with a crucial action on nights 1-2 (official recommendation).
+const DRUNK_ALLOWED = [
+  'villager', 'werewolf', 'wolf_cub', 'alpha_wolf', 'hunter', 'prince', 'mayor', 'lycan', 'tanner',
+  'pacifist', 'idiot', 'squire', 'marksman', 'diseased', 'cursed', 'martyr', 'tough_guy', 'huntress',
+  'apprentice_seer',
+]
+
 function getInitialCounts(): Record<string, number> {
   const zeros = Object.fromEntries(CARD_CATALOG.map((c) => [c.id, 0]))
   if (typeof window === 'undefined') return zeros
@@ -29,6 +36,7 @@ function getInitialCounts(): Record<string, number> {
 export function ScenarioBuilder({ roomId, playerCount }: ScenarioBuilderProps) {
   const [counts, setCounts] = useState<Record<string, number>>(getInitialCounts)
   const [revealMode, setRevealMode] = useState<RevealMode>('team')
+  const [drunkHidden, setDrunkHidden] = useState('random')
   const [modalCard, setModalCard] = useState<CardDefinition | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -78,9 +86,16 @@ export function ScenarioBuilder({ roomId, playerCount }: ScenarioBuilderProps) {
       }
     }
 
+    const hiddenRole =
+      (counts.drunk ?? 0) > 0
+        ? drunkHidden === 'random'
+          ? DRUNK_ALLOWED[Math.floor(Math.random() * DRUNK_ALLOWED.length)]
+          : drunkHidden
+        : null
+
     const { error: revealError } = await supabase
       .from('rooms')
-      .update({ reveal_mode: revealMode })
+      .update({ reveal_mode: revealMode, drunk_hidden_role: hiddenRole })
       .eq('id', roomId)
     if (revealError) {
       setError(revealError.message)
@@ -143,6 +158,27 @@ export function ScenarioBuilder({ roomId, playerCount }: ScenarioBuilderProps) {
           ))}
         </div>
       </div>
+
+      {(counts.drunk ?? 0) > 0 && (
+        <div className="rounded-xl border border-amber-900/40 bg-amber-950/10 px-4 py-3 space-y-2">
+          <p className="text-amber-500 text-[10px] uppercase tracking-widest font-bold">
+            🍺 Papel oculto do Bêbado (carta reserva)
+          </p>
+          <select
+            value={drunkHidden}
+            onChange={(e) => setDrunkHidden(e.target.value)}
+            className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2 text-sm text-neutral-300"
+          >
+            <option value="random">🎲 Sortear</option>
+            {CARD_CATALOG.filter((c) => DRUNK_ALLOWED.includes(c.id)).map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+          <p className="text-neutral-600 text-[10px] leading-tight">
+            Não conta como jogador. Ele vira esse papel na 3ª noite; a Vidente já vê esse papel antes.
+          </p>
+        </div>
+      )}
 
       {/* Termômetro */}
       <div className="rounded-xl border border-neutral-800 bg-neutral-900/60 px-4 py-3 space-y-1.5">

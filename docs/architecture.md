@@ -3,6 +3,14 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — Drunk redesigned (hidden reserve role)
+
+- **Model**: `rooms.drunk_hidden_role` is the Drunk's secret real role, set when the host starts the game (ScenarioBuilder shows a dropdown when Drunk count > 0: a chosen role or "🎲 Sortear" from `DRUNK_ALLOWED` = roles without night 1-2 actions, per the official recommendation). It is a reserve card (not a player).
+- **Night 3**: host button "🍺 Acordar Bêbado" (`drunk` is first in `WAKE_ORDER`, only `turnIndex === 3`); the Drunk taps "Revelar meu papel" → RPC `drunk_sober_up` sets `players.role` to the hidden role and shows it. The ex-Drunk acts normally later that night (a wolf joins the `wolves` step; `availableNightRoles` now also refetches on `night_step`).
+- **Seer / Aura Seer / Sorceress**: `execute_night_action` resolves a `drunk` target to `drunk_hidden_role` before checking.
+- **Removed**: host-picks-role flow (`host_reveal_drunk`, `drunk-reveal-panel.tsx`).
+- **Files**: `20260721180000_drunk_hidden_role.sql`, `drunk-sober-panel.tsx`, `scenario-builder.tsx`, `page.tsx`.
+
 ### `<current>` — Dire Wolf announced + Old Witch immunity rules
 
 - **Dire Wolf**: companion-linked death during the night is appended to `resolve_night` victims (shows in the morning like any death). Daytime (lynch) companion deaths are NOT announced.
