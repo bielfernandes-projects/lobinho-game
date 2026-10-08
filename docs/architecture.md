@@ -3,6 +3,11 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — Win conditions in one function (architecture review, candidate 4)
+
+- **`compute_winner(room)`** (`supabase/functions/compute_winner.sql`): pure function holding the whole priority table (lone wolf / Chupacu last alive, soulmates, cult, tanner, no-wolves branch, wolf parity). `check_game_over` (RPC use, returns `{game_over, winner, display}`) and `trg_check_game_over` (trigger on `players.is_alive`) are now thin wrappers that only record the result — the duplicated logic is gone, so a new role touches one list.
+- **Tests**: `supabase/tests/win_conditions.sql` (12 checks, rollback-only). Both test scripts passed after the change. Migration: `20260721240000_win_conditions.sql`.
+
 ### `<current>` — Death module (architecture review, candidate 1) + repairs
 
 - **New module `kill_players(room, ids, causes)`** (`supabase/functions/kill_players.sql`): the one place where "players die". Kills the whole list in one UPDATE (simultaneous deaths), reports chain deaths (soulmate / Dire Wolf companion / Virginia partner — still produced by the `AFTER UPDATE OF is_alive` triggers) by diffing who was alive before/after, and applies the post-effects once: Hunter pending, Prince→Squire promotion (after all simultaneous deaths settle), Doppelgänger role copy. Returns `{deaths:[{id,name,role,cause}], hunter_pending, hunter_id}`. Victims are identified by **id** (no more name matching).
