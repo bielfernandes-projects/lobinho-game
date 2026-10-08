@@ -51,6 +51,7 @@ export interface GameStateRow {
     victim_role?: string | null
     soulmate_name?: string | null
     soulmate_role?: string | null
+    extra_deaths?: { id: string; name: string; role: string; cause: string }[]
   } | null
   timer_duration: number | null
   timer_remaining: number | null

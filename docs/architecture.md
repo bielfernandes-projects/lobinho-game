@@ -3,6 +3,15 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — Death module (architecture review, candidate 1) + repairs
+
+- **New module `kill_players(room, ids, causes)`** (`supabase/functions/kill_players.sql`): the one place where "players die". Kills the whole list in one UPDATE (simultaneous deaths), reports chain deaths (soulmate / Dire Wolf companion / Virginia partner — still produced by the `AFTER UPDATE OF is_alive` triggers) by diffing who was alive before/after, and applies the post-effects once: Hunter pending, Prince→Squire promotion (after all simultaneous deaths settle), Doppelgänger role copy. Returns `{deaths:[{id,name,role,cause}], hunter_pending, hunter_id}`. Victims are identified by **id** (no more name matching).
+- **Callers rewritten on top of it**: `resolve_night` (decides who dies — protections, Cursed, Alpha infection, Tough Guy deferral, Ghost card — then ONE `kill_players` call), `host_execute_accused` (lynch announces chain deaths via `last_vote_result.extra_deaths`; UI shows "X também morreu"), `marksman_shoot`, `hunter_retaliate`, `insta_kill` (now get Squire promotion / Doppelgänger / chain reporting; day shots still do not trigger Hunter retaliation — known gap).
+- **Bugs fixed**: (1) a dead Diseased made `resolve_night` drop EVERY night action; now only the wolves' attack is skipped. (2) `last_event` never carried `infected_id` / `cursed_converted_id`, so the Alpha-bite and Cursed banners never showed; now written. (3) frenzy flag is cleared BEFORE deaths so a Wolf Cub dying that night keeps frenzy for the next one. (4) duplicate guard blocks in marksman/hunter/execute removed.
+- **Production repair** (`20260721230000_fix_players_role_check.sql`): the anchor-patched `players_role_check` had wrapped every role added after `doppelganger` into a single `ROW(...)` element, so the database rejected all new roles (chupacabra … ghost). Recreated with an explicit list. Found by the new test.
+- **Repo now holds the function sources**: `supabase/functions/*.sql` = current definitions of the death/win/night functions (dumped from production, then edited). `supabase/tests/death_module.sql` = rollback-only test script (12 checks: chain deaths, Hunter, Prince/Squire, Doppelgänger, wolves, Bodyguard, Diseased skip, Tough Guy). Run it in the SQL Editor after any change to these functions; expected result: `TODOS OS TESTES PASSARAM (rollback intencional)`.
+- **Migrations**: `20260721220000_death_module.sql`, `20260721230000_fix_players_role_check.sql`.
+
 ### `<current>` — Ghost (card + variant)
 
 - **Card `ghost`** (village, +2): programmed to die on night 1 (`resolve_night`, turn 1, cause hidden). **Variant** (`rooms.ghost_enabled`, checkbox "Variante Fantasma" in ScenarioBuilder, ignored when a ghost card is in the scenario): the FIRST player to die becomes the Ghost and keeps their team.

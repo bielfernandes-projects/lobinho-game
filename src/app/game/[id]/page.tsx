@@ -607,9 +607,7 @@ export default function GameScreen() {
               <div className="bg-red-950/80 border border-red-700/50 rounded-2xl px-5 py-4 text-center shadow-2xl backdrop-blur-sm max-w-[85vw]">
                 <p className="text-3xl mb-2">⚖️</p>
                 <p className="text-red-400 text-sm font-black tracking-wider">
-                  {lastVoteResult.soulmate_name
-                    ? `${lastVoteResult.victim_name} foi linchado(a) pela vila! ${lastVoteResult.soulmate_name} morreu de coração partido.`
-                    : `O acusado foi linchado pela vila!`}
+                  {lynchMessage(lastVoteResult)}
                 </p>
                 {lastVoteResult.victim_role && (
                   <p className="text-neutral-500 text-[10px] mt-1 uppercase tracking-wider">
@@ -1055,9 +1053,7 @@ export default function GameScreen() {
               <div className="bg-red-950/80 border border-red-700/50 rounded-2xl px-5 py-4 text-center shadow-2xl backdrop-blur-sm max-w-[85vw]">
                 <p className="text-3xl mb-2">⚖️</p>
                 <p className="text-red-400 text-sm font-black tracking-wider">
-                  {lastVoteResult.soulmate_name
-                    ? `${lastVoteResult.victim_name} foi linchado(a) pela vila! ${lastVoteResult.soulmate_name} morreu de coração partido.`
-                    : `O acusado foi linchado pela vila!`}
+                  {lynchMessage(lastVoteResult)}
                 </p>
                 {lastVoteResult.victim_role && (
                   <p className="text-neutral-500 text-[10px] mt-1 uppercase tracking-wider">
@@ -1552,4 +1548,20 @@ export default function GameScreen() {
       </div>
     )
   }
+}
+
+
+// Lynch result text: the accused, a broken-hearted soulmate and any other chain deaths (no causes revealed).
+function lynchMessage(r: {
+  victim_name?: string | null
+  soulmate_name?: string | null
+  extra_deaths?: { name: string; cause: string }[]
+}): string {
+  const others = (r.extra_deaths ?? []).filter((e) => e.cause !== 'soulmate').map((e) => e.name)
+  let text = r.soulmate_name || others.length > 0
+    ? `${r.victim_name} foi linchado(a) pela vila!`
+    : 'O acusado foi linchado pela vila!'
+  if (r.soulmate_name) text += ` ${r.soulmate_name} morreu de coração partido.`
+  if (others.length > 0) text += ` ${others.join(', ')} também morreu.`
+  return text
 }
