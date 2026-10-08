@@ -56,7 +56,7 @@ export function TribunalPanel({ roomId, dayStep, accusedId, turnIndex }: Tribuna
     setBusy(true)
     await supabase
       .from('game_state')
-      .update({ day_step: 'trial', current_accused_id: targetId })
+      .update({ day_step: 'trial', current_accused_id: targetId, martyr_id: null })
       .eq('room_id', roomId)
     setBusy(false)
     setAccuseModal(false)

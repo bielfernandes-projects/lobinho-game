@@ -38,6 +38,12 @@ export const ROLE_STYLE: Record<string, string> = {
   chupacabra: 'bg-lime-100 text-lime-700 border-lime-300',
   minion: 'bg-red-100 text-red-700 border-red-300',
   huntress: 'bg-rose-100 text-rose-700 border-rose-300',
+  tough_guy: 'bg-stone-100 text-stone-700 border-stone-300',
+  martyr: 'bg-amber-100 text-amber-700 border-amber-300',
+  apprentice_seer: 'bg-purple-100 text-purple-700 border-purple-300',
+  old_witch: 'bg-pink-100 text-pink-700 border-pink-300',
+  drunk: 'bg-yellow-100 text-yellow-700 border-yellow-300',
+  dire_wolf: 'bg-red-100 text-red-700 border-red-300',
 }
 
 export const ROLE_LABEL: Record<string, string> = {
@@ -71,6 +77,12 @@ export const ROLE_LABEL: Record<string, string> = {
   chupacabra: '🦇 Chupacu',
   minion: '😈 Lacaio',
   huntress: '🏹 Caçadora',
+  tough_guy: '💪 Cara Durão',
+  martyr: '⚖️ Mártir',
+  apprentice_seer: '🔮 Vidente Aprendiz',
+  old_witch: '🤒 Bruxa Velha',
+  drunk: '🍺 Bêbado',
+  dire_wolf: '🐺 Lobo Aproveitador',
 }
 
 export const ROLE_TRANSLATION: Record<string, string> = {
@@ -104,6 +116,12 @@ export const ROLE_TRANSLATION: Record<string, string> = {
   chupacabra: 'Chupacu',
   minion: 'Lacaio',
   huntress: 'Caçadora',
+  tough_guy: 'Cara Durão',
+  martyr: 'Mártir',
+  apprentice_seer: 'Vidente Aprendiz',
+  old_witch: 'Bruxa Velha',
+  drunk: 'Bêbado',
+  dire_wolf: 'Lobo Aproveitador',
 }
 
 export const CARD_CATALOG: CardDefinition[] = [
@@ -332,5 +350,52 @@ export const CARD_CATALOG: CardDefinition[] = [
     team: 'village',
     description:
       'Uma vez por jogo, durante a noite, você pode eliminar um jogador.',
+  },
+  {
+    id: 'tough_guy',
+    name: 'Tough Guy',
+    points: 3,
+    team: 'village',
+    description:
+      'Se os lobos tentarem te eliminar, você só morre na noite seguinte.',
+  },
+  {
+    id: 'martyr',
+    name: 'Martyr',
+    points: 3,
+    team: 'village',
+    description:
+      'Depois da votação de linchamento, você pode se oferecer para morrer no lugar do acusado.',
+  },
+  {
+    id: 'apprentice_seer',
+    name: 'Apprentice Seer',
+    points: 4,
+    team: 'village',
+    description: 'Se a Vidente morrer, você vira a nova Vidente.',
+  },
+  {
+    id: 'old_witch',
+    name: 'Old Witch',
+    points: 3,
+    team: 'village',
+    description:
+      'Toda noite, coloque varíola em um jogador: ele sai do jogo por um dia (sem debate nem voto).',
+  },
+  {
+    id: 'drunk',
+    name: 'Drunk',
+    points: 4,
+    team: 'village',
+    description:
+      'Você é Aldeão até a 3ª noite, quando o mestre revela seu papel verdadeiro.',
+  },
+  {
+    id: 'dire_wolf',
+    name: 'Dire Wolf',
+    points: -4,
+    team: 'wolf',
+    description:
+      'Acorda com os lobos. Na 1ª noite escolha um companheiro: se ele for eliminado, você também é.',
   },
 ]

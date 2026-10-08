@@ -3,6 +3,22 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — New roles: Apprentice Seer, Dire Wolf, Old Witch, Drunk
+
+- **Apprentice Seer** `apprentice_seer` (village, +4): DB trigger `trg_apprentice_seer` — when a `seer` dies (any cause) the alive apprentice becomes `seer`.
+- **Dire Wolf (Lobo Aproveitador)** `dire_wolf` (wolf, -4): joins every wolf list (all functions containing `'wolf_cub', 'alpha_wolf'` were patched: win checks, wolf consensus, teammates, werewolf_kill role check, Chupacu kill list, Sorceress/Minion view). Night 1 wake step `dire_wolf` picks a companion (`dire_wolf_companion`, `TargetActionPanel`); `trg_dire_wolf_companion` kills him when the companion dies (marker in `night_actions`, wiped on reset). Companion-linked death is not listed in the morning announcement.
+- **Old Witch (Bruxa Velha)** `old_witch` (village, +3): each night `old_witch_pox`; `resolve_night` copies the target to `game_state.poxed_id`. Day: banner "X está com varíola…", the poxed player cannot vote (`TribunalVoting isAlive` false). Host should not accuse the poxed player (not enforced). Not protected from night attacks; Marksman/Hunter immunity not enforced.
+- **Drunk (Bêbado)** `drunk` (village, +4): plays as Villager; from night 3 the host sees `DrunkRevealPanel` (role dropdown + button) → RPC `host_reveal_drunk` changes his role; player sees a banner with the real role. `availableNightRoles` refetches per turn, so a wake button for the revealed role appears from the next night.
+- **DB**: `20260721160000_apprentice_direwolf_oldwitch_drunk.sql`.
+- **Files**: migration, `cards.ts`, `target-action-panel.tsx`, `drunk-reveal-panel.tsx`, `use-room.ts`, `page.tsx`, `host-action-log.tsx`.
+
+### `<current>` — New roles: Tough Guy + Martyr
+
+- **Tough Guy (Cara Durão)** `tough_guy` (village, +3): a wolf attack does not kill him that night (no victim announced); `resolve_night` inserts a `night_actions` marker (`tough_guy_doomed`, turn N) and he dies in the resolve of any LATER night (cause shown as wolves/hidden). Not marked if saved by Witch/Bodyguard/Priest blessing (blessing is consumed). Frenzy 2nd target and Alpha infection of a Tough Guy are not handled (he'd die normally / be unaffected). Marker lives in `night_actions`, so it is wiped on game reset.
+- **Martyr (Mártir)** `martyr` (village, +3): official rule. In day step `reveal` the alive Martyr (not the accused) sees "Morrer no lugar do acusado" → RPC `martyr_volunteer` sets `game_state.martyr_id`; everyone sees "X se ofereceu...". `host_execute_accused` swaps the accused for the Martyr (then clears `martyr_id`); absolving leaves it set until the next accusation (`handleAccuse` clears it). Prince/Cursed immunities apply to the original accused only if no Martyr.
+- **DB** (`20260721150000_tough_guy_martyr.sql`): `game_state.martyr_id`, constraints (`tough_guy`, `martyr`, `tough_guy_doomed`), `martyr_volunteer`, patches to `host_execute_accused` and `resolve_night`. `resolve_day_vote` (deprecated flow) NOT patched.
+- **Files**: migration, `cards.ts`, `martyr-panel.tsx`, `use-room.ts`, `tribunal-panel.tsx`, `page.tsx`, `host-action-log.tsx`.
+
 ### `<current>` — Witch panel clarity + no cause for Chupacu/Huntress deaths
 
 - **Death cause**: removed host-visible causes `chupacabra`/`cacadora` from `DayAnnouncement` — those deaths show only as dead; the moderator decides whether to say the cause aloud.

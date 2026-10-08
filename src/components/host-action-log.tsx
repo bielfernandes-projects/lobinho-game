@@ -36,6 +36,9 @@ const ACTION_LABEL: Record<string, string> = {
   doppelganger_select: '🎭 selecionou',
   chupacabra_kill: '🦇 atacou',
   huntress_kill: '🏹 atirou em',
+  old_witch_pox: '🤒 contaminou',
+  dire_wolf_companion: '🐺 escolheu como companheiro',
+  tough_guy_doomed: '💪 foi marcado para morrer na próxima noite:',
 }
 
 interface VoteEntry {

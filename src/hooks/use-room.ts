@@ -58,6 +58,8 @@ export interface GameStateRow {
   timer_started_at: string | null
   hunter_pending: boolean
   hunter_id: string | null
+  martyr_id: string | null
+  poxed_id: string | null
 }
 
 function normalize(row: ProfileRow): RoomProfile {
@@ -139,7 +141,7 @@ export function useGameState(roomId: string) {
     async function load() {
       const { data, error } = await supabase
         .from('game_state')
-        .select('current_phase, turn_index, night_step, wolves_resolved, voting_open, day_step, current_accused_id, winner, last_event, last_vote_result, timer_duration, timer_remaining, is_timer_running, timer_started_at, hunter_pending, hunter_id')
+        .select('current_phase, turn_index, night_step, wolves_resolved, voting_open, day_step, current_accused_id, winner, last_event, last_vote_result, timer_duration, timer_remaining, is_timer_running, timer_started_at, hunter_pending, hunter_id, martyr_id, poxed_id')
         .eq('room_id', roomId)
         .single()
 

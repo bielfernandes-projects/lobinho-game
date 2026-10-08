@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useCurrentPlayer } from '@/hooks/use-player'
 import { useRoomPlayers, useGameState } from '@/hooks/use-room'
 import { FlipCard } from '@/components/flip-card'
-import { CARD_CATALOG, ROLE_STYLE } from '@/lib/cards'
+import { CARD_CATALOG, ROLE_STYLE, ROLE_LABEL } from '@/lib/cards'
 import { getRevealedRoleText } from '@/lib/reveal'
 import { HostControls } from '@/components/host-controls'
 import { WerewolfPanel } from '@/components/werewolf-panel'
@@ -36,6 +36,9 @@ import { DoppelgangerPanel } from '@/components/doppelganger-panel'
 import { ChupacabraPanel } from '@/components/chupacabra-panel'
 import { HuntressPanel } from '@/components/huntress-panel'
 import { MinionPanel } from '@/components/minion-panel'
+import { MartyrPanel } from '@/components/martyr-panel'
+import { TargetActionPanel } from '@/components/target-action-panel'
+import { DrunkRevealPanel } from '@/components/drunk-reveal-panel'
 import { StrikePanel } from '@/components/strike-panel'
 import { ScenarioExplanation } from '@/components/scenario-explanation'
 import type { RevealMode } from '@/lib/reveal'
@@ -66,7 +69,7 @@ export default function GameScreen() {
   const [showCursedBanner, setShowCursedBanner] = useState(false)
   const [showDoppelgangerBanner, setShowDoppelgangerBanner] = useState(false)
 
-  const WAKE_ORDER = ['masons', 'cupid', 'doppelganger', 'minion', 'priest', 'bodyguard', 'wolves', 'witch', 'seer', 'aura_seer', 'sorceress', 'chupacabra', 'huntress', 'cult_leader'] as const
+  const WAKE_ORDER = ['masons', 'cupid', 'doppelganger', 'minion', 'priest', 'bodyguard', 'wolves', 'dire_wolf', 'witch', 'seer', 'aura_seer', 'sorceress', 'chupacabra', 'huntress', 'old_witch', 'cult_leader'] as const
   const STEP_TO_ACTION_TYPES: Record<string, string[]> = {
     masons: [],
     cupid: [],
@@ -80,6 +83,8 @@ export default function GameScreen() {
     sorceress: ['sorceress_search'],
     chupacabra: ['chupacabra_kill'],
     huntress: ['huntress_kill'],
+    dire_wolf: ['dire_wolf_companion'],
+    old_witch: ['old_witch_pox'],
     minion: [],
     cult_leader: ['cult_convert'],
   }
@@ -96,6 +101,8 @@ export default function GameScreen() {
     sorceress: '🔮 Feiticeira',
     chupacabra: '🦇 Chupacu',
     huntress: '🏹 Caçadora',
+    dire_wolf: '🐺 Lobo Aproveitador',
+    old_witch: '🤒 Bruxa Velha',
     minion: '😈 Lacaio',
     cult_leader: '🔮 Líder de Culto',
   }
@@ -138,7 +145,7 @@ export default function GameScreen() {
           .select('role, has_used_power')
           .eq('room_id', roomId)
           .neq('role', 'moderator')
-          .in('role', ['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf', 'seer', 'witch', 'priest', 'bodyguard', 'aura_seer', 'cupid', 'cult_leader', 'mason', 'sorceress', 'doppelganger', 'chupacabra', 'huntress', 'minion'])
+          .in('role', ['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf', 'seer', 'witch', 'priest', 'bodyguard', 'aura_seer', 'cupid', 'cult_leader', 'mason', 'sorceress', 'doppelganger', 'chupacabra', 'huntress', 'minion', 'dire_wolf', 'old_witch'])
         if (data) {
           const roles = (data as any[])
             .filter((r) => !((r.role === 'priest' || r.role === 'huntress') && r.has_used_power))
@@ -296,6 +303,15 @@ export default function GameScreen() {
     }
   }, [lastEvent, player, showCursedBanner])
 
+  // Drunk: real role revealed by the host (role changes away from 'drunk')
+  const prevRoleRef = useRef<string | null>(null)
+  const [drunkNewRole, setDrunkNewRole] = useState<string | null>(null)
+  useEffect(() => {
+    const role = player?.role ?? null
+    if (prevRoleRef.current === 'drunk' && role && role !== 'drunk') setDrunkNewRole(role)
+    prevRoleRef.current = role
+  }, [player?.role])
+
   // Check if current player's doppelganger target died (role was copied)
   useEffect(() => {
     if (!player || !lastEvent || showDoppelgangerBanner || player.role === 'doppelganger') return
@@ -420,6 +436,19 @@ export default function GameScreen() {
   const infectionBanner = showInfectionBanner && (
     <div className="fixed bottom-4 left-4 text-[10px] text-red-500/80 select-none z-50 bg-red-950/40 px-3 py-1.5 rounded-lg border border-red-800/30 backdrop-blur-sm">
       🐺 Você foi mordido pelo Lobo Alfa e agora pertence à Alcatéia!
+    </div>
+  )
+
+  const poxedPlayer = gameState?.poxed_id ? players.find((p) => p.id === gameState.poxed_id) : null
+  const poxBanner = phase === 'day' && poxedPlayer && (
+    <p className="text-center text-xs text-lime-400 py-2">
+      🤒 {poxedPlayer.name} está com varíola e saiu da vila por hoje (sem debate nem voto).
+    </p>
+  )
+
+  const drunkBanner = drunkNewRole && (
+    <div className="fixed bottom-4 left-4 text-[10px] text-amber-400/90 select-none z-50 bg-amber-950/40 px-3 py-1.5 rounded-lg border border-amber-800/30 backdrop-blur-sm">
+      🍺 Você acordou da bebedeira! Seu papel real: {ROLE_LABEL[drunkNewRole] ?? drunkNewRole}
     </div>
   )
 
@@ -623,7 +652,7 @@ export default function GameScreen() {
               Controle da Noite
             </p>
             {(() => {
-              const WOLF_ROLES = ['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf']
+              const WOLF_ROLES = ['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf', 'dire_wolf']
               const _nextRoleToWake = WAKE_ORDER.find((s) => {
                 if (s === 'wolves') {
                   if (!WOLF_ROLES.some((r) => availableNightRoles.has(r))) return false
@@ -640,6 +669,7 @@ export default function GameScreen() {
                 if (s === 'cupid' && turnIndex !== 1) return false
                 if (s === 'doppelganger' && turnIndex !== 1) return false
                 if (s === 'minion' && turnIndex !== 1) return false
+                if (s === 'dire_wolf' && turnIndex !== 1) return false
                 if (nightRolesActedRef.current.has(s)) return false
                 return nightStep !== s
               })
@@ -664,7 +694,7 @@ export default function GameScreen() {
               )
             })()}
             {(() => {
-              const WOLF_ROLES = ['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf']
+              const WOLF_ROLES = ['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf', 'dire_wolf']
               const nextRoleToWake = WAKE_ORDER.find((s) => {
                 if (s === 'wolves') {
                   if (!WOLF_ROLES.some((r) => availableNightRoles.has(r))) return false
@@ -681,6 +711,7 @@ export default function GameScreen() {
                 if (s === 'cupid' && turnIndex !== 1) return false
                 if (s === 'doppelganger' && turnIndex !== 1) return false
                 if (s === 'minion' && turnIndex !== 1) return false
+                if (s === 'dire_wolf' && turnIndex !== 1) return false
                 if (nightRolesActedRef.current.has(s)) return false
                 return nightStep !== s
               })
@@ -706,16 +737,19 @@ export default function GameScreen() {
                     { step: 'sorceress', role: 'sorceress', label: '🔮 Acordar Feiticeira' },
                     { step: 'minion', role: 'minion', label: '😈 Acordar Lacaio' },
                     { step: 'chupacabra', role: 'chupacabra', label: '🦇 Acordar Chupacu' },
+                    { step: 'dire_wolf', role: 'dire_wolf', label: '🐺 Acordar Lobo Aproveitador' },
                     { step: 'huntress', role: 'huntress', label: '🏹 Acordar Caçadora' },
+                    { step: 'old_witch', role: 'old_witch', label: '🤒 Acordar Bruxa Velha' },
                     { step: 'cult_leader', role: 'cult_leader', label: '🔮 Acordar Líder de Culto' },
                   ]                  .filter((b) => {
                     if (b.step === 'masons' && turnIndex !== 1) return false
                     if (b.step === 'cupid' && turnIndex !== 1) return false
                     if (b.step === 'doppelganger' && turnIndex !== 1) return false
                     if (b.step === 'minion' && turnIndex !== 1) return false
+                    if (b.step === 'dire_wolf' && turnIndex !== 1) return false
                     if (b.step === 'witch' && turnIndex === 1) return false
                     if (b.step === 'wolves') {
-                      return ['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf'].some((r) => availableNightRoles.has(r))
+                      return ['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf', 'dire_wolf'].some((r) => availableNightRoles.has(r))
                     }
                     return availableNightRoles.has(b.role)
                   }).map((b) => {
@@ -755,6 +789,7 @@ export default function GameScreen() {
               />
             )}
 
+            <DrunkRevealPanel roomId={roomId} turnIndex={turnIndex} />
             <HostActionLog roomId={roomId} turnIndex={turnIndex} />
           </div>
         )}
@@ -822,6 +857,7 @@ export default function GameScreen() {
                   accusedId={accusedId}
                   turnIndex={turnIndex}
                 />
+                <MartyrPanel roomId={roomId} martyrId={gameState?.martyr_id ?? null} martyrName={players.find((p) => p.id === gameState?.martyr_id)?.name ?? null} canVolunteer={false} />
                 <TribunalReveal roomId={roomId} turnIndex={turnIndex} />
               </>
             )}
@@ -927,6 +963,7 @@ export default function GameScreen() {
         {soulmateBanner}
         {infectionBanner}
         {cursedBanner}
+        {drunkBanner}
       </div>
     )
   }
@@ -1075,7 +1112,7 @@ export default function GameScreen() {
         {dayStep !== 'announcement' && dayStep === 'voting' && (
           <TribunalVoting
             roomId={roomId}
-            isAlive={isAlive}
+            isAlive={isAlive && player.id !== gameState?.poxed_id}
             isAccused={player.id === accusedId}
             playerRole={player.role}
           />
@@ -1083,12 +1120,20 @@ export default function GameScreen() {
 
         {dayStep !== 'announcement' && dayStep === 'reveal' && (
           <>
+            <MartyrPanel
+              roomId={roomId}
+              martyrId={gameState?.martyr_id ?? null}
+              martyrName={players.find((p) => p.id === gameState?.martyr_id)?.name ?? null}
+              canVolunteer={isAlive && player.role === 'martyr' && player.id !== accusedId}
+            />
             <TribunalReveal roomId={roomId} turnIndex={turnIndex} />
           </>
         )}
+        {poxBanner}
         {soulmateBanner}
         {infectionBanner}
         {cursedBanner}
+        {drunkBanner}
 
         <div className="mt-auto pt-4 pb-6">
           <GraveyardList roomId={roomId} revealMode={revealMode} />
@@ -1173,7 +1218,47 @@ export default function GameScreen() {
       )
     }
 
-    if (['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf'].includes(player.role ?? '')) {
+    if (player.role === 'dire_wolf' && nightStep === 'dire_wolf') {
+      if (turnIndex !== 1 || actedRoles.has('dire_wolf')) return sleepScreen()
+      return (
+        <div className="flex flex-1 flex-col items-center justify-center px-6 gap-6">
+          <p className="text-neutral-600 text-xs uppercase tracking-widest select-none animate-pulse">
+            🌙 Fechem os olhos...
+          </p>
+          <TargetActionPanel
+            roomId={roomId}
+            playerId={player.id}
+            actionType="dire_wolf_companion"
+            title="🐺 Lobo Aproveitador"
+            prompt="Escolha seu companheiro. Se ele for eliminado, você também será:"
+            doneText="Companheiro escolhido. Volte a dormir..."
+            onDone={() => handleRoleDone('dire_wolf')}
+          />
+        </div>
+      )
+    }
+
+    if (player.role === 'old_witch') {
+      if (nightStep !== 'old_witch' || actedRoles.has('old_witch')) return sleepScreen()
+      return (
+        <div className="flex flex-1 flex-col items-center justify-center px-6 gap-6">
+          <p className="text-neutral-600 text-xs uppercase tracking-widest select-none animate-pulse">
+            🌙 Fechem os olhos...
+          </p>
+          <TargetActionPanel
+            roomId={roomId}
+            playerId={player.id}
+            actionType="old_witch_pox"
+            title="🤒 Bruxa Velha"
+            prompt="Quem vai ficar de fora amanhã?"
+            doneText="Varíola lançada. Volte a dormir..."
+            onDone={() => handleRoleDone('old_witch')}
+          />
+        </div>
+      )
+    }
+
+    if (['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf', 'dire_wolf'].includes(player.role ?? '')) {
       if (nightStep !== 'wolves') return sleepScreen()
       if (actedRoles.has('werewolf')) return sleepScreen()
       return (
