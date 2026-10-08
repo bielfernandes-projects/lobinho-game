@@ -6,7 +6,7 @@ A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, S
 ### `<current>` — Ghost (card + variant)
 
 - **Card `ghost`** (village, +2): programmed to die on night 1 (`resolve_night`, turn 1, cause hidden). **Variant** (`rooms.ghost_enabled`, checkbox "Variante Fantasma" in ScenarioBuilder, ignored when a ghost card is in the scenario): the FIRST player to die becomes the Ghost and keeps their team.
-- `trg_ghost_assign` sets `game_state.ghost_id` (card holder, or first death for the variant) and clears old `ghost_letters`. `get_ghost_state` (polled every 5s by `GhostLetters`) returns letters (only while a ghost exists, so rematches don't leak old letters), `am_ghost`, `can_write` (phase `day`, one letter per `turn_index`) and — card ghost only — `view` with every player's role. `ghost_write_letter` validates one A-Z letter.
+- `trg_ghost_assign` sets `game_state.ghost_id` (card holder, or first death for the variant) and clears old `ghost_letters`. `get_ghost_state` (polled every 5s by `GhostLetters`) returns letters (only while a ghost exists, so rematches don't leak old letters), `am_ghost`, `can_write` (phase `day`, one letter per `turn_index`) and `view` with every player's role (card AND variant ghost; patched by `20260721210000`). `ghost_write_letter` validates one A-Z letter.
 - **UI**: `ghost-letters.tsx` — top pill "👻 A B C" for everyone (host, players, dead screen); bottom sheet for the Ghost with the role list (card) and the letter box. The "no names/initials" rule is not enforced by code.
 - **Files**: `20260721200000_ghost.sql`, `ghost-letters.tsx`, `cards.ts`, `scenario-builder.tsx`, `page.tsx`.
 

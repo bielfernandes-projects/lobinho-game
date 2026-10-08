@@ -128,7 +128,7 @@ BEGIN
       SELECT jsonb_agg(jsonb_build_object('turn', turn_index, 'letter', letter) ORDER BY turn_index)
       FROM ghost_letters WHERE room_id = p_room_id
     ), '[]'::jsonb),
-    'view', CASE WHEN v_am_ghost AND v_card THEN (
+    'view', CASE WHEN v_am_ghost THEN (
       SELECT jsonb_agg(jsonb_build_object('name', name, 'role', role, 'is_alive', is_alive) ORDER BY name)
       FROM players WHERE room_id = p_room_id AND is_host = false AND role <> 'moderator'
     ) ELSE NULL END

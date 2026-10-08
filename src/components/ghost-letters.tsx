@@ -13,7 +13,7 @@ interface GhostState {
 }
 
 // Everyone sees the Ghost's letters; the Ghost also gets the writing box
-// (and, for the Ghost card, the full list of roles).
+// (and the full list of roles).
 export function GhostLetters({ roomId }: { roomId: string }) {
   const [state, setState] = useState<GhostState>({ active: false })
   const [letter, setLetter] = useState('')
