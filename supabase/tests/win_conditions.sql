@@ -9,9 +9,13 @@ END;
 $f$;
 
 CREATE OR REPLACE FUNCTION pg_temp.mkroom() RETURNS uuid LANGUAGE plpgsql AS $f$
-DECLARE r uuid := gen_random_uuid(); h uuid := pg_temp.mkuser();
+DECLARE r uuid := gen_random_uuid(); h uuid := pg_temp.mkuser(); pin text;
 BEGIN
-  INSERT INTO rooms (id, pin_code, host_id) VALUES (r, floor(random()*9000+1000)::int::text, h);
+  LOOP
+    pin := floor(random()*9000+1000)::int::text;
+    EXIT WHEN NOT EXISTS (SELECT 1 FROM rooms WHERE pin_code = pin);
+  END LOOP;
+  INSERT INTO rooms (id, pin_code, host_id) VALUES (r, pin, h);
   INSERT INTO players (room_id, name, user_id, role, is_host) VALUES (r, 'Host', h, 'moderator', true);
   INSERT INTO game_state (room_id, current_phase, turn_index) VALUES (r, 'night', 2);
   RETURN r;

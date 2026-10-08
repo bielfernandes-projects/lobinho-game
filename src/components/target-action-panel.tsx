@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useTargets } from '@/hooks/use-targets'
 
 interface TargetActionPanelProps {
   roomId: string
@@ -15,29 +16,11 @@ interface TargetActionPanelProps {
 
 // Generic "pick one alive player" night action with no feedback (Dire Wolf companion, Old Witch pox).
 export function TargetActionPanel({ roomId, playerId, actionType, title, prompt, doneText, onDone }: TargetActionPanelProps) {
-  const [targets, setTargets] = useState<{ id: string; name: string }[]>([])
   const [hasActed, setHasActed] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const supabase = createClient()
-
-  useEffect(() => {
-    ;(async () => {
-      try {
-        const { data } = await supabase
-          .from('player_profiles')
-          .select('id, name, is_alive, is_host')
-          .eq('room_id', roomId)
-        if (data) {
-          setTargets(
-            (data as { id: string; name: string; is_alive: boolean; is_host: boolean }[])
-              .filter((r) => r.id !== playerId && r.is_alive && !r.is_host)
-              .map((r) => ({ id: r.id, name: r.name }))
-          )
-        }
-      } catch {}
-    })()
-  }, [roomId, playerId])
+  const targets = useTargets(roomId, { selfId: playerId })
 
   async function handlePick(targetId: string) {
     setBusy(true)

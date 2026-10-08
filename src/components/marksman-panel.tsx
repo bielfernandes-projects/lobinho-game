@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useTargets } from '@/hooks/use-targets'
 
 interface MarksmanPanelProps {
   roomId: string
@@ -10,36 +11,12 @@ interface MarksmanPanelProps {
 }
 
 export function MarksmanPanel({ roomId, playerId, onShot }: MarksmanPanelProps) {
-  const [targets, setTargets] = useState<{ id: string; name: string }[]>([])
   const [hasActed, setHasActed] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [showModal, setShowModal] = useState(false)
   const supabase = createClient()
-
-  useEffect(() => {
-    ;(async () => {
-      try {
-        const { data: gs } = await supabase
-          .from('game_state')
-          .select('poxed_id')
-          .eq('room_id', roomId)
-          .single()
-        const poxedId = (gs as { poxed_id: string | null } | null)?.poxed_id ?? null
-        const { data } = await supabase
-          .from('player_profiles')
-          .select('id, name, is_alive, is_host')
-          .eq('room_id', roomId)
-        if (data) {
-          setTargets(
-            (data as any[])
-              .filter((r) => r.id !== playerId && r.is_alive && !r.is_host && r.id !== poxedId)
-              .map((r) => ({ id: r.id, name: r.name }))
-          )
-        }
-      } catch {}
-    })()
-  }, [roomId, playerId])
+  const targets = useTargets(roomId, { selfId: playerId, excludePoxed: true })
 
   async function handleShoot(targetId: string) {
     setBusy(true)

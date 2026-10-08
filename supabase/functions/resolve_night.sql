@@ -61,7 +61,7 @@ BEGIN
 
   SELECT COUNT(*) INTO v_wolves_alive_at_start FROM players
   WHERE room_id = p_room_id AND is_alive = true
-    AND role IN ('werewolf', 'wolf_cub', 'alpha_wolf', 'dire_wolf', 'virginia_wolf', 'lone_wolf');
+    AND role = ANY(pack_roles());
 
   -- Priest: blessing (protects against wolves and poison only)
   SELECT target_id INTO v_priest_target_id FROM night_actions
@@ -164,7 +164,7 @@ BEGIN
      AND (v_bodyguard_id IS NULL OR v_bodyguard_id <> v_chupa_target_id) THEN
     SELECT role INTO v_role FROM players WHERE id = v_chupa_target_id;
     IF v_wolves_alive_at_start = 0
-       OR v_role IN ('werewolf', 'wolf_cub', 'alpha_wolf', 'dire_wolf', 'virginia_wolf', 'lone_wolf') THEN
+       OR v_role = ANY(pack_roles()) THEN
       v_kill_ids := array_append(v_kill_ids, v_chupa_target_id);
       v_kill_causes := array_append(v_kill_causes, 'chupacabra');
     END IF;

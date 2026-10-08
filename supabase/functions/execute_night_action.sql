@@ -28,7 +28,7 @@ END IF;
 IF NOT v_alive THEN
 RAISE EXCEPTION 'Jogadores mortos nao podem agir';
 END IF;
-IF (p_action_type = 'werewolf_kill' AND v_role NOT IN ('werewolf', 'wolf_cub', 'alpha_wolf', 'dire_wolf', 'virginia_wolf', 'lone_wolf')) OR
+IF (p_action_type = 'werewolf_kill' AND v_role <> ALL(pack_roles())) OR
 (p_action_type = 'seer_investigate' AND v_role != 'seer') OR
 (p_action_type IN ('witch_save', 'witch_poison', 'witch_skip') AND v_role != 'witch') OR
 (p_action_type = 'priest_bless' AND v_role != 'priest') OR
@@ -143,7 +143,7 @@ ON CONFLICT (room_id, turn_index, actor_id, action_type, target_id) DO NOTHING;
 RETURN jsonb_build_object('success', true);
 ELSIF p_action_type = 'aura_investigate' THEN
 SELECT (CASE WHEN role = 'drunk' THEN COALESCE((SELECT drunk_hidden_role FROM rooms WHERE id = p_room_id), role) ELSE role END) INTO v_target_role FROM players WHERE id = p_target_id;
-v_result := (v_target_role NOT IN ('villager', 'werewolf', 'wolf_cub', 'alpha_wolf', 'dire_wolf', 'virginia_wolf', 'lone_wolf'));
+v_result := (v_target_role <> 'villager' AND v_target_role <> ALL(pack_roles()));
 INSERT INTO night_actions (room_id, turn_index, actor_id, action_type, target_id, result)
 VALUES (p_room_id, v_turn, v_player_id, p_action_type, p_target_id, v_result)
 ON CONFLICT (room_id, turn_index, actor_id, action_type, target_id) DO NOTHING;
@@ -168,7 +168,7 @@ RETURN jsonb_build_object('success', true);
     RETURN jsonb_build_object('is_seer', v_result);
 END IF;
 IF p_action_type = 'seer_investigate' THEN
-SELECT (CASE WHEN role = 'drunk' THEN COALESCE((SELECT drunk_hidden_role FROM rooms WHERE id = p_room_id), role) ELSE role END) IN ('werewolf', 'wolf_cub', 'alpha_wolf', 'dire_wolf', 'virginia_wolf', 'lone_wolf', 'lycan') INTO v_result
+SELECT (CASE WHEN role = 'drunk' THEN COALESCE((SELECT drunk_hidden_role FROM rooms WHERE id = p_room_id), role) ELSE role END) = ANY(pack_roles() || 'lycan'::text) INTO v_result
 FROM players WHERE id = p_target_id;
 INSERT INTO night_actions (room_id, turn_index, actor_id, action_type, target_id, result)
 VALUES (p_room_id, v_turn, v_player_id, p_action_type, p_target_id, v_result)

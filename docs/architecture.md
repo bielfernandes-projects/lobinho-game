@@ -3,6 +3,13 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — Role groups, player privileges, shared target hook (architecture review, candidates 2, 6, 7)
+
+- **Role groups in the database** (`supabase/functions/role_groups.sql`): `pack_roles()` (wake with the wolves / vote / seen as wolf) and `wolf_team_roles()` (wolf team for win conditions). `compute_winner`, `resolve_night`, `execute_night_action`, `get_werewolf_teammates`, `get_wolf_consensus`, `get_wolves_for_sorceress` and `upsert_consensus_vote` call them instead of repeating literal lists. **A new wolf role = edit these two functions (+ `WOLF_ROLES` in `src/lib/night-steps.ts` + `players_role_check`).** The four consensus/teammates functions were dumped into `supabase/functions/` for this.
+- **Security fix** (`20260721250000_role_groups_and_player_privileges.sql`): the policy `players_update_own` let any player UPDATE any column of their own row from the browser (own `role`, `is_alive`, …). `UPDATE` on `players` is now revoked for `anon`/`authenticated` except `has_viewed_card` and `viewed_card_at` (the only client write). All functions that change players are `SECURITY DEFINER` and keep working. `game_state` already restricts UPDATE to the host by RLS, so candidate 7 (host-only RPCs) was not needed.
+- **`useTargets(roomId, {selfId, excludePoxed})`** (`src/hooks/use-targets.ts`): the one definition of "valid target" (alive, not host, not you, optionally not the poxed player). Marksman, Hunter-retaliate, Chupacu, Huntress and the generic `TargetActionPanel` use it; ~100 lines removed. Sorceress/Seer-style panels with their own result screens were left alone.
+- **Tests**: both SQL test scripts pass; their fixtures now pick a free room PIN (a random 4-digit PIN could collide with a real room).
+
 ### `<current>` — Night steps registry (architecture review, candidate 3)
 
 - **`src/lib/night-steps.ts`**: one `NIGHT_STEPS` table (array order = wake order) with id, roles, button/label text, which night it happens (`first` / `third` / `not_first` / `any`) and the `night_actions` types that finish it. `WAKE_ORDER`, `STEP_TO_ACTION_TYPES`, `NIGHT_ROLE_LABELS`, the role list queried for `availableNightRoles`, the host wake buttons (now in wake order) and `nextStepToWake()` all derive from it; the two identical "who wakes next" lambdas in `game/[id]/page.tsx` are gone. `WOLF_ROLES` lives here too.

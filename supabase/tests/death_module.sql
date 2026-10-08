@@ -12,6 +12,7 @@ $f$;
 
 DO $test$
 DECLARE
+  v_pin TEXT;
   v_room UUID := gen_random_uuid();
   v_host_user UUID := pg_temp.mkuser();
   v_host UUID;
@@ -20,7 +21,11 @@ DECLARE
   r JSONB;
 
 BEGIN
-  INSERT INTO rooms (id, pin_code, host_id) VALUES (v_room, floor(random()*9000+1000)::int::text, v_host_user);
+  LOOP
+    v_pin := floor(random()*9000+1000)::int::text;
+    EXIT WHEN NOT EXISTS (SELECT 1 FROM rooms WHERE pin_code = v_pin);
+  END LOOP;
+  INSERT INTO rooms (id, pin_code, host_id) VALUES (v_room, v_pin, v_host_user);
   INSERT INTO players (room_id, name, user_id, role, is_host) VALUES (v_room, 'Host', v_host_user, 'moderator', true) RETURNING id INTO v_host;
   INSERT INTO game_state (room_id, current_phase, turn_index) VALUES (v_room, 'night', 2);
 

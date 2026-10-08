@@ -26,8 +26,8 @@ BEGIN
   END IF;
 
   SELECT COUNT(*) FILTER (WHERE is_alive AND role <> 'moderator'),
-         COUNT(*) FILTER (WHERE is_alive AND role IN ('werewolf', 'wolf_cub', 'alpha_wolf', 'dire_wolf', 'virginia_wolf', 'sorceress', 'minion')),
-         COUNT(*) FILTER (WHERE is_alive AND role NOT IN ('werewolf', 'wolf_cub', 'alpha_wolf', 'dire_wolf', 'virginia_wolf', 'sorceress', 'minion', 'moderator')),
+         COUNT(*) FILTER (WHERE is_alive AND role = ANY(wolf_team_roles())),
+         COUNT(*) FILTER (WHERE is_alive AND role <> ALL(wolf_team_roles()) AND role <> 'moderator'),
          COALESCE(BOOL_OR(is_alive AND role = 'lone_wolf'), false),
          COALESCE(BOOL_OR(is_alive AND role = 'chupacabra'), false)
   INTO v_alive_count, v_wolves, v_non_wolves, v_lone_wolf, v_chupacabra

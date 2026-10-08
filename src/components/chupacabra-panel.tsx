@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useTargets } from '@/hooks/use-targets'
 
 interface ChupacabraPanelProps {
   roomId: string
@@ -10,29 +11,11 @@ interface ChupacabraPanelProps {
 }
 
 export function ChupacabraPanel({ roomId, playerId, onDone }: ChupacabraPanelProps) {
-  const [targets, setTargets] = useState<{ id: string; name: string }[]>([])
   const [hasActed, setHasActed] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const supabase = createClient()
-
-  useEffect(() => {
-    ;(async () => {
-      try {
-        const { data } = await supabase
-          .from('player_profiles')
-          .select('id, name, is_alive, is_host')
-          .eq('room_id', roomId)
-        if (data) {
-          setTargets(
-            (data as { id: string; name: string; is_alive: boolean; is_host: boolean }[])
-              .filter((r) => r.id !== playerId && r.is_alive && !r.is_host)
-              .map((r) => ({ id: r.id, name: r.name }))
-          )
-        }
-      } catch {}
-    })()
-  }, [roomId, playerId])
+  const targets = useTargets(roomId, { selfId: playerId })
 
   async function handleKill(targetId: string) {
     setBusy(true)
