@@ -11,6 +11,7 @@ interface SorceressPanelProps {
 
 export function SorceressPanel({ roomId, playerId, onDone }: SorceressPanelProps) {
   const [targets, setTargets] = useState<{ id: string; name: string }[]>([])
+  const [wolves, setWolves] = useState<{ id: string; name: string; is_alive: boolean }[]>([])
   const [resultText, setResultText] = useState('')
   const [targetName, setTargetName] = useState('')
   const [hasActed, setHasActed] = useState(false)
@@ -32,6 +33,10 @@ export function SorceressPanel({ roomId, playerId, onDone }: SorceressPanelProps
               .map((r) => ({ id: r.id, name: r.name }))
           )
         }
+      } catch {}
+      try {
+        const { data } = await supabase.rpc('get_wolves_for_sorceress', { p_room_id: roomId })
+        if (data) setWolves(data as { id: string; name: string; is_alive: boolean }[])
       } catch {}
     })()
   }, [roomId, playerId])
@@ -70,6 +75,16 @@ export function SorceressPanel({ roomId, playerId, onDone }: SorceressPanelProps
         <p className="text-purple-500 text-sm uppercase tracking-widest font-bold">
           🔮 Feiticeira
         </p>
+        {wolves.length > 0 && (
+          <div className="p-3 rounded-xl border border-red-900 bg-red-950/20 text-left">
+            <p className="text-red-400 text-xs uppercase tracking-widest mb-1">🐺 Os lobos</p>
+            {wolves.map((w) => (
+              <p key={w.id} className={`text-sm ${w.is_alive ? 'text-neutral-200' : 'text-neutral-600 line-through'}`}>
+                {w.name}
+              </p>
+            ))}
+          </div>
+        )}
         <div
           className={`p-6 rounded-2xl border-2 ${
             resultText === 'É a Vidente!'
@@ -95,6 +110,16 @@ export function SorceressPanel({ roomId, playerId, onDone }: SorceressPanelProps
       <p className="text-purple-500 text-sm uppercase tracking-widest font-bold">
         🔮 Feiticeira
       </p>
+      {wolves.length > 0 && (
+        <div className="p-3 rounded-xl border border-red-900 bg-red-950/20 text-left">
+          <p className="text-red-400 text-xs uppercase tracking-widest mb-1">🐺 Os lobos</p>
+          {wolves.map((w) => (
+            <p key={w.id} className={`text-sm ${w.is_alive ? 'text-neutral-200' : 'text-neutral-600 line-through'}`}>
+              {w.name}
+            </p>
+          ))}
+        </div>
+      )}
       <p className="text-neutral-500 text-xs">Procure pela Vidente:</p>
       <div className="space-y-2">
         {targets.map((t) => (

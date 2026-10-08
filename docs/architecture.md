@@ -3,6 +3,12 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — Sorceress sees wolves + host match history accordion with votes
+
+- **Sorceress sees wolves**: new RPC `get_wolves_for_sorceress(p_room_id)` (SECURITY DEFINER, only callable by the room's sorceress) returns wolf-team players (`werewolf`, `wolf_cub`, `alpha_wolf`, `lone_wolf`) with `is_alive`. `SorceressPanel` shows them in a "Os lobos" box. Wolves still do NOT see her (`get_werewolf_teammates` untouched).
+- **Host history**: `HostActionLog` is now "Histórico da Partida" — one `<details>` accordion per round (collapsed), containing night actions plus the tribunal vote tally (Sim/Não with voter names, from `votes` table). Polls every 5s besides Realtime.
+- **Files**: `supabase/migrations/20260721120000_sorceress_sees_wolves.sql`, `src/components/sorceress-panel.tsx`, `src/components/host-action-log.tsx`, `docs/architecture.md`.
+
 ### `<current>` — New logo + favicon set applied
 
 - **Feature**: Replaced the generated "L" PNG icons with a full favicon/logo set dropped into `public/` (real-favicon-generator output): `logo.png` (2000×2000), `favicon.ico`, `favicon-16x16.png`, `favicon-32x32.png`, `apple-touch-icon.png` (180×180), `android-chrome-192x192.png`, `android-chrome-512x512.png`. Old icons (`icon-*.png/svg`, `icon-maskable-*.png`) and unused default SVGs (file/globe/next/vercel/window) removed.
