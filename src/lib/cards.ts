@@ -44,6 +44,7 @@ export const ROLE_STYLE: Record<string, string> = {
   old_witch: 'bg-pink-100 text-pink-700 border-pink-300',
   drunk: 'bg-yellow-100 text-yellow-700 border-yellow-300',
   dire_wolf: 'bg-red-100 text-red-700 border-red-300',
+  virginia_wolf: 'bg-red-100 text-red-700 border-red-300',
 }
 
 export const ROLE_LABEL: Record<string, string> = {
@@ -83,6 +84,7 @@ export const ROLE_LABEL: Record<string, string> = {
   old_witch: '🤒 Bruxa Velha',
   drunk: '🍺 Bêbado',
   dire_wolf: '🐺 Lobo Aproveitador',
+  virginia_wolf: '🐺 Virginia Wolf',
 }
 
 export const ROLE_TRANSLATION: Record<string, string> = {
@@ -122,6 +124,7 @@ export const ROLE_TRANSLATION: Record<string, string> = {
   old_witch: 'Bruxa Velha',
   drunk: 'Bêbado',
   dire_wolf: 'Lobo Aproveitador',
+  virginia_wolf: 'Virginia Wolf',
 }
 
 export const CARD_CATALOG: CardDefinition[] = [
@@ -397,5 +400,13 @@ export const CARD_CATALOG: CardDefinition[] = [
     team: 'wolf',
     description:
       'Acorda com os lobos. Na 1ª noite escolha um companheiro: se ele for eliminado, você também é.',
+  },
+  {
+    id: 'virginia_wolf',
+    name: 'Virginia Wolf',
+    points: -2,
+    team: 'wolf',
+    description:
+      'Acorda com os lobos. Na 1ª noite escolha um par: se você for eliminada, essa pessoa morre junto.',
   },
 ]

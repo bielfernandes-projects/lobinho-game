@@ -37,6 +37,7 @@ const ACTION_LABEL: Record<string, string> = {
   chupacabra_kill: '🦇 atacou',
   huntress_kill: '🏹 atirou em',
   old_witch_pox: '🤒 contaminou',
+  virginia_partner: '🐺 escolheu como par',
   dire_wolf_companion: '🐺 escolheu como companheiro',
   tough_guy_doomed: '💪 foi marcado para morrer na próxima noite:',
 }
