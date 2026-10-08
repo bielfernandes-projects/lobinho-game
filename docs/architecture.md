@@ -3,6 +3,12 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — Night steps registry (architecture review, candidate 3)
+
+- **`src/lib/night-steps.ts`**: one `NIGHT_STEPS` table (array order = wake order) with id, roles, button/label text, which night it happens (`first` / `third` / `not_first` / `any`) and the `night_actions` types that finish it. `WAKE_ORDER`, `STEP_TO_ACTION_TYPES`, `NIGHT_ROLE_LABELS`, the role list queried for `availableNightRoles`, the host wake buttons (now in wake order) and `nextStepToWake()` all derive from it; the two identical "who wakes next" lambdas in `game/[id]/page.tsx` are gone. `WOLF_ROLES` lives here too.
+- **Adding a night role now means**: one entry in `NIGHT_STEPS`, its player panel block in `renderNightPanel`, and its SQL. `page.tsx` shrank by ~90 lines.
+- **Not yet moved** (next step if wanted): the per-role panel blocks in `renderNightPanel` (they differ in props) and the SQL wolf-role lists (candidate 2).
+
 ### `<current>` — Win conditions in one function (architecture review, candidate 4)
 
 - **`compute_winner(room)`** (`supabase/functions/compute_winner.sql`): pure function holding the whole priority table (lone wolf / Chupacu last alive, soulmates, cult, tanner, no-wolves branch, wolf parity). `check_game_over` (RPC use, returns `{game_over, winner, display}`) and `trg_check_game_over` (trigger on `players.is_alive`) are now thin wrappers that only record the result — the duplicated logic is gone, so a new role touches one list.

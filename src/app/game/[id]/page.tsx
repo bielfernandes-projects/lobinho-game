@@ -7,6 +7,7 @@ import { useCurrentPlayer } from '@/hooks/use-player'
 import { useRoomPlayers, useGameState } from '@/hooks/use-room'
 import { FlipCard } from '@/components/flip-card'
 import { CARD_CATALOG, ROLE_STYLE, ROLE_LABEL } from '@/lib/cards'
+import { NIGHT_STEPS, NIGHT_ROLES, WOLF_ROLES, NIGHT_ROLE_LABELS, STEP_TO_ACTION_TYPES, nextStepToWake, stepIsAvailable } from '@/lib/night-steps'
 import { getRevealedRoleText } from '@/lib/reveal'
 import { HostControls } from '@/components/host-controls'
 import { WerewolfPanel } from '@/components/werewolf-panel'
@@ -70,47 +71,6 @@ export default function GameScreen() {
   const [showCursedBanner, setShowCursedBanner] = useState(false)
   const [showDoppelgangerBanner, setShowDoppelgangerBanner] = useState(false)
 
-  const WAKE_ORDER = ['drunk', 'masons', 'cupid', 'doppelganger', 'minion', 'priest', 'bodyguard', 'wolves', 'dire_wolf', 'virginia_wolf', 'witch', 'seer', 'aura_seer', 'sorceress', 'chupacabra', 'huntress', 'old_witch', 'cult_leader'] as const
-  const STEP_TO_ACTION_TYPES: Record<string, string[]> = {
-    drunk: [],
-    masons: [],
-    cupid: [],
-    doppelganger: ['doppelganger_select'],
-    priest: ['priest_bless'],
-    bodyguard: ['bodyguard_protect'],
-    wolves: ['werewolf_kill'],
-    witch: ['witch_save', 'witch_poison', 'witch_skip'],
-    seer: ['seer_investigate'],
-    aura_seer: ['aura_investigate'],
-    sorceress: ['sorceress_search'],
-    chupacabra: ['chupacabra_kill'],
-    huntress: ['huntress_kill'],
-    dire_wolf: ['dire_wolf_companion'],
-    virginia_wolf: ['virginia_partner'],
-    old_witch: ['old_witch_pox'],
-    minion: [],
-    cult_leader: ['cult_convert'],
-  }
-  const NIGHT_ROLE_LABELS: Record<string, string> = {
-    drunk: '🍺 Bêbado',
-    masons: '🧱 Maçons',
-    cupid: '💘 Cupido',
-    doppelganger: '🎭 Doppelgänger',
-    priest: '🙏 Padre',
-    bodyguard: '🛡️ Guarda-costas',
-    wolves: '🐺 Lobisomens',
-    witch: '🧪 Bruxa',
-    seer: '🔮 Vidente',
-    aura_seer: '👁️ Vidente de Aura',
-    sorceress: '🔮 Feiticeira',
-    chupacabra: '🦇 Chupacu',
-    huntress: '🏹 Caçadora',
-    dire_wolf: '🐺 Lobo Aproveitador',
-    virginia_wolf: '🐺 Virginia Wolf',
-    old_witch: '🤒 Bruxa Velha',
-    minion: '😈 Lacaio',
-    cult_leader: '🔮 Líder de Culto',
-  }
   const prevNightStepRef = useRef<string>('sleeping')
   const nightRolesActedRef = useRef<Set<string>>(new Set())
   const prevTurnRef = useRef<number>(0)
@@ -150,7 +110,7 @@ export default function GameScreen() {
           .select('role, has_used_power')
           .eq('room_id', roomId)
           .neq('role', 'moderator')
-          .in('role', ['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf', 'seer', 'witch', 'priest', 'bodyguard', 'aura_seer', 'cupid', 'cult_leader', 'mason', 'sorceress', 'doppelganger', 'chupacabra', 'huntress', 'minion', 'dire_wolf', 'virginia_wolf', 'old_witch', 'drunk'])
+          .in('role', NIGHT_ROLES)
         if (data) {
           const roles = (data as any[])
             .filter((r) => !((r.role === 'priest' || r.role === 'huntress') && r.has_used_power))
@@ -662,28 +622,12 @@ export default function GameScreen() {
               Controle da Noite
             </p>
             {(() => {
-              const WOLF_ROLES = ['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf', 'dire_wolf', 'virginia_wolf']
-              const _nextRoleToWake = WAKE_ORDER.find((s) => {
-                if (s === 'wolves') {
-                  if (!WOLF_ROLES.some((r) => availableNightRoles.has(r))) return false
-                  return nightStep !== 'wolves' && !wolvesResolved
-                }
-                if (s === 'masons') {
-                  if (!availableNightRoles.has('mason')) return false
-                  if (turnIndex !== 1) return false
-                  if (nightRolesActedRef.current.has(s)) return false
-                  return nightStep !== s
-                }
-                if (!availableNightRoles.has(s)) return false
-                if (s === 'witch' && turnIndex === 1) return false
-                if (s === 'cupid' && turnIndex !== 1) return false
-                if (s === 'doppelganger' && turnIndex !== 1) return false
-                if (s === 'minion' && turnIndex !== 1) return false
-                if (s === 'drunk' && turnIndex !== 3) return false
-                if (s === 'dire_wolf' && turnIndex !== 1) return false
-                if (s === 'virginia_wolf' && turnIndex !== 1) return false
-                if (nightRolesActedRef.current.has(s)) return false
-                return nightStep !== s
+              const _nextRoleToWake = nextStepToWake({
+                turnIndex,
+                nightStep,
+                wolvesResolved,
+                availableRoles: availableNightRoles,
+                acted: nightRolesActedRef.current,
               })
               if (nightStep === 'sleeping') {
                 if (_nextRoleToWake) {
@@ -706,28 +650,12 @@ export default function GameScreen() {
               )
             })()}
             {(() => {
-              const WOLF_ROLES = ['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf', 'dire_wolf', 'virginia_wolf']
-              const nextRoleToWake = WAKE_ORDER.find((s) => {
-                if (s === 'wolves') {
-                  if (!WOLF_ROLES.some((r) => availableNightRoles.has(r))) return false
-                  return nightStep !== 'wolves' && !wolvesResolved
-                }
-                if (s === 'masons') {
-                  if (!availableNightRoles.has('mason')) return false
-                  if (turnIndex !== 1) return false
-                  if (nightRolesActedRef.current.has(s)) return false
-                  return nightStep !== s
-                }
-                if (!availableNightRoles.has(s)) return false
-                if (s === 'witch' && turnIndex === 1) return false
-                if (s === 'cupid' && turnIndex !== 1) return false
-                if (s === 'doppelganger' && turnIndex !== 1) return false
-                if (s === 'minion' && turnIndex !== 1) return false
-                if (s === 'drunk' && turnIndex !== 3) return false
-                if (s === 'dire_wolf' && turnIndex !== 1) return false
-                if (s === 'virginia_wolf' && turnIndex !== 1) return false
-                if (nightRolesActedRef.current.has(s)) return false
-                return nightStep !== s
+              const nextRoleToWake = nextStepToWake({
+                turnIndex,
+                nightStep,
+                wolvesResolved,
+                availableRoles: availableNightRoles,
+                acted: nightRolesActedRef.current,
               })
               return (
                 <div className="flex flex-wrap gap-2 justify-center">
@@ -738,53 +666,21 @@ export default function GameScreen() {
                   >
                     😴 Todos Dormindo
                   </button>
-                  {[
-                    { step: 'drunk', role: 'drunk', label: '🍺 Acordar Bêbado' },
-                    { step: 'masons', role: 'mason', label: '🧱 Acordar Maçons' },
-                    { step: 'cupid', role: 'cupid', label: '💘 Acordar Cupido' },
-                    { step: 'doppelganger', role: 'doppelganger', label: '🎭 Acordar Doppelgänger' },
-                    { step: 'priest', role: 'priest', label: '🙏 Acordar Padre' },
-                    { step: 'bodyguard', role: 'bodyguard', label: '🛡️ Acordar Guarda-costas' },
-                    { step: 'wolves', role: 'werewolf', label: '🐺 Acordar Lobos' },
-                    { step: 'witch', role: 'witch', label: '🧪 Acordar Bruxa' },
-                    { step: 'seer', role: 'seer', label: '🔮 Acordar Vidente' },
-                    { step: 'aura_seer', role: 'aura_seer', label: '👁️ Acordar Vidente de Aura' },
-                    { step: 'sorceress', role: 'sorceress', label: '🔮 Acordar Feiticeira' },
-                    { step: 'minion', role: 'minion', label: '😈 Acordar Lacaio' },
-                    { step: 'chupacabra', role: 'chupacabra', label: '🦇 Acordar Chupacu' },
-                    { step: 'dire_wolf', role: 'dire_wolf', label: '🐺 Acordar Lobo Aproveitador' },
-                    { step: 'virginia_wolf', role: 'virginia_wolf', label: '🐺 Acordar Virginia Wolf' },
-                    { step: 'huntress', role: 'huntress', label: '🏹 Acordar Caçadora' },
-                    { step: 'old_witch', role: 'old_witch', label: '🤒 Acordar Bruxa Velha' },
-                    { step: 'cult_leader', role: 'cult_leader', label: '🔮 Acordar Líder de Culto' },
-                  ]                  .filter((b) => {
-                    if (b.step === 'masons' && turnIndex !== 1) return false
-                    if (b.step === 'cupid' && turnIndex !== 1) return false
-                    if (b.step === 'doppelganger' && turnIndex !== 1) return false
-                    if (b.step === 'minion' && turnIndex !== 1) return false
-                    if (b.step === 'drunk' && turnIndex !== 3) return false
-                    if (b.step === 'dire_wolf' && turnIndex !== 1) return false
-                    if (b.step === 'virginia_wolf' && turnIndex !== 1) return false
-                    if (b.step === 'witch' && turnIndex === 1) return false
-                    if (b.step === 'wolves') {
-                      return ['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf', 'dire_wolf', 'virginia_wolf'].some((r) => availableNightRoles.has(r))
-                    }
-                    return availableNightRoles.has(b.role)
-                  }).map((b) => {
-                    const isWolves = b.step === 'wolves'
-                    const actionDone = !isWolves && resolvedActions.has(b.step)
+                  {NIGHT_STEPS.filter((b) => stepIsAvailable(b, turnIndex, availableNightRoles)).map((b) => {
+                    const isWolves = b.id === 'wolves'
+                    const actionDone = !isWolves && resolvedActions.has(b.id)
                     const disabled = isWolves
                       ? nightStep === 'wolves' || wolvesResolved
-                      : nightStep === b.step || actionDone
-                    const isNextToWake = nightStep === 'sleeping' && nextRoleToWake === b.step
+                      : nightStep === b.id || actionDone
+                    const isNextToWake = nightStep === 'sleeping' && nextRoleToWake === b.id
                     return (
                       <button
-                        key={b.step}
-                        onClick={() => handleSetNightStep(b.step)}
+                        key={b.id}
+                        onClick={() => handleSetNightStep(b.id)}
                         disabled={disabled}
-                        className={`px-3 py-2 rounded-lg text-xs font-bold tracking-wider border ${ROLE_STYLE[b.role] ?? 'text-neutral-500 border-neutral-700'} disabled:opacity-30 transition-all duration-200 ${actionDone ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${isNextToWake ? 'animate-pulse' : ''}`}
+                        className={`px-3 py-2 rounded-lg text-xs font-bold tracking-wider border ${ROLE_STYLE[b.styleRole] ?? 'text-neutral-500 border-neutral-700'} disabled:opacity-30 transition-all duration-200 ${actionDone ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${isNextToWake ? 'animate-pulse' : ''}`}
                       >
-                        {b.label}
+                        {b.wakeLabel}
                       </button>
                     )
                   })}
@@ -1310,7 +1206,7 @@ export default function GameScreen() {
       )
     }
 
-    if (['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf', 'dire_wolf', 'virginia_wolf'].includes(player.role ?? '')) {
+    if (WOLF_ROLES.includes(player.role ?? '')) {
       if (nightStep !== 'wolves') return sleepScreen()
       if (actedRoles.has('werewolf')) return sleepScreen()
       return (
