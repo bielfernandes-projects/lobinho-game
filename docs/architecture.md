@@ -3,6 +3,12 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — Dire Wolf announced + Old Witch immunity rules
+
+- **Dire Wolf**: companion-linked death during the night is appended to `resolve_night` victims (shows in the morning like any death). Daytime (lynch) companion deaths are NOT announced.
+- **Old Witch**: poxed player cannot be accused (tribunal accuse list filters `poxed_id`), is rejected by `host_execute_accused`, and cannot be targeted by Marksman/Hunter (panels filter + RPC guards in `marksman_shoot`/`hunter_retaliate`). Cannot pox the same player on consecutive nights (`execute_night_action`; self-target already blocked).
+- **Files**: `20260721170000_dire_wolf_announce_pox_rules.sql`, `tribunal-panel.tsx`, `marksman-panel.tsx`, `hunter-retaliate-panel.tsx`.
+
 ### `<current>` — New roles: Apprentice Seer, Dire Wolf, Old Witch, Drunk
 
 - **Apprentice Seer** `apprentice_seer` (village, +4): DB trigger `trg_apprentice_seer` — when a `seer` dies (any cause) the alive apprentice becomes `seer`.

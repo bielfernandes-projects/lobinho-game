@@ -46,8 +46,10 @@ export function TribunalPanel({ roomId, dayStep, accusedId, turnIndex }: Tribuna
       .eq('room_id', roomId)
       .neq('role', 'moderator')
       .eq('is_alive', true)
+    const { data: gs } = await supabase.from('game_state').select('poxed_id').eq('room_id', roomId).single()
+    const poxedId = (gs as { poxed_id: string | null } | null)?.poxed_id ?? null
     if (data) {
-      setPlayers(data as { id: string; name: string; role: string }[])
+      setPlayers((data as { id: string; name: string; role: string }[]).filter((p) => p.id !== poxedId))
     }
     setAccuseModal(true)
   }

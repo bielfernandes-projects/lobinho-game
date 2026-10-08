@@ -19,6 +19,12 @@ export function HunterRetaliatePanel({ roomId, hunterId, onDone }: HunterRetalia
   useEffect(() => {
     ;(async () => {
       try {
+        const { data: gs } = await supabase
+          .from('game_state')
+          .select('poxed_id')
+          .eq('room_id', roomId)
+          .single()
+        const poxedId = (gs as { poxed_id: string | null } | null)?.poxed_id ?? null
         const { data } = await supabase
           .from('player_profiles')
           .select('id, name, is_alive, is_host')
@@ -26,7 +32,7 @@ export function HunterRetaliatePanel({ roomId, hunterId, onDone }: HunterRetalia
         if (data) {
           setTargets(
             (data as any[])
-              .filter((r) => r.id !== hunterId && r.is_alive && !r.is_host)
+              .filter((r) => r.id !== hunterId && r.is_alive && !r.is_host && r.id !== poxedId)
               .map((r) => ({ id: r.id, name: r.name }))
           )
         }
