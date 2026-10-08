@@ -34,6 +34,7 @@ const ACTION_LABEL: Record<string, string> = {
   mason_recognition: '🧱 reconheceu Maçons',
   hunter_shot: '🔫 atirou em',
   doppelganger_select: '🎭 selecionou',
+  chupacabra_kill: '🦇 atacou',
 }
 
 interface VoteEntry {

@@ -3,6 +3,13 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — New role: Chupacabra (Chupacu)
+
+- **Role** `chupacabra` (independent, -4 pts): each night picks a player; dies only if `werewolf`/`wolf_cub`/`alpha_wolf`/`lone_wolf` (sorceress is not a werewolf), or ANY player if no wolves were alive at night start. No feedback to the Chupacu. Wins as last alive, or 1v1 once no team wolves remain (mirrors Lone Wolf). Villagers/wolves win checks are blocked while he lives with >2 alive and no wolves. Not blockable by Bodyguard/Priest/Witch (simplification).
+- **DB** (`20260721130000_chupacabra.sql`, applied via SQL Editor): constraints (`players_role_check`, `night_actions_action_type_check` + `chupacabra_kill`, `rooms_status_check` + `finished_chupacabra_win`); `execute_night_action` branch; `resolve_night` step 3b (hunter/prince flags, soulmate chain handled by existing loop); `check_game_over`/`trg_check_game_over` priority 0b + village-win guard; `host_end_game` handles `chupacabra_win`. Functions were patched in place by anchor-replace on `pg_get_functiondef`.
+- **Frontend**: `cards.ts` (catalog/style/labels), `chupacabra-panel.tsx`, `page.tsx` (WAKE_ORDER after sorceress, host button, player panel, game-over screen), `day-announcement.tsx` (cause text), `host-action-log.tsx` label.
+- **Files**: above + `docs/architecture.md`.
+
 ### `<current>` — Sorceress sees wolves + host match history accordion with votes
 
 - **Sorceress sees wolves**: new RPC `get_wolves_for_sorceress(p_room_id)` (SECURITY DEFINER, only callable by the room's sorceress) returns wolf-team players (`werewolf`, `wolf_cub`, `alpha_wolf`, `lone_wolf`) with `is_alive`. `SorceressPanel` shows them in a "Os lobos" box. Wolves still do NOT see her (`get_werewolf_teammates` untouched).

@@ -33,6 +33,7 @@ import { GraveyardList } from '@/components/graveyard-list'
 import { HunterRetaliatePanel } from '@/components/hunter-retaliate-panel'
 import { MarksmanPanel } from '@/components/marksman-panel'
 import { DoppelgangerPanel } from '@/components/doppelganger-panel'
+import { ChupacabraPanel } from '@/components/chupacabra-panel'
 import { StrikePanel } from '@/components/strike-panel'
 import { ScenarioExplanation } from '@/components/scenario-explanation'
 import type { RevealMode } from '@/lib/reveal'
@@ -63,7 +64,7 @@ export default function GameScreen() {
   const [showCursedBanner, setShowCursedBanner] = useState(false)
   const [showDoppelgangerBanner, setShowDoppelgangerBanner] = useState(false)
 
-  const WAKE_ORDER = ['masons', 'cupid', 'doppelganger', 'priest', 'bodyguard', 'wolves', 'witch', 'seer', 'aura_seer', 'sorceress', 'cult_leader'] as const
+  const WAKE_ORDER = ['masons', 'cupid', 'doppelganger', 'priest', 'bodyguard', 'wolves', 'witch', 'seer', 'aura_seer', 'sorceress', 'chupacabra', 'cult_leader'] as const
   const STEP_TO_ACTION_TYPES: Record<string, string[]> = {
     masons: [],
     cupid: [],
@@ -75,6 +76,7 @@ export default function GameScreen() {
     seer: ['seer_investigate'],
     aura_seer: ['aura_investigate'],
     sorceress: ['sorceress_search'],
+    chupacabra: ['chupacabra_kill'],
     cult_leader: ['cult_convert'],
   }
   const NIGHT_ROLE_LABELS: Record<string, string> = {
@@ -88,6 +90,7 @@ export default function GameScreen() {
     seer: '🔮 Vidente',
     aura_seer: '👁️ Vidente de Aura',
     sorceress: '🔮 Feiticeira',
+    chupacabra: '🦇 Chupacu',
     cult_leader: '🔮 Líder de Culto',
   }
   const prevNightStepRef = useRef<string>('sleeping')
@@ -129,7 +132,7 @@ export default function GameScreen() {
           .select('role, has_used_power')
           .eq('room_id', roomId)
           .neq('role', 'moderator')
-          .in('role', ['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf', 'seer', 'witch', 'priest', 'bodyguard', 'aura_seer', 'cupid', 'cult_leader', 'mason', 'sorceress', 'doppelganger'])
+          .in('role', ['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf', 'seer', 'witch', 'priest', 'bodyguard', 'aura_seer', 'cupid', 'cult_leader', 'mason', 'sorceress', 'doppelganger', 'chupacabra'])
         if (data) {
           const roles = (data as any[])
             .filter((r) => !(r.role === 'priest' && r.has_used_power))
@@ -174,7 +177,7 @@ export default function GameScreen() {
   // Derived state: gameEnded is true ONLY when rooms.status says so
   const gameEnded =
     roomStatus === 'finished_villagers_win' || roomStatus === 'finished_wolves_win' || roomStatus === 'finished_tanner_win' ||
-    roomStatus === 'finished_soulmates_win' || roomStatus === 'finished_cult_win' || roomStatus === 'finished_lone_wolf_win'
+    roomStatus === 'finished_soulmates_win' || roomStatus === 'finished_cult_win' || roomStatus === 'finished_lone_wolf_win' || roomStatus === 'finished_chupacabra_win'
 
   // Fetch ALL player names and roles when game ends (bypasses RLS via SECURITY DEFINER RPC)
   useEffect(() => {
@@ -187,6 +190,7 @@ export default function GameScreen() {
           ?? (status === 'finished_wolves_win' ? 'wolves_win'
             : status === 'finished_tanner_win' ? 'tanner_win'
             : status === 'finished_lone_wolf_win' ? 'lone_wolf_win'
+            : status === 'finished_chupacabra_win' ? 'chupacabra_win'
             : status === 'finished_soulmates_win' ? 'soulmates_win'
             : status === 'finished_cult_win' ? 'cult_win'
             : 'villagers_win')
@@ -211,6 +215,10 @@ export default function GameScreen() {
         } else if (winnerType === 'lone_wolf_win') {
           result = allPlayers
             .filter((p) => p.role === 'lone_wolf')
+            .map((p) => ({ name: p.name, role: p.role }))
+        } else if (winnerType === 'chupacabra_win') {
+          result = allPlayers
+            .filter((p) => p.role === 'chupacabra')
             .map((p) => ({ name: p.name, role: p.role }))
         } else if (winnerType === 'wolves_win') {
           result = allPlayers
@@ -688,6 +696,7 @@ export default function GameScreen() {
                     { step: 'seer', role: 'seer', label: '🔮 Acordar Vidente' },
                     { step: 'aura_seer', role: 'aura_seer', label: '👁️ Acordar Vidente de Aura' },
                     { step: 'sorceress', role: 'sorceress', label: '🔮 Acordar Feiticeira' },
+                    { step: 'chupacabra', role: 'chupacabra', label: '🦇 Acordar Chupacu' },
                     { step: 'cult_leader', role: 'cult_leader', label: '🔮 Acordar Líder de Culto' },
                   ]                  .filter((b) => {
                     if (b.step === 'masons' && turnIndex !== 1) return false
@@ -1245,6 +1254,19 @@ export default function GameScreen() {
       )
     }
 
+    if (player.role === 'chupacabra') {
+      if (nightStep !== 'chupacabra') return sleepScreen()
+      if (actedRoles.has('chupacabra')) return sleepScreen()
+      return (
+        <div className="flex flex-1 flex-col items-center justify-center px-6 gap-6">
+          <p className="text-neutral-600 text-xs uppercase tracking-widest select-none animate-pulse">
+            🌙 Fechem os olhos...
+          </p>
+          <ChupacabraPanel roomId={roomId} playerId={player.id} onDone={() => handleRoleDone('chupacabra')} />
+        </div>
+      )
+    }
+
     if (player.role === 'doppelganger') {
       if (turnIndex !== 1) return sleepScreen()
       if (nightStep !== 'doppelganger') return sleepScreen()
@@ -1283,6 +1305,7 @@ export default function GameScreen() {
     const tannerStyle = 'text-stone-600 drop-shadow-[0_0_20px_rgba(120,100,80,0.5)]'
     const wolfStyle = 'text-red-700 drop-shadow-[0_0_20px_rgba(185,28,28,0.5)]'
     const loneWolfStyle = 'text-orange-500 drop-shadow-[0_0_20px_rgba(249,115,22,0.5)]'
+    const chupaStyle = 'text-lime-500 drop-shadow-[0_0_20px_rgba(132,204,22,0.5)]'
     const villagerStyle = 'text-yellow-500 drop-shadow-[0_0_20px_rgba(234,179,8,0.4)]'
 
     const colors =
@@ -1291,6 +1314,7 @@ export default function GameScreen() {
         : winner === 'tanner_win' ? tannerStyle
         : winner === 'wolves_win' ? wolfStyle
         : winner === 'lone_wolf_win' ? loneWolfStyle
+        : winner === 'chupacabra_win' ? chupaStyle
         : villagerStyle
 
     const displayText =
@@ -1299,6 +1323,7 @@ export default function GameScreen() {
         : winner === 'tanner_win' ? 'O CURTIDOR VENCEU'
         : winner === 'wolves_win' ? 'VITÓRIA DO TIME DOS LOBOS'
         : winner === 'lone_wolf_win' ? 'O LOBO SOLITÁRIO VENCEU!'
+        : winner === 'chupacabra_win' ? 'O CHUPACU VENCEU!'
         : 'VITÓRIA DO TIME DA VILA'
 
     return (
@@ -1309,6 +1334,7 @@ export default function GameScreen() {
             : winner === 'tanner_win' ? '👔'
             : winner === 'wolves_win' ? '🐺'
             : winner === 'lone_wolf_win' ? '🐺'
+            : winner === 'chupacabra_win' ? '🦇'
             : '🏆'
         }</p>
         <p className="text-neutral-400 text-xs uppercase tracking-widest">

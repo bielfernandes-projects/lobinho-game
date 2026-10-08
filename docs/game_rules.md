@@ -316,6 +316,7 @@ The `check_game_over()` trigger fires AFTER every death. It sets `game_state.win
 | 2 | Exactly 2 alive non-moderator players, AND they are each other's soulmates | `soulmates_win` |
 | 3 | Cult Leader alive AND all other non-moderator, non-leader players have `in_cult = true` | `cult_win` |
 | 4 | Lone Wolf alive AND no team-wolves alive AND (alive_count = 1 OR alive_count ≤ 2) | `lone_wolf_win` |
+| 4b | Chupacabra alive AND (alive_count = 1, or no team-wolves alive AND alive_count ≤ 2) | `chupacabra_win` |
 | 5 | `v_wolves >= v_non_wolves` (wolves achieve parity) | `wolves_win` |
 | 6 | No alive werewolves (and no other win condition triggered) | `villagers_win` |
 
@@ -1221,8 +1222,8 @@ You MUST:
 
 | Constraint | Current values |
 |------------|----------------|
-| `players_role_check` | `werewolf`, `seer`, `witch`, `villager`, `mayor`, `prince`, `tanner`, `lycan`, `priest`, `bodyguard`, `aura_seer`, `wolf_cub`, `lone_wolf`, `alpha_wolf`, `cupid`, `cult_leader`, `mason`, `pacifist`, `idiot`, `sorceress`, `moderator`, `hunter`, `squire`, `marksman`, `diseased`, `cursed`, `doppelganger` |
-| `night_actions_action_type_check` | `werewolf_kill`, `seer_investigate`, `witch_save`, `witch_poison`, `witch_skip`, `priest_bless`, `bodyguard_protect`, `aura_investigate`, `cult_convert`, `alpha_infect`, `cupid_match`, `sorceress_search`, `mason_recognition`, `hunter_shot`, `doppelganger_select` |
+| `players_role_check` | `werewolf`, `seer`, `witch`, `villager`, `mayor`, `prince`, `tanner`, `lycan`, `priest`, `bodyguard`, `aura_seer`, `wolf_cub`, `lone_wolf`, `alpha_wolf`, `cupid`, `cult_leader`, `mason`, `pacifist`, `idiot`, `sorceress`, `moderator`, `hunter`, `squire`, `marksman`, `diseased`, `cursed`, `doppelganger`, `chupacabra` |
+| `night_actions_action_type_check` | `werewolf_kill`, `seer_investigate`, `witch_save`, `witch_poison`, `witch_skip`, `priest_bless`, `bodyguard_protect`, `aura_investigate`, `cult_convert`, `alpha_infect`, `cupid_match`, `sorceress_search`, `mason_recognition`, `hunter_shot`, `doppelganger_select`, `chupacabra_kill` |
 
 When you add a role with a new action, you MUST add that action to `night_actions_action_type_check` via a migration.
 

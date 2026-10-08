@@ -35,6 +35,7 @@ export const ROLE_STYLE: Record<string, string> = {
   diseased: 'bg-lime-100 text-lime-700 border-lime-300',
   cursed: 'bg-blue-100 text-blue-700 border-blue-300',
   doppelganger: 'bg-violet-100 text-violet-700 border-violet-300',
+  chupacabra: 'bg-lime-100 text-lime-700 border-lime-300',
 }
 
 export const ROLE_LABEL: Record<string, string> = {
@@ -65,6 +66,7 @@ export const ROLE_LABEL: Record<string, string> = {
   diseased: '🤢 Doente',
   cursed: '🔮 Amaldiçoado',
   doppelganger: '🎭 Doppelgänger',
+  chupacabra: '🦇 Chupacu',
 }
 
 export const ROLE_TRANSLATION: Record<string, string> = {
@@ -95,6 +97,7 @@ export const ROLE_TRANSLATION: Record<string, string> = {
   diseased: 'Doente',
   cursed: 'Amaldiçoado',
   doppelganger: 'Doppelgänger',
+  chupacabra: 'Chupacu',
 }
 
 export const CARD_CATALOG: CardDefinition[] = [
@@ -299,5 +302,13 @@ export const CARD_CATALOG: CardDefinition[] = [
     team: 'independent',
     description:
       'Na 1ª noite, escolha um jogador. Se ele for morto, você assume secretamente esse papel. Enquanto seu alvo estiver vivo, você é do time dos Aldeões.',
+  },
+  {
+    id: 'chupacabra',
+    name: 'Chupacabra',
+    points: -4,
+    team: 'independent',
+    description:
+      'Toda noite, escolha um jogador: se for lobisomem, ele morre; se não, nada acontece (você não saberá). Com todos os lobos mortos, mata qualquer alvo. Vence se for o último vivo.',
   },
 ]
