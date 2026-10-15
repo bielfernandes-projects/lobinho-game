@@ -16,7 +16,7 @@ export function DayTools({ state, dispatch }: DayToolsProps) {
 
   return (
     <section className="space-y-4">
-      <VoteTimerPanel />
+      <VoteTimerPanel title="Manhã" label="⏱️ Tempo da manhã" defaultMinutes={5} />
 
       <div className="space-y-2">
         <h2 className="text-neutral-400 text-xs uppercase tracking-widest">Strikes</h2>

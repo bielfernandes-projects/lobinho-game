@@ -10,12 +10,14 @@ function fmt(sec: number): string {
 
 interface VoteTimerProps {
   label: string
+  defaultMinutes: number
 }
 
-function VoteTimer({ label }: VoteTimerProps) {
-  const [remaining, setRemaining] = useState(60)
+function VoteTimer({ label, defaultMinutes }: VoteTimerProps) {
+  const defaultSeconds = Math.round(defaultMinutes * 60)
+  const [remaining, setRemaining] = useState(defaultSeconds)
   const [running, setRunning] = useState(false)
-  const [minutesInput, setMinutesInput] = useState('1')
+  const [minutesInput, setMinutesInput] = useState(String(defaultMinutes))
   const [inputError, setInputError] = useState('')
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -83,7 +85,7 @@ function VoteTimer({ label }: VoteTimerProps) {
     if (sec != null) {
       setRemaining(sec)
     } else {
-      setRemaining(60)
+      setRemaining(defaultSeconds)
     }
   }
 
@@ -161,11 +163,24 @@ function VoteTimer({ label }: VoteTimerProps) {
   )
 }
 
-export function VoteTimerPanel() {
+interface VoteTimerPanelProps {
+  /** Small heading above the timer. */
+  title?: string
+  label?: string
+  /** Minutes the timer starts with and returns to on reset. */
+  defaultMinutes?: number
+}
+
+// Defaults keep the online tribunal exactly as it was (1 minute); the Caderneta passes its own.
+export function VoteTimerPanel({
+  title = 'Tribunal',
+  label = '⏱️ Tempo do Tribunal',
+  defaultMinutes = 1,
+}: VoteTimerPanelProps) {
   return (
     <div className="w-full max-w-sm mx-auto space-y-4 py-4 border-t border-neutral-800">
-      <p className="text-neutral-600 text-[10px] uppercase tracking-widest text-center">Tribunal</p>
-      <VoteTimer label="⏱️ Tempo do Tribunal" />
+      <p className="text-neutral-600 text-[10px] uppercase tracking-widest text-center">{title}</p>
+      <VoteTimer label={label} defaultMinutes={defaultMinutes} />
     </div>
   )
 }

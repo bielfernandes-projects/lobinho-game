@@ -1217,6 +1217,7 @@ You MUST:
 2. Update `check_game_over` SQL function to reflect the new logic.
 3. Update `host_end_game` to handle the new `winner` value.
 4. Update the win-condition display in the UI.
+5. **Keep the TypeScript mirror in sync:** the single-device Caderneta do Mestre mode computes the same priority table in `src/lib/caderneta/winner.ts` (`computeWinner`, `WOLF_TEAM_ROLES`, `WINNER_VIEW`), tested by `src/lib/caderneta/winner.test.ts` (`npm test`). Any change to `compute_winner` (or `wolf_team_roles()`) must be made there too.
 
 ### 13.5 Schema constraints (current state)
 

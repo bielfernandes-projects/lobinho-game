@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, type Dispatch } from 'react'
-import { aliveCounts, type Action, type CadernetaState } from '@/lib/caderneta/state'
+import { aliveCounts, winnerOf, type Action, type CadernetaState } from '@/lib/caderneta/state'
 import { DayTools } from './day-tools'
 import { NightStepsList } from './night-steps-list'
 import { PlayersList } from './players-list'
+import { WinnerBanner } from './winner-banner'
 
 interface PlayPanelProps {
   state: CadernetaState
@@ -13,6 +14,7 @@ interface PlayPanelProps {
 
 export function PlayPanel({ state, dispatch }: PlayPanelProps) {
   const { alive, wolves, others } = aliveCounts(state)
+  const winner = winnerOf(state)
   const [confirm, setConfirm] = useState<'end' | 'cancel' | null>(null)
 
   return (
@@ -25,6 +27,8 @@ export function PlayPanel({ state, dispatch }: PlayPanelProps) {
           {alive} vivos · 🐺 {wolves} × {others} demais
         </p>
       </header>
+
+      {winner && <WinnerBanner winner={winner} onEnd={() => dispatch({ type: 'end' })} />}
 
       {state.view === 'night' ? (
         <NightStepsList key={state.turn} state={state} dispatch={dispatch} />

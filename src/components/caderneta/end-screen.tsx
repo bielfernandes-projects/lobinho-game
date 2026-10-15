@@ -2,7 +2,8 @@
 
 import type { Dispatch } from 'react'
 import { ROLE_LABEL, ROLE_STYLE } from '@/lib/cards'
-import type { Action, CadernetaState } from '@/lib/caderneta/state'
+import { winnerOf, type Action, type CadernetaState } from '@/lib/caderneta/state'
+import { WinnerBanner } from './winner-banner'
 
 interface EndScreenProps {
   state: CadernetaState
@@ -10,12 +11,15 @@ interface EndScreenProps {
 }
 
 export function EndScreen({ state, dispatch }: EndScreenProps) {
+  const winner = winnerOf(state)
   return (
     <div className="space-y-6">
       <header className="text-center space-y-1">
         <h1 className="font-display text-5xl tracking-widest text-red-600">FIM DE JOGO</h1>
         <p className="text-neutral-500 text-xs">Os papéis de todos, na partida que acabou.</p>
       </header>
+
+      {winner && <WinnerBanner winner={winner} />}
 
       <ul className="space-y-2">
         {state.players.map((p) => (

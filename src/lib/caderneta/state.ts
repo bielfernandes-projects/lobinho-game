@@ -3,6 +3,7 @@
 import { CARD_CATALOG, DRUNK_ALLOWED } from '../cards.ts'
 import { NIGHT_STEPS, stepIsAvailable, type NightStep } from '../night-steps.ts'
 import { MAX_PLAYERS, rolesFromCounts, type ScenarioCounts } from '../scenario.ts'
+import { computeWinner, wolfCounts, type Winner } from './winner.ts'
 
 export type Phase = 'setup' | 'deal' | 'play' | 'ended'
 export type View = 'night' | 'day'
@@ -43,6 +44,8 @@ export interface CadernetaState {
   view: View
   turn: number
   doneSteps: string[]
+  /** Player the host lynched last (the Tanner only wins if he was lynched). */
+  lastLynchId: string | null
 }
 
 export type Action =
@@ -53,6 +56,7 @@ export type Action =
   | { type: 'nextDeal' }
   | { type: 'cancel' }
   | { type: 'setAlive'; id: string; alive: boolean }
+  | { type: 'lynch'; id: string }
   | { type: 'toggleTag'; id: string; tag: Tag }
   | { type: 'setNote'; id: string; note: string }
   | { type: 'setRole'; id: string; role: string }
@@ -78,6 +82,7 @@ export function initialState(): CadernetaState {
     view: 'night',
     turn: 1,
     doneSteps: [],
+    lastLynchId: null,
   }
 }
 
@@ -149,6 +154,7 @@ export function reducer(state: CadernetaState, action: Action): CadernetaState {
         view: 'night',
         turn: 1,
         doneSteps: [],
+        lastLynchId: null,
       }
     }
     case 'nextDeal': {
@@ -160,8 +166,15 @@ export function reducer(state: CadernetaState, action: Action): CadernetaState {
     }
     case 'cancel':
       return { ...initialState(), names: state.names }
-    case 'setAlive':
-      return mapPlayer(state, action.id, (p) => ({ ...p, alive: action.alive }))
+    case 'setAlive': {
+      const next = mapPlayer(state, action.id, (p) => ({ ...p, alive: action.alive }))
+      // Bringing the lynched player back undoes the lynch.
+      return action.alive && action.id === state.lastLynchId ? { ...next, lastLynchId: null } : next
+    }
+    case 'lynch': {
+      const next = mapPlayer(state, action.id, (p) => ({ ...p, alive: false }))
+      return next === state ? state : { ...next, lastLynchId: action.id }
+    }
     case 'toggleTag':
       return mapPlayer(state, action.id, (p) => ({
         ...p,
@@ -181,7 +194,7 @@ export function reducer(state: CadernetaState, action: Action): CadernetaState {
       }
     case 'toNight':
       return state.phase === 'play'
-        ? { ...state, view: 'night', turn: state.turn + 1, doneSteps: [] }
+        ? { ...state, view: 'night', turn: state.turn + 1, doneSteps: [], lastLynchId: null }
         : state
     case 'toDay':
       return state.phase === 'play' ? { ...state, view: 'day' } : state
@@ -210,16 +223,15 @@ export function nextStepId(state: CadernetaState): string | undefined {
   return nightSteps(state).find((s) => !state.doneSteps.includes(s.id))?.id
 }
 
+/** Alive players split like the win check does (wolf team vs everyone else). */
 export function aliveCounts(state: CadernetaState): { alive: number; wolves: number; others: number } {
-  const team = new Map(CARD_CATALOG.map((c) => [c.id, c.team]))
-  let alive = 0
-  let wolves = 0
-  for (const p of state.players) {
-    if (!p.alive) continue
-    alive++
-    if (team.get(p.role) === 'wolf') wolves++
-  }
-  return { alive, wolves, others: alive - wolves }
+  return wolfCounts(state.players)
+}
+
+/** Who has won by the count of the living, or null. Only meaningful once the game started. */
+export function winnerOf(state: CadernetaState): Winner | null {
+  if (state.phase !== 'play' && state.phase !== 'ended') return null
+  return computeWinner(state.players, state.lastLynchId)
 }
 
 // ---- persistence guard ----
@@ -263,6 +275,9 @@ export function sanitizeState(raw: unknown): CadernetaState | null {
   if (s.drunkHiddenRole !== null && (typeof s.drunkHiddenRole !== 'string' || !ROLE_IDS.has(s.drunkHiddenRole))) {
     return null
   }
+  // Absent in games saved before the lynch existed: treat as "nobody lynched".
+  const lastLynchId = s.lastLynchId ?? null
+  if (lastLynchId !== null && typeof lastLynchId !== 'string') return null
   return {
     v: STATE_VERSION,
     phase,
@@ -273,5 +288,6 @@ export function sanitizeState(raw: unknown): CadernetaState | null {
     view: s.view,
     turn: s.turn,
     doneSteps: s.doneSteps,
+    lastLynchId,
   }
 }

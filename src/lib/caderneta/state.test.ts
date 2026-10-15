@@ -10,6 +10,7 @@ import {
   pickDrunkRole,
   reducer,
   sanitizeState,
+  winnerOf,
   type CadernetaState,
 } from './state.ts'
 import { emptyCounts, rolesFromCounts } from '../scenario.ts'
@@ -142,6 +143,52 @@ test('aliveCounts separa lobos dos demais', () => {
   assert.deepEqual(aliveCounts(s), { alive: 6, wolves: 2, others: 4 })
   s = reducer(s, { type: 'setAlive', id: 'p0', alive: false })
   assert.deepEqual(aliveCounts(s), { alive: 5, wolves: 1, others: 4 })
+})
+
+test('linchar mata e registra o linchamento; a noite seguinte e reviver limpam', () => {
+  let s = played(['tanner', 'werewolf', 'villager', 'villager', 'villager', 'villager'])
+  s = reducer(s, { type: 'toDay' })
+  s = reducer(s, { type: 'lynch', id: 'p0' })
+  assert.equal(s.players[0].alive, false)
+  assert.equal(s.lastLynchId, 'p0')
+  assert.equal(winnerOf(s), 'tanner_win')
+  const revived = reducer(s, { type: 'setAlive', id: 'p0', alive: true })
+  assert.equal(revived.lastLynchId, null)
+  const night = reducer(s, { type: 'toNight' })
+  assert.equal(night.lastLynchId, null)
+  assert.notEqual(winnerOf(night), 'tanner_win')
+})
+
+test('matar o Curtidor sem linchar não dá vitória dele', () => {
+  let s = played(['tanner', 'werewolf', 'villager', 'villager', 'villager', 'villager'])
+  s = reducer(s, { type: 'setAlive', id: 'p0', alive: false })
+  assert.equal(winnerOf(s), null)
+})
+
+test('winnerOf: Vila vence quando o último lobo morre; só conta em play/ended', () => {
+  let s = played(SIX)
+  assert.equal(winnerOf(s), null)
+  s = reducer(s, { type: 'setAlive', id: 'p0', alive: false })
+  assert.equal(winnerOf(s), 'villagers_win')
+  assert.equal(winnerOf(reducer(s, { type: 'end' })), 'villagers_win')
+  assert.equal(winnerOf({ ...s, phase: 'setup' }), null)
+})
+
+test('winnerOf: lobos vencem por paridade', () => {
+  let s = played(SIX)
+  for (const id of ['p2', 'p3', 'p4']) s = reducer(s, { type: 'setAlive', id, alive: false })
+  // sobram: werewolf, seer, villager -> 1 lobo x 2 demais ainda segue
+  assert.equal(winnerOf(s), null)
+  s = reducer(s, { type: 'setAlive', id: 'p5', alive: false })
+  // sobram: werewolf, seer -> 1 x 1
+  assert.equal(winnerOf(s), 'wolves_win')
+})
+
+test('sanitizeState aceita estado salvo antes de existir lastLynchId', () => {
+  const s = played(SIX)
+  const legacy: Record<string, unknown> = JSON.parse(JSON.stringify(s))
+  delete legacy.lastLynchId
+  assert.equal(sanitizeState(legacy)?.lastLynchId, null)
 })
 
 test('sanitizeState: ida e volta por JSON e rejeição de lixo', () => {

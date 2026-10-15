@@ -15,7 +15,7 @@ Esse modo passa a ser o **principal** da home. O jogo online (sala + PIN, cada u
 - O nome "Impostor" **não aparece em nenhum lugar do app**. O modo se chama **Caderneta do Mestre**.
 - Nada de Supabase, sala, PIN, conta ou migração nesse modo.
 - O app **não resolve a noite**: não aplica proteção, poção, mortes em cadeia, caçador etc. O mestre registra o que aconteceu.
-- O app **não declara vencedor**. Mostra só uma linha informativa (lobos vivos x demais vivos).
+- ~~O app não declara vencedor~~ **Revisado depois do primeiro teste:** o app mostra um banner de vitória pela contagem dos vivos (espelho de `compute_winner`, em `src/lib/caderneta/winner.ts`); o jogo não acaba sozinho, o mestre decide encerrar. O cronômetro do dia é "Tempo da manhã" com 5 min por padrão.
 - Não registra votos do tribunal.
 - Sem `game_rules.md` a alterar: nenhuma regra do jogo muda. É uma ferramenta de apoio.
 

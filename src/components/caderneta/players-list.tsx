@@ -49,13 +49,24 @@ export function PlayersList({ state, dispatch }: PlayersListProps) {
                 )}
                 {p.note && <span className="block mt-1 truncate text-[11px] text-neutral-600">{p.note}</span>}
               </button>
-              <button
-                type="button"
-                onClick={() => dispatch({ type: 'setAlive', id: p.id, alive: !p.alive })}
-                className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-neutral-200 cursor-pointer transition-all"
-              >
-                {p.alive ? '💀 Matar' : '❤️ Reviver'}
-              </button>
+              <div className="shrink-0 flex flex-col gap-1">
+                {p.alive && state.view === 'day' && (
+                  <button
+                    type="button"
+                    onClick={() => dispatch({ type: 'lynch', id: p.id })}
+                    className="px-3 py-1.5 rounded-lg text-xs font-bold bg-red-950/30 border border-red-900/50 text-red-300 hover:bg-red-900/40 cursor-pointer transition-all"
+                  >
+                    ⚖️ Linchar
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => dispatch({ type: 'setAlive', id: p.id, alive: !p.alive })}
+                  className="px-3 py-1.5 rounded-lg text-xs font-bold bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-neutral-200 cursor-pointer transition-all"
+                >
+                  {p.alive ? '💀 Matar' : '❤️ Reviver'}
+                </button>
+              </div>
             </div>
 
             {open && (
