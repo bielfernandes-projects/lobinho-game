@@ -1,5 +1,7 @@
 # Caderneta do Mestre Implementation Plan
 
+> **Nota (histórico):** este é o plano da entrega inicial. Depois dos testes do usuário houve três revisões que **não** estão refletidas nos blocos de código abaixo: (1) vencedor pela contagem dos vivos (`src/lib/caderneta/winner.ts`, botão "Linchar", `WinnerBanner`) e cronômetro "Tempo da manhã" de 5 min; (2) a partida e o cenário da Caderneta passaram de `localStorage` para `sessionStorage`, com reset por "← Início" e por 30 min de inatividade (`src/hooks/use-idle-reset.ts`), e "Nova partida" mantendo jogadores e cenário; (3) o campo de nome mantém o foco (teclado aberto) ao adicionar. O estado final está descrito em `docs/architecture.md` e na spec.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Entregar o modo "Caderneta do Mestre" (um celular só, sem Supabase) como modo principal da home, mais a barra de pontuação fixa no construtor de cenário.

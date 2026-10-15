@@ -17,7 +17,7 @@ Esse modo passa a ser o **principal** da home. O jogo online (sala + PIN, cada u
 - O app **não resolve a noite**: não aplica proteção, poção, mortes em cadeia, caçador etc. O mestre registra o que aconteceu.
 - ~~O app não declara vencedor~~ **Revisado depois do primeiro teste:** o app mostra um banner de vitória pela contagem dos vivos (espelho de `compute_winner`, em `src/lib/caderneta/winner.ts`); o jogo não acaba sozinho, o mestre decide encerrar. O cronômetro do dia é "Tempo da manhã" com 5 min por padrão.
 - Não registra votos do tribunal.
-- Sem `game_rules.md` a alterar: nenhuma regra do jogo muda. É uma ferramenta de apoio.
+- Nenhuma regra do jogo muda; é uma ferramenta de apoio. (`game_rules.md` só ganhou, na seção 13.4, o aviso de manter `winner.ts` em sincronia com `compute_winner`.)
 
 ## Mudança incluída: barra de pontuação fixa no construtor de cenário
 
@@ -90,7 +90,7 @@ Duas visões, alternadas pelo botão de transição: **Noite** e **Dia**. Em cim
 - **Strikes** locais 0–3 por jogador vivo (+/−). No 3º strike abre confirmação "Eliminar *Nome*?"; confirmar marca como morto.
 - Botão **"Anoitecer"** → `turn + 1`, `doneSteps` vazio, visão Noite.
 
-**Encerrar partida:** botão no menu do painel (com confirmação) → tela final com o papel de todos e "Nova partida".
+**Encerrar partida:** botão no menu do painel (com confirmação) → tela final com o papel de todos, o banner do vencedor (se houver) e "Nova partida".
 
 Fora do painel nada é bloqueado: o mestre pode marcar vivo/morto, etiquetas e trocar papel a qualquer hora.
 
@@ -169,7 +169,7 @@ Os componentes são verificados manualmente (sticky do termômetro, segurar-para
 
 ## Documentação e deploy
 
-- Antes de commitar: entrada nova em `docs/architecture.md` (commit, motivo, arquivos). `game_rules.md` não muda.
+- Antes de commitar: entrada nova em `docs/architecture.md` (commit, motivo, arquivos). `game_rules.md` só ganha o aviso da seção 13.4 (espelho `winner.ts`).
 - Sem migração de banco (a regra de `supabase db push` não se aplica).
 - Commit + push; o deploy na Vercel é automático.
 - Pré-voo da Supabase CLI (regra do AGENTS.md) não é necessário para esta mudança, já que não toca o banco.
