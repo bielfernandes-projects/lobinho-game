@@ -421,3 +421,10 @@ export const CARD_CATALOG: CardDefinition[] = [
       'Você morre obrigatoriamente na 1ª noite. Depois, vê quem é quem na mesa e escreve uma letra por dia como pista para a Vila (sem nomes ou iniciais).',
   },
 ]
+
+// Reserve roles the Drunk may become: none with a crucial action on nights 1-2 (official recommendation).
+export const DRUNK_ALLOWED = [
+  'villager', 'werewolf', 'wolf_cub', 'alpha_wolf', 'hunter', 'prince', 'mayor', 'lycan', 'tanner',
+  'pacifist', 'idiot', 'squire', 'marksman', 'diseased', 'cursed', 'martyr', 'tough_guy', 'huntress',
+  'apprentice_seer',
+]
