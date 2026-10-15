@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { InstallButton } from '@/components/install-button'
 import { SupportFooter } from '@/components/support-footer'
@@ -184,6 +185,30 @@ export default function EntryScreen() {
         </div>
 
         <div className="w-full flex flex-col gap-4">
+          <Link
+            href="/caderneta"
+            className="
+              w-full py-4 rounded-2xl font-bold text-base tracking-wider text-center
+              bg-primary hover:bg-primary-hover active:bg-primary-active text-white
+              shadow-lg shadow-red-900/30
+              transition-all duration-200
+            "
+          >
+            Caderneta do Mestre
+          </Link>
+          <p className="text-neutral-500 text-xs text-center leading-relaxed">
+            Um celular só, o mestre conduz. Cada jogador vê a própria carta sem precisar de conta.
+          </p>
+
+          <div className="flex items-center gap-2 mt-4">
+            <span className="flex-1 h-px bg-neutral-800" />
+            <h2 className="text-neutral-500 text-[10px] uppercase tracking-widest">Jogar online</h2>
+            <span className="flex-1 h-px bg-neutral-800" />
+          </div>
+          <p className="text-neutral-600 text-[11px] text-center">
+            Cada um no seu celular, com sala e código.
+          </p>
+
           <input
             type="text"
             placeholder="Nome do Jogador"
