@@ -41,7 +41,7 @@ export function EndScreen({ state, dispatch }: EndScreenProps) {
 
       <button
         type="button"
-        onClick={() => dispatch({ type: 'reset' })}
+        onClick={() => dispatch({ type: 'cancel' })}
         className="w-full py-4 rounded-2xl font-bold text-lg tracking-wider bg-red-700 text-white hover:bg-red-600 active:bg-red-800 shadow-lg shadow-red-900/40 cursor-pointer transition-all"
       >
         Nova partida

@@ -3,6 +3,16 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — Caderneta: quando reseta (aba, "← Início", inatividade) + teclado aberto ao adicionar nome
+
+- **Só vive enquanto a aba está aberta**: a partida (`lobinho:caderneta:v1`) e o cenário da Caderneta (`lobinho:caderneta:scenario`) passaram de `localStorage` para **`sessionStorage`**. Recarregar a página mantém tudo; fechar a aba/app zera. O estado antigo que ficou em `localStorage` é apagado na hidratação. O modo **online** continua lembrando o último cenário (`useScenarioCounts('local')`, `lobinho_last_scenario`); `useScenarioCounts(storage)` agora recebe `'local' | 'session'` (a Caderneta usa `'session'`).
+- **Reset por "← Início"**: o link da montagem chama `clearCadernetaStorage()` + `dispatch reset` (apaga jogadores e cenário) antes de navegar.
+- **Reset por inatividade**: `src/hooks/use-idle-reset.ts` (`IDLE_RESET_MS` = 30 min sem toque/tecla/scroll). Só vale em `setup` e `ended` (nada em jogo a perder): limpa tudo e `router.push('/')`. Confere o relógio também ao voltar para a aba (`visibilitychange`), porque o celular suspende timers com a tela apagada. Partida em andamento (`deal`/`play`) **nunca** é apagada por inatividade.
+- **"Nova partida"** (tela final) passou a `cancel`: volta à montagem **mantendo** jogadores e cenário (útil para revanche); só os três casos acima zeram.
+- **Teclado**: ao adicionar um nome o foco volta ao campo (`ref.focus()` no submit) e o botão "Adicionar" não rouba o foco (`preventDefault` em `pointerdown`/`mousedown`), então o teclado do celular não fecha; campo com `enterKeyHint="done"`, `autoCapitalize="words"`.
+- **Verificado no navegador** (build de produção): foco continua no campo após clicar em "Adicionar"; recarregar mantém jogador e cenário; "← Início" limpa e vai para `/`; 10 min parado não faz nada, 31 min volta para `/` e limpa.
+- **Files**: `src/hooks/use-caderneta.ts`, `src/hooks/use-scenario-counts.ts`, `src/hooks/use-idle-reset.ts`, `src/app/caderneta/page.tsx`, `src/components/caderneta/{setup-screen,end-screen}.tsx`.
+
 ### `<current>` — Caderneta: vencedor pela contagem dos vivos + "Tempo da manhã" de 5 min
 
 - **Vitória na Caderneta** (reverte a decisão anterior de "não declarar vencedor"): `src/lib/caderneta/winner.ts` é um espelho em TS de `compute_winner` (mesma prioridade: último vivo Lobo Solitário/Chupacu > almas gêmeas > culto > Curtidor > time dos lobos × demais). `WOLF_TEAM_ROLES` espelha `wolf_team_roles()` (o Lobo Solitário **não** é do time dos lobos; Feiticeira e Lacaio são). Como o gatilho do banco, só dispara depois de haver uma morte; e, simplificação da Caderneta, nada se ninguém sobrou vivo. `winnerOf(state)` só vale em `play`/`ended`. Quando há vencedor o painel mostra o **`WinnerBanner`** (mesmos textos da tela online) com "Encerrar e revelar papéis"; o jogo **não** acaba sozinho (o mestre decide, como no online); a tela final também mostra o banner. O cabeçalho "lobos × demais" passou a usar a mesma contagem (`wolfCounts`).

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, type Dispatch, type FormEvent } from 'react'
+import { useRef, useState, type Dispatch, type FormEvent } from 'react'
 import { CARD_CATALOG } from '@/lib/cards'
 import { ScenarioCardPicker } from '@/components/scenario-card-picker'
 import { useScenarioCounts } from '@/hooks/use-scenario-counts'
@@ -20,10 +20,11 @@ interface SetupScreenProps {
 }
 
 export function SetupScreen({ state, dispatch }: SetupScreenProps) {
-  const [counts, setCounts] = useScenarioCounts()
+  const [counts, setCounts] = useScenarioCounts('session')
   const [drunkHidden, setDrunkHidden] = useState('random')
   const [nameInput, setNameInput] = useState('')
   const [error, setError] = useState('')
+  const nameRef = useRef<HTMLInputElement>(null)
 
   const playerCount = state.names.length
   const valid = isValidScenario(counts, playerCount)
@@ -37,6 +38,8 @@ export function SetupScreen({ state, dispatch }: SetupScreenProps) {
 
   function handleAdd(e: FormEvent) {
     e.preventDefault()
+    // Keep the keyboard up so the host can type the next name straight away.
+    nameRef.current?.focus()
     const result = addName(state.names, nameInput)
     if (result.error) {
       setError(result.error)
@@ -73,9 +76,13 @@ export function SetupScreen({ state, dispatch }: SetupScreenProps) {
         <h2 className="text-neutral-400 text-xs uppercase tracking-widest">Jogadores ({playerCount})</h2>
         <form onSubmit={handleAdd} className="flex gap-2">
           <input
+            ref={nameRef}
             type="text"
             value={nameInput}
             maxLength={NAME_MAX}
+            enterKeyHint="done"
+            autoComplete="off"
+            autoCapitalize="words"
             onChange={(e) => {
               setNameInput(e.target.value)
               setError('')
@@ -85,6 +92,9 @@ export function SetupScreen({ state, dispatch }: SetupScreenProps) {
           />
           <button
             type="submit"
+            // Tapping the button must not steal focus from the input (that closes the keyboard).
+            onPointerDown={(e) => e.preventDefault()}
+            onMouseDown={(e) => e.preventDefault()}
             className="px-4 rounded-xl font-bold text-sm bg-primary hover:bg-primary-hover active:bg-primary-active text-white cursor-pointer transition-all"
           >
             Adicionar

@@ -35,7 +35,7 @@ O "termômetro" (Equilibrado / Vantagem da Aldeia / Vantagem dos Lobos + barra +
 **`src/components/scenario-card-picker.tsx`** (novo, sem Supabase):
 - Props: `playerCount`, `counts`, `onChange(counts)`, `drunkHidden`, `onDrunkHiddenChange`.
 - Contém: termômetro **fixo**, botão "Resetar Cenário", lista agrupada por time (Vila, Lobos, Independentes) com +/− e ⓘ (`RoleInfoModal`), linha "Cartas: x/N", seletor do papel oculto do Bêbado (só aparece com `drunk > 0`).
-- Persistência do `counts` em `localStorage` (`lobinho_last_scenario`) fica no pai (hook `useScenarioCounts` em `src/hooks/`), compartilhando a chave existente, então o último cenário é lembrado nos dois modos.
+- Persistência do `counts` fica no pai (hook `useScenarioCounts(storage)` em `src/hooks/`). **Revisado:** o modo online segue lembrando o último cenário (`localStorage`, `lobinho_last_scenario`); a Caderneta usa `sessionStorage` (`lobinho:caderneta:scenario`) e esquece ao fechar.
 
 **`ScenarioBuilder`** (existente) passa a renderizar: blocos online (modo de revelação, Variante Fantasma) + `ScenarioCardPicker` + botão "Iniciar Jogo" (com `handleStart` igual ao de hoje). Comportamento online inalterado, só a barra fica fixa.
 
@@ -129,7 +129,7 @@ Reducer puro com ações: `setNames`, `deal` (recebe o sorteio já pronto, para 
 
 Funções puras exportadas: `drawRoles(counts, names, rng)` (Fisher-Yates com `rng` injetável), `rolesInGame(state)`, `aliveCounts(state)`.
 
-Persistência: hook `useCaderneta()` (`src/hooks/use-caderneta.ts`) com `useReducer`, hidratação de `localStorage` (`lobinho:caderneta:v1`) em `useEffect` (evita mismatch de SSR), gravação a cada mudança, tudo em `try/catch`. Estado inválido ou de outra versão é descartado. "Nova partida" apaga a chave.
+Persistência: hook `useCaderneta()` (`src/hooks/use-caderneta.ts`) com `useReducer`, hidratação de `sessionStorage` (`lobinho:caderneta:v1`) em `useEffect` (evita mismatch de SSR), gravação a cada mudança, tudo em `try/catch`. Estado inválido ou de outra versão é descartado. **Revisado:** a partida só vive enquanto a aba/app está aberto (recarregar mantém; fechar zera). "← Início" e 30 min sem mexer (só em `setup` e `ended`) apagam jogadores e cenário e voltam para a home. "Nova partida" na tela final volta à montagem **mantendo** jogadores e cenário.
 
 ## Componentes novos
 
@@ -152,7 +152,7 @@ Persistência: hook `useCaderneta()` (`src/hooks/use-caderneta.ts`) com `useRedu
 
 ## Erros e casos de borda
 
-- `localStorage` indisponível ou corrompido: o modo funciona em memória e começa em `setup`.
+- `sessionStorage` indisponível ou corrompido: o modo funciona em memória e começa em `setup`.
 - Recarregar durante a entrega: volta no mesmo `dealIndex`, na tela neutra (nunca na carta aberta).
 - Nome duplicado ou vazio: bloqueia o botão de sortear, com mensagem curta.
 - Cenário sem Lobo ou sem Vidente: aviso não bloqueante (a regra 11.3 recomenda ao menos um de cada), o termômetro continua.
