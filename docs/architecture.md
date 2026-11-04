@@ -3,6 +3,13 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — Conferência dos 9 papéis na linha do cenário; sem aviso de "sem lobos/Vidente"; campo de nome sem estouro
+
+- **Conferido por script** (build de produção, larguras 300, 320, 360, 390 e 412 px): Bodyguard, Aura Seer, Apprentice Seer, Mystic Seer, Wolf Cub, Dire Wolf, Fruit Brute, Cult Leader e Lone Wolf têm o `[+x]` visível, sem tocar no ⓘ nem estourar a linha.
+- **Achado no caminho**: em 320 px (e menos) a página inteira ganhava rolagem horizontal porque o campo de nome da montagem não tinha `min-w-0` e empurrava o botão "Adicionar". Corrigido; sem rolagem horizontal de 300 a 412 px.
+- **Removido** o aviso "Sem lobos / Sem Vidente no cenário. Dá para jogar assim mesmo." da montagem (pedido do usuário) e o cálculo que o alimentava. A checagem real de cenário válido (cartas = jogadores, 6 a 77) continua travando o botão.
+- **Files**: `src/components/caderneta/setup-screen.tsx`.
+
 ### `<current>` — Ajustes de layout: cenários prontos fechados e valor da carta sempre visível
 
 - **Cenários prontos e salvos** agora começam **fechados** (`<details>` sem `open` em `scenario-presets.tsx`).

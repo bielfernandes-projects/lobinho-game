@@ -1,7 +1,6 @@
 'use client'
 
 import { useRef, useState, type Dispatch, type FormEvent } from 'react'
-import { CARD_CATALOG } from '@/lib/cards'
 import { ScenarioCardPicker } from '@/components/scenario-card-picker'
 import { ScenarioPresets } from '@/components/caderneta/scenario-presets'
 import { ScenarioScreen } from '@/components/caderneta/scenario-screen'
@@ -31,13 +30,6 @@ export function SetupScreen({ state, dispatch }: SetupScreenProps) {
 
   const playerCount = state.names.length
   const valid = isValidScenario(counts, playerCount)
-  const wolfCards = CARD_CATALOG.filter((c) => c.team === 'wolf').reduce(
-    (sum, c) => sum + (counts[c.id] ?? 0),
-    0,
-  )
-  const warnings: string[] = []
-  if (wolfCards === 0) warnings.push('Sem lobos no cenário.')
-  if ((counts.seer ?? 0) === 0) warnings.push('Sem Vidente no cenário.')
 
   function handleAdd(e: FormEvent) {
     e.preventDefault()
@@ -95,7 +87,7 @@ export function SetupScreen({ state, dispatch }: SetupScreenProps) {
               setError('')
             }}
             placeholder="Nome do jogador"
-            className="flex-1 px-4 py-3 rounded-xl text-sm bg-neutral-900 border border-neutral-800 text-neutral-200 placeholder-neutral-600 focus:outline-none focus:ring-2 focus:ring-red-700 focus:border-red-800 transition-all"
+            className="flex-1 min-w-0 px-4 py-3 rounded-xl text-sm bg-neutral-900 border border-neutral-800 text-neutral-200 placeholder-neutral-600 focus:outline-none focus:ring-2 focus:ring-red-700 focus:border-red-800 transition-all"
           />
           <button
             type="submit"
@@ -142,10 +134,6 @@ export function SetupScreen({ state, dispatch }: SetupScreenProps) {
           cadernetaMode
         />
       </section>
-
-      {warnings.length > 0 && (
-        <p className="text-amber-500 text-xs text-center">{warnings.join(' ')} Dá para jogar assim mesmo.</p>
-      )}
 
       <button
         type="button"
