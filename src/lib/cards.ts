@@ -523,8 +523,7 @@ export const CARD_CATALOG: CardDefinition[] = [
   {
     id: 'mentalist',
     name: 'Mentalist',
-    // ponytail: +5 read from a blurry photo of the card, confirm against the real one.
-    points: 5,
+    points: 6,
     team: 'village',
     cadernetaOnly: true,
     description:

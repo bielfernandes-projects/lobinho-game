@@ -6,7 +6,7 @@ A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, S
 ### `<current>` — Hunting Party: Vidente Mística, Revelador, Mentalista (Caderneta) + Mad Bomber confirmado
 
 - **Fonte**: foto das cartas da expansão Hunting Party enviada pelo usuário. **Já existiam** (não duplicados): Huntress (+3, texto igual), Mad Bomber (-2, agora **confirmado** na carta; removida a nota de "estimado"; `game_rules.md` atualizado) e Alpha Wolf (-9; a carta nova só acrescenta a condição "depois de um lobo ser eliminado de dia", o app segue com o texto original).
-- **Novos (village, `cadernetaOnly`, sem migração)**: `mystic_seer` +9 (vê o papel exato), `revealer` +4 (aponta alguém: se for lobo ele morre, senão o Revelador morre), `mentalist` +5 (aponta dois: mesmo time ou não). **O +5 do Mentalist foi lido de uma foto borrada**: conferir na carta (comentário `ponytail:` em `cards.ts` e "to confirm" no `game_rules.md`).
+- **Novos (village, `cadernetaOnly`, sem migração)**: `mystic_seer` +9 (vê o papel exato), `revealer` +4 (aponta alguém: se for lobo ele morre, senão o Revelador morre), `mentalist` **+6** (aponta dois: mesmo time ou não). Pontos conferidos pelo usuário: Mentalista +6, Alpha Wolf -9, Mad Bomber -2, Huntress +3, Revelador +4 (o +5 inicial do Mentalista veio de uma foto borrada e foi corrigido).
 - **Noite**: três passos novos em `NIGHT_STEPS` (toda noite, antes da Feiticeira) com lembrete de uma linha em `night-steps-list.tsx` (`STEP_HINTS`), já que a Caderneta não resolve a noite. Escondidos do online pelo mesmo filtro `cadernetaOnly`.
 - **Files**: `src/lib/{cards,night-steps}.ts`, `src/components/caderneta/night-steps-list.tsx`, `docs/game_rules.md`.
 

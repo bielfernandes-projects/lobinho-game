@@ -386,7 +386,7 @@ For each role:
 | `mad_bomber` | Mad Bomber | Mad Bomber | Village | -2 | Official Expansion (Hunting Party) |
 | `mystic_seer` | Mystic Seer | Vidente Mística | Village | +9 | Official Expansion (Hunting Party) |
 | `revealer` | Revealer | Revelador | Village | +4 | Official Expansion (Hunting Party) |
-| `mentalist` | Mentalist | Mentalista | Village | +5 (to confirm) | Official Expansion (Hunting Party) |
+| `mentalist` | Mentalist | Mentalista | Village | +6 | Official Expansion (Hunting Party) |
 | `old_witch` | Old Witch | Bruxa Velha | Village | +3 | Official |
 | `drunk` | Drunk | Bêbado | Village → other | +4 | Official |
 | `diseased` | Diseased | Doente | Village | +3 | Official Expansion |
@@ -418,7 +418,7 @@ For each role:
 
 > **Status note (as of the most recent code state):**
 > **Implemented** (37 player roles + moderator): `villager`, `seer`, `witch`, `aura_seer`, `bodyguard`, `priest`, `hunter`, `prince`, `mayor`, `mason`, `lycan`, `pacifist`, `idiot`, `werewolf`, `wolf_cub`, `alpha_wolf`, `lone_wolf`, `sorceress`, `cupid`, `cult_leader`, `tanner`, `diseased`, `cursed`, `doppelganger`, `marksman`, `squire`, `chupacabra`, `minion`, `huntress`, `tough_guy`, `martyr`, `apprentice_seer`, `old_witch`, `drunk`, `dire_wolf`, `virginia_wolf`, `ghost` (card + variant).
-> **Caderneta-only, village (Hunting Party)**: `mad_bomber` (-2, confirmed on the card), `mystic_seer` (+9), `revealer` (+4), `mentalist` (+5, read from a blurry photo - confirm). Mad Bomber: when he dies, the nearest living player on each side of his seat also dies; the Caderneta takes the seating order from the order the names were typed. The Hunting Party Alpha Wolf card adds a condition to the existing `alpha_wolf` (only usable after a Werewolf was eliminated during the day); the app still uses the original text.
+> **Caderneta-only, village (Hunting Party)**: `mad_bomber` (-2, confirmed on the card), `mystic_seer` (+9), `revealer` (+4), `mentalist` (+6). Mad Bomber: when he dies, the nearest living player on each side of his seat also dies; the Caderneta takes the seating order from the order the names were typed. The Hunting Party Alpha Wolf card adds a condition to the existing `alpha_wolf` (only usable after a Werewolf was eliminated during the day); the app still uses the original text.
 > **Drunk**: the Moderator **chooses** the hidden role (any card except the Drunk; Villager and Werewolf listed first, Villager is the default) — no random draw. In Caderneta mode the choice can also be changed at the night-3 reveal; online it is fixed at scenario time.
 > **Caderneta-only** (implemented in the single-phone Caderneta mode, NOT yet in the online game/database): `bad_wolf`, `fruit_brute`, `wolverine`, `hoodlum`, `vampire`. Caderneta simplifications: Hoodlum reaching its goal only shows a notice to the Moderator (never ends the game); Vampires win only once no wolves live and they are at least half of the living; the Hunter does not become a Vampire Hunter.
 > **NOT yet implemented** online: the five roles above.
@@ -516,7 +516,7 @@ For each role:
 | Field | Value |
 |-------|-------|
 | Team | Village |
-| Pts | +5 (to confirm) |
+| Pts | +6 |
 | Wake | Each night (optional) |
 | **Description (EN)** | Each night you may point to two players, and are told if those players are on the same team or not. |
 | **Mechanics** | Caderneta-only: the Moderator answers "same team" / "different teams" by hand. |
