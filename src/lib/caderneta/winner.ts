@@ -7,7 +7,6 @@ export type Winner =
   | 'chupacabra_win'
   | 'soulmates_win'
   | 'cult_win'
-  | 'hoodlum_win'
   | 'vampires_win'
   | 'tanner_win'
   | 'villagers_win'
@@ -32,12 +31,21 @@ export const WINNER_VIEW: Record<Winner, { emoji: string; title: string }> = {
   soulmates_win: { emoji: '💕', title: 'O AMOR VENCEU!' },
   cult_win: { emoji: '🔮', title: 'O CULTO DOMINOU A VILA!' },
   tanner_win: { emoji: '👔', title: 'O CURTIDOR VENCEU' },
-  hoodlum_win: { emoji: '🎯', title: 'O BANDIDO VENCEU!' },
   vampires_win: { emoji: '🧛', title: 'OS VAMPIROS DOMINARAM A NOITE!' },
   wolves_win: { emoji: '🐺', title: 'VITÓRIA DO TIME DOS LOBOS' },
   lone_wolf_win: { emoji: '🐺', title: 'O LOBO SOLITÁRIO VENCEU!' },
   chupacabra_win: { emoji: '🦇', title: 'O CHUPACU VENCEU!' },
   villagers_win: { emoji: '🏆', title: 'VITÓRIA DO TIME DA VILA' },
+}
+
+/**
+ * The Hoodlum's goal (alive, exactly 2 `hoodlum`-tagged players, both dead). It is NOT a game-ending
+ * winner: the master decides whether to announce it, so the UI just shows a notice.
+ */
+export function hoodlumDone(players: readonly WinnerPlayer[]): WinnerPlayer | null {
+  const targets = players.filter((p) => p.tags.includes('hoodlum'))
+  if (targets.length !== 2 || !targets.every((p) => !p.alive)) return null
+  return players.find((p) => p.alive && p.role === 'hoodlum') ?? null
 }
 
 export function wolfCounts(players: readonly WinnerPlayer[]): { alive: number; wolves: number; others: number } {
@@ -53,10 +61,8 @@ export function wolfCounts(players: readonly WinnerPlayer[]): { alive: number; w
 
 /**
  * Who has won, or null while the game goes on. Same order as the SQL:
- * last one standing > soulmates > cult > hoodlum > tanner > vampires > wolf team vs the rest.
- * Hoodlum / Vampire are Caderneta-only (not in the SQL yet). Hoodlum = alive, exactly 2 players carry the
- * `hoodlum` tag and both are dead (simplification: it ends the game instantly, the alternate rule).
- * Vampires: only while no wolves live, they win once they are at least half of the living; while
+ * last one standing > soulmates > cult > tanner > vampires > wolf team vs the rest.
+ * Vampires (Caderneta-only, not in the SQL yet): only while no wolves live, they win once they are at least half of the living; while
  * vampires live the wolves cannot win by parity (they must wipe out the vampires too).
  *
  * Like the database trigger, it only fires once someone has died, and (a Caderneta
@@ -84,15 +90,6 @@ export function computeWinner(players: readonly WinnerPlayer[], lastLynchId: str
     players.every((p) => !p.alive || p.role === 'cult_leader' || p.tags.includes('cult'))
   ) {
     return 'cult_win'
-  }
-
-  const targets = players.filter((p) => p.tags.includes('hoodlum'))
-  if (
-    players.some((p) => p.alive && p.role === 'hoodlum') &&
-    targets.length === 2 &&
-    targets.every((p) => !p.alive)
-  ) {
-    return 'hoodlum_win'
   }
 
   if (lastLynchId && players.some((p) => p.id === lastLynchId && p.role === 'tanner' && !p.alive)) {

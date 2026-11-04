@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { computeWinner, wolfCounts, type WinnerPlayer } from './winner.ts'
+import { computeWinner, hoodlumDone, wolfCounts, type WinnerPlayer } from './winner.ts'
 
 let seq = 0
 function p(role: string, alive = true, tags: string[] = []): WinnerPlayer {
@@ -86,11 +86,12 @@ test('todos mortos: sem vencedor', () => {
   assert.equal(computeWinner([p('villager', false), p('werewolf', false)], null), null)
 })
 
-test('Bandido vence quando os 2 alvos morreram e ele está vivo; morto ou com alvo vivo, não', () => {
-  const win = [p('hoodlum'), p('villager', false, ['hoodlum']), p('seer', false, ['hoodlum']), p('villager'), p('villager'), p('werewolf')]
-  assert.equal(computeWinner(win, null), 'hoodlum_win')
-  assert.notEqual(computeWinner([p('hoodlum', false), p('villager', false, ['hoodlum']), p('seer', false, ['hoodlum']), p('villager'), p('werewolf')], null), 'hoodlum_win')
-  assert.notEqual(computeWinner([p('hoodlum'), p('villager', false, ['hoodlum']), p('seer', true, ['hoodlum']), p('villager'), p('villager'), p('werewolf')], null), 'hoodlum_win')
+test('Bandido cumpriu o objetivo (aviso, não encerra): 2 alvos mortos e ele vivo; morto ou com alvo vivo, não', () => {
+  const ok = [p('hoodlum'), p('villager', false, ['hoodlum']), p('seer', false, ['hoodlum']), p('villager'), p('villager'), p('werewolf')]
+  assert.equal(hoodlumDone(ok)?.role, 'hoodlum')
+  assert.equal(computeWinner(ok, null), null)
+  assert.equal(hoodlumDone([p('hoodlum', false), p('villager', false, ['hoodlum']), p('seer', false, ['hoodlum'])]), null)
+  assert.equal(hoodlumDone([p('hoodlum'), p('villager', false, ['hoodlum']), p('seer', true, ['hoodlum'])]), null)
 })
 
 test('Vampiros: lobos vivos impedem; sem lobos vencem ao ser metade dos vivos; vivos impedem paridade dos lobos', () => {

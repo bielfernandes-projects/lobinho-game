@@ -415,7 +415,7 @@ For each role:
 > **Status note (as of the most recent code state):**
 > **Implemented** (37 player roles + moderator): `villager`, `seer`, `witch`, `aura_seer`, `bodyguard`, `priest`, `hunter`, `prince`, `mayor`, `mason`, `lycan`, `pacifist`, `idiot`, `werewolf`, `wolf_cub`, `alpha_wolf`, `lone_wolf`, `sorceress`, `cupid`, `cult_leader`, `tanner`, `diseased`, `cursed`, `doppelganger`, `marksman`, `squire`, `chupacabra`, `minion`, `huntress`, `tough_guy`, `martyr`, `apprentice_seer`, `old_witch`, `drunk`, `dire_wolf`, `virginia_wolf`, `ghost` (card + variant).
 > **Drunk**: the Moderator **chooses** the hidden role (any card except the Drunk; Villager and Werewolf listed first, Villager is the default) — no random draw. In Caderneta mode the choice can also be changed at the night-3 reveal; online it is fixed at scenario time.
-> **Caderneta-only** (implemented in the single-phone Caderneta mode, NOT yet in the online game/database): `bad_wolf`, `fruit_brute`, `wolverine`, `hoodlum`, `vampire`. Caderneta simplifications: Hoodlum wins instantly when both targets are dead (alternate rule); Vampires win only once no wolves live and they are at least half of the living; the Hunter does not become a Vampire Hunter.
+> **Caderneta-only** (implemented in the single-phone Caderneta mode, NOT yet in the online game/database): `bad_wolf`, `fruit_brute`, `wolverine`, `hoodlum`, `vampire`. Caderneta simplifications: Hoodlum reaching its goal only shows a notice to the Moderator (never ends the game); Vampires win only once no wolves live and they are at least half of the living; the Hunter does not become a Vampire Hunter.
 > **NOT yet implemented** online: the five roles above.
 
 ### 7.3 Village Roles (Aldeia)

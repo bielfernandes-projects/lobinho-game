@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, type Dispatch } from 'react'
+import { hoodlumDone } from '@/lib/caderneta/winner'
 import { aliveCounts, winnerOf, type Action, type CadernetaState } from '@/lib/caderneta/state'
 import { DayTools } from './day-tools'
 import { NightStepsList } from './night-steps-list'
@@ -15,6 +16,8 @@ interface PlayPanelProps {
 export function PlayPanel({ state, dispatch }: PlayPanelProps) {
   const { alive, wolves, others } = aliveCounts(state)
   const winner = winnerOf(state)
+  const hoodlumId = hoodlumDone(state.players)?.id
+  const hoodlum = state.players.find((p) => p.id === hoodlumId)
   const marked = state.players.filter((p) => p.alive && p.tags.includes('marked'))
   const [confirm, setConfirm] = useState<'end' | 'cancel' | null>(null)
 
@@ -30,6 +33,13 @@ export function PlayPanel({ state, dispatch }: PlayPanelProps) {
       </header>
 
       {winner && <WinnerBanner winner={winner} onEnd={() => dispatch({ type: 'end' })} />}
+
+      {hoodlum && (
+        <p className="rounded-xl border border-neutral-600 bg-neutral-900 px-4 py-3 text-xs text-neutral-300">
+          🎯 <b>{hoodlum.name}</b> (Bandido) cumpriu o objetivo: os 2 alvos morreram e ele está vivo. Você decide se
+          fala agora ou não; o jogo continua.
+        </p>
+      )}
 
       {state.view === 'day' && marked.length > 0 && (
         <p className="rounded-xl border border-fuchsia-800/50 bg-fuchsia-950/20 px-4 py-3 text-xs text-fuchsia-300">
