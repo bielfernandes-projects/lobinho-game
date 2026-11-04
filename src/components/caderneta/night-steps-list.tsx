@@ -34,6 +34,13 @@ const CONNECTIONS: Record<string, { tag: Tag; max: number | null; hint: string; 
   virginia_wolf: { tag: 'companion', max: 1, hint: 'Anote o par que a Virginia Wolf escolheu:' },
 }
 
+// One-line reminders of what the master must answer or resolve when the role wakes.
+const STEP_HINTS: Record<string, string> = {
+  mystic_seer: 'Mostre o papel exato do alvo (a Vidente comum só diz vila ou lobo).',
+  revealer: 'Se apontar um lobo, ele é eliminado; se errar, o Revelador é eliminado. Use "Matar" na lista.',
+  mentalist: 'Diga só se os dois jogadores apontados são do mesmo time ou não.',
+}
+
 export function NightStepsList({ state, dispatch }: NightStepsListProps) {
   const [confirming, setConfirming] = useState(false)
   const [drunkChoice, setDrunkChoice] = useState<string | null>(null)
@@ -98,6 +105,7 @@ export function NightStepsList({ state, dispatch }: NightStepsListProps) {
                 <p className="text-[11px] text-neutral-500">
                   {holders.map((p) => (p.alive ? p.name : `${p.name} †`)).join(', ')}
                 </p>
+                {STEP_HINTS[step.id] && <p className="text-[11px] text-amber-400">💡 {STEP_HINTS[step.id]}</p>}
                 {step.id === 'wolves' &&
                   wolvesStepNotes(state.players, state.turn).map((note) => (
                     <p key={note} className="text-[11px] text-amber-400">{note}</p>

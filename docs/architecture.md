@@ -3,6 +3,13 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — Hunting Party: Vidente Mística, Revelador, Mentalista (Caderneta) + Mad Bomber confirmado
+
+- **Fonte**: foto das cartas da expansão Hunting Party enviada pelo usuário. **Já existiam** (não duplicados): Huntress (+3, texto igual), Mad Bomber (-2, agora **confirmado** na carta; removida a nota de "estimado"; `game_rules.md` atualizado) e Alpha Wolf (-9; a carta nova só acrescenta a condição "depois de um lobo ser eliminado de dia", o app segue com o texto original).
+- **Novos (village, `cadernetaOnly`, sem migração)**: `mystic_seer` +9 (vê o papel exato), `revealer` +4 (aponta alguém: se for lobo ele morre, senão o Revelador morre), `mentalist` +5 (aponta dois: mesmo time ou não). **O +5 do Mentalist foi lido de uma foto borrada**: conferir na carta (comentário `ponytail:` em `cards.ts` e "to confirm" no `game_rules.md`).
+- **Noite**: três passos novos em `NIGHT_STEPS` (toda noite, antes da Feiticeira) com lembrete de uma linha em `night-steps-list.tsx` (`STEP_HINTS`), já que a Caderneta não resolve a noite. Escondidos do online pelo mesmo filtro `cadernetaOnly`.
+- **Files**: `src/lib/{cards,night-steps}.ts`, `src/components/caderneta/night-steps-list.tsx`, `docs/game_rules.md`.
+
 ### `<current>` — Cenários prontos e salvos + Jogo Rápido + Mínimo + Mad Bomber (Caderneta)
 
 - **Cenários prontos** (`src/lib/caderneta/presets.ts`, `PRESETS`): sugestões do Lobinho (não há lista oficial publicada), todas **equilibradas (-3..+3) por teste**: Mínimo (6: 2 lobos, Vidente, Bruxa, 2 Aldeões), Mínimo com 1 lobo (6), Clássico (8), Com amor (8), **Jogo Rápido** (8: Vidente, Caçador, Caçadora, Atirador, Mad Bomber, Cupido, 2 Lobisomens, sem aldeões comuns), Guarda-costas (10), Caçada (10), Vila animada (12), Caótico (12). A lista (`scenario-presets.tsx`, acima das cartas) mostra para cada um as cartas, o total e o equilíbrio. Aplicar **só preenche as cartas, sem exigir o nº de jogadores**: se não bater, o contador `x/y` da barra fixa mostra e o botão de sortear fica travado até casar.

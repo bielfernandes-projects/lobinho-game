@@ -54,6 +54,9 @@ export const ROLE_STYLE: Record<string, string> = {
   hoodlum: 'bg-gray-200 text-gray-700 border-gray-400',
   vampire: 'bg-fuchsia-100 text-fuchsia-700 border-fuchsia-300',
   mad_bomber: 'bg-orange-100 text-orange-700 border-orange-300',
+  mystic_seer: 'bg-purple-100 text-purple-700 border-purple-300',
+  revealer: 'bg-amber-100 text-amber-700 border-amber-300',
+  mentalist: 'bg-indigo-100 text-indigo-700 border-indigo-300',
 }
 
 export const ROLE_LABEL: Record<string, string> = {
@@ -101,6 +104,9 @@ export const ROLE_LABEL: Record<string, string> = {
   hoodlum: '🎯 Bandido',
   vampire: '🧛 Vampiro',
   mad_bomber: '💣 Mad Bomber',
+  mystic_seer: '🔮 Vidente Mística',
+  revealer: '⚡ Revelador',
+  mentalist: '🧠 Mentalista',
 }
 
 export const ROLE_TRANSLATION: Record<string, string> = {
@@ -148,6 +154,9 @@ export const ROLE_TRANSLATION: Record<string, string> = {
   hoodlum: 'Bandido',
   vampire: 'Vampiro',
   mad_bomber: 'Mad Bomber',
+  mystic_seer: 'Vidente Mística',
+  revealer: 'Revelador',
+  mentalist: 'Mentalista',
 }
 
 export const CARD_CATALOG: CardDefinition[] = [
@@ -488,12 +497,38 @@ export const CARD_CATALOG: CardDefinition[] = [
   {
     id: 'mad_bomber',
     name: 'Mad Bomber',
-    // ponytail: estimated value, not checked against the official card; revisit if the table feels off.
-    points: -2,
+    points: -2, // confirmed on the Hunting Party card
     team: 'village',
     cadernetaOnly: true,
     description:
       'Quando você morrer, os dois jogadores sentados ao seu lado (esquerda e direita) morrem junto com você.',
+  },
+  {
+    id: 'mystic_seer',
+    name: 'Mystic Seer',
+    points: 9,
+    team: 'village',
+    cadernetaOnly: true,
+    description: 'Toda noite, aponte um jogador e descubra o papel exato dele.',
+  },
+  {
+    id: 'revealer',
+    name: 'Revealer',
+    points: 4,
+    team: 'village',
+    cadernetaOnly: true,
+    description:
+      'Toda noite, você pode apontar um jogador: se for lobisomem, ele é eliminado; se não for, você é eliminado.',
+  },
+  {
+    id: 'mentalist',
+    name: 'Mentalist',
+    // ponytail: +5 read from a blurry photo of the card, confirm against the real one.
+    points: 5,
+    team: 'village',
+    cadernetaOnly: true,
+    description:
+      'Toda noite, você pode apontar dois jogadores e saber se eles estão no mesmo time ou não.',
   },
 ]
 
