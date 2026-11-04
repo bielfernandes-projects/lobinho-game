@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
-import { CARD_CATALOG, ROLE_LABEL, ROLE_STYLE } from '@/lib/cards'
+import { CARD_CATALOG, ROLE_STYLE } from '@/lib/cards'
+import { RoleName } from '@/components/role-name'
 import type { CadernetaPlayer } from '@/lib/caderneta/state'
 
 interface DealScreenProps {
@@ -77,7 +78,7 @@ export function DealScreen({ player, isLast, nextName, onNext }: DealScreenProps
             <span
               className={`px-3 py-1.5 rounded-lg border text-lg font-bold ${ROLE_STYLE[player.role] ?? 'bg-neutral-200 text-neutral-800 border-neutral-400'}`}
             >
-              {ROLE_LABEL[player.role] ?? player.role}
+              <RoleName id={player.role} emoji />
             </span>
             <p className="text-neutral-300 text-sm leading-relaxed">{card?.description}</p>
           </div>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, type Dispatch } from 'react'
-import { DRUNK_ROLE_OPTIONS, ROLE_TRANSLATION } from '@/lib/cards'
+import { DRUNK_ROLE_OPTIONS, roleName } from '@/lib/cards'
 import { wolvesStepNotes } from '@/lib/caderneta/night-notes'
 import { nextStepId, nightSteps, type Action, type CadernetaState, type Tag } from '@/lib/caderneta/state'
 
@@ -154,7 +154,7 @@ export function NightStepsList({ state, dispatch }: NightStepsListProps) {
                         className="block w-full bg-neutral-900 border border-neutral-800 rounded-lg px-2 py-1.5 text-xs text-neutral-300"
                       >
                         {DRUNK_ROLE_OPTIONS.map((c) => (
-                          <option key={c.id} value={c.id}>{ROLE_TRANSLATION[c.id] ?? c.name}</option>
+                          <option key={c.id} value={c.id}>{roleName(c.id)}</option>
                         ))}
                       </select>
                     </label>

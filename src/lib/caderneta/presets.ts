@@ -1,6 +1,6 @@
 // Ready-made scenarios and the ones the master saves (browser only).
 // Pure: run directly by `node --test`. Relative `.ts` imports on purpose.
-import { CARD_CATALOG, ROLE_TRANSLATION } from '../cards.ts'
+import { CARD_CATALOG, roleName } from '../cards.ts'
 import { balanceOf, countCards, totalPoints, type Balance, type ScenarioCounts } from '../scenario.ts'
 
 export interface ScenarioPreset {
@@ -23,14 +23,15 @@ export const PRESETS: ScenarioPreset[] = [
   { id: 'caotico', name: 'Caótico', counts: { werewolf: 2, seer: 1, witch: 1, tanner: 1, cupid: 1, priest: 1, hunter: 1, lycan: 1, villager: 3 } },
 ]
 
-/** "2× Lobisomem, Vidente, 4× Aldeão" in catalog order. */
+/** The roles of a scenario in catalog order, with how many of each. */
+export function countEntries(counts: ScenarioCounts): { id: string; n: number }[] {
+  return CARD_CATALOG.filter((c) => (counts[c.id] ?? 0) > 0).map((c) => ({ id: c.id, n: counts[c.id] }))
+}
+
+/** "2× Werewolf (Lobisomem), Seer (Vidente)" in catalog order. */
 export function describeCounts(counts: ScenarioCounts): string {
-  return CARD_CATALOG.filter((c) => (counts[c.id] ?? 0) > 0)
-    .map((c) => {
-      const n = counts[c.id]
-      const name = ROLE_TRANSLATION[c.id] ?? c.name
-      return n > 1 ? `${n}× ${name}` : name
-    })
+  return countEntries(counts)
+    .map(({ id, n }) => (n > 1 ? `${n}× ${roleName(id)}` : roleName(id)))
     .join(', ')
 }
 

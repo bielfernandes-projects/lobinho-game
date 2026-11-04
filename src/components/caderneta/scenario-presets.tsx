@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, type FormEvent } from 'react'
+import { RoleName } from '@/components/role-name'
 import { useSavedScenarios } from '@/hooks/use-saved-scenarios'
 import {
   PRESETS,
   SAVED_NAME_MAX,
-  describeCounts,
+  countEntries,
   summarize,
   type SavedScenario,
   type ScenarioPreset,
@@ -48,7 +49,15 @@ function Row({
             {cards} cartas · {BALANCE_LABEL[balance]}
           </span>
         </span>
-        <span className="block mt-1 text-[11px] leading-relaxed text-neutral-500">{describeCounts(counts)}</span>
+        <span className="block mt-1 text-[11px] leading-relaxed text-neutral-500">
+          {countEntries(counts).map(({ id, n }, i) => (
+            <span key={id}>
+              {i > 0 && ', '}
+              {n > 1 && `${n}× `}
+              <RoleName id={id} />
+            </span>
+          ))}
+        </span>
       </button>
       {onRemove && (
         <button

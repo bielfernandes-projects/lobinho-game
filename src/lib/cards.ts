@@ -531,6 +531,20 @@ export const CARD_CATALOG: CardDefinition[] = [
   },
 ]
 
+/** "Werewolf (Lobisomem)": English name plus the Portuguese one (just one when they are the same). */
+export function roleName(id: string): string {
+  const { en, pt } = roleNameParts(id)
+  return pt ? `${en} (${pt})` : en
+}
+
+/** English name and, when it differs, the Portuguese one (for UIs that style the two apart). */
+export function roleNameParts(id: string): { en: string; pt: string | null } {
+  const en = CARD_CATALOG.find((c) => c.id === id)?.name
+  const pt = ROLE_TRANSLATION[id]
+  if (!en) return { en: pt ?? id, pt: null }
+  return { en, pt: pt && pt !== en ? pt : null }
+}
+
 // Roles the Drunk may become (the master picks; any card but the Drunk itself).
 // Villager and Werewolf come first: they are by far the most used.
 const DRUNK_FIRST = ['villager', 'werewolf']

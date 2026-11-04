@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { CARD_CATALOG, DRUNK_ROLE_OPTIONS, ROLE_TRANSLATION, type CardDefinition } from '@/lib/cards'
+import { CARD_CATALOG, DRUNK_ROLE_OPTIONS, roleName, type CardDefinition } from '@/lib/cards'
+import { RoleName } from '@/components/role-name'
 import { RoleInfoModal } from '@/components/role-info-modal'
 import {
   MAX_PLAYERS,
@@ -72,7 +73,7 @@ export function ScenarioCardPicker({
             className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2 text-sm text-neutral-300"
           >
             {DRUNK_ROLE_OPTIONS.filter(available).map((c) => (
-              <option key={c.id} value={c.id}>{ROLE_TRANSLATION[c.id] ?? c.name}</option>
+              <option key={c.id} value={c.id}>{roleName(c.id)}</option>
             ))}
           </select>
           <p className="text-neutral-600 text-[10px] leading-tight">
@@ -127,7 +128,7 @@ export function ScenarioCardPicker({
                     className="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-neutral-800 bg-neutral-900/50"
                   >
                     <span className="flex-1 text-sm font-medium text-neutral-300 truncate flex items-center gap-2">
-                      {card.name}
+                      <span><RoleName id={card.id} /></span>
                       <span
                         className={`text-xs font-mono ${
                           card.points > 0 ? 'text-emerald-500' : card.points < 0 ? 'text-red-500' : 'text-yellow-500'

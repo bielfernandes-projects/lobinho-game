@@ -3,6 +3,13 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — Nomes dos papéis em inglês e português: "Werewolf (Lobisomem)"
+
+- **Formato**: inglês normal + português **menor** entre parênteses (`text-[0.75em]`, mais claro). Quando os nomes coincidem (ex.: Wolverine, Mad Bomber) aparece só um. Helpers em `src/lib/cards.ts`: `roleNameParts(id)` e `roleName(id)` (texto puro) e o componente `src/components/role-name.tsx` (`<RoleName id emoji />`, com o parêntese estilizado).
+- **Onde**: linha de cada carta do cenário (`scenario-card-picker.tsx`), cenários prontos/salvos (`scenario-presets.tsx` via `countEntries`), a carta ao segurar (`deal-screen.tsx`), as etiquetas de papel na lista de jogadores e na tela final. Os `<select>` (Bêbado, "Trocar papel") usam o texto puro `roleName` porque `<option>` não aceita estilo.
+- **Não mudou**: `ROLE_LABEL` (só PT, usado nas telas do modo online) e a tela de cenário da Caderneta/`RoleInfoModal`, que já eram bilíngues. O seletor de cartas é compartilhado, então o modo online também passa a mostrar as duas línguas ali.
+- **Verificado** em build de produção (390 px): linha do cenário, carta (Mad Bomber), lista de jogadores. `tsc` limpo e 48 testes passando (teste de `describeCounts` atualizado).
+
 ### `<current>` — Hunting Party: Vidente Mística, Revelador, Mentalista (Caderneta) + Mad Bomber confirmado
 
 - **Fonte**: foto das cartas da expansão Hunting Party enviada pelo usuário. **Já existiam** (não duplicados): Huntress (+3, texto igual), Mad Bomber (-2, agora **confirmado** na carta; removida a nota de "estimado"; `game_rules.md` atualizado) e Alpha Wolf (-9; a carta nova só acrescenta a condição "depois de um lobo ser eliminado de dia", o app segue com o texto original).

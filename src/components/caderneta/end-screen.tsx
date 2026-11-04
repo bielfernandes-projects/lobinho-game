@@ -1,7 +1,8 @@
 'use client'
 
 import type { Dispatch } from 'react'
-import { ROLE_LABEL, ROLE_STYLE } from '@/lib/cards'
+import { ROLE_STYLE } from '@/lib/cards'
+import { RoleName } from '@/components/role-name'
 import { winnerOf, type Action, type CadernetaState } from '@/lib/caderneta/state'
 import { WinnerBanner } from './winner-banner'
 
@@ -33,7 +34,7 @@ export function EndScreen({ state, dispatch }: EndScreenProps) {
               {p.name}
             </span>
             <span className={`px-2 py-0.5 rounded-md border text-[11px] font-medium ${ROLE_STYLE[p.role] ?? ''}`}>
-              {ROLE_LABEL[p.role] ?? p.role}
+              <RoleName id={p.role} emoji />
             </span>
           </li>
         ))}

@@ -19,9 +19,9 @@ test('presets têm pelo menos 6 cartas e os dois mínimos têm exatamente 6', ()
   assert.equal(summarize(PRESETS[1].counts).cards, 6)
 })
 
-test('describeCounts agrupa repetidos e usa os nomes em português', () => {
+test('describeCounts agrupa repetidos e mostra inglês (português)', () => {
   const text = describeCounts({ villager: 4, werewolf: 2, seer: 1 })
-  assert.ok(text.includes('2× Lobisomem') && text.includes('4× Aldeão') && text.includes('Vidente'))
+  assert.ok(text.includes('2× Werewolf (Lobisomem)') && text.includes('4× Villager (Aldeão)') && text.includes('Seer (Vidente)'))
   assert.ok(!text.includes('1×'))
 })
 

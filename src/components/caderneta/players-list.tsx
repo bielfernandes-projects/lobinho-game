@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, type Dispatch } from 'react'
-import { CARD_CATALOG, ROLE_LABEL, ROLE_STYLE, ROLE_TRANSLATION } from '@/lib/cards'
+import { CARD_CATALOG, ROLE_STYLE, roleName } from '@/lib/cards'
+import { RoleName } from '@/components/role-name'
 import { NOTE_MAX, TAGS, type Action, type CadernetaState } from '@/lib/caderneta/state'
 
 interface PlayersListProps {
@@ -42,7 +43,7 @@ export function PlayersList({ state, dispatch }: PlayersListProps) {
                     ROLE_STYLE[p.role] ?? ''
                   }`}
                 >
-                  {ROLE_LABEL[p.role] ?? p.role}
+                  <RoleName id={p.role} emoji />
                 </span>
                 {tagEmojis.length > 0 && (
                   <span className="ml-2 text-[11px] text-neutral-500">{tagEmojis.join(' ')}</span>
@@ -110,7 +111,7 @@ export function PlayersList({ state, dispatch }: PlayersListProps) {
                   >
                     {CARD_CATALOG.map((c) => (
                       <option key={c.id} value={c.id}>
-                        {ROLE_TRANSLATION[c.id] ?? c.name}
+                        {roleName(c.id)}
                       </option>
                     ))}
                   </select>
