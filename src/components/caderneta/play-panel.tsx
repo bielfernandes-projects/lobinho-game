@@ -4,6 +4,7 @@ import { useState, type Dispatch } from 'react'
 import { hoodlumDone } from '@/lib/caderneta/winner'
 import { aliveCounts, pendingBombers, pendingHunters, winnerOf, type Action, type CadernetaState } from '@/lib/caderneta/state'
 import { DayTools } from './day-tools'
+import { StrikesPanel } from './strikes-panel'
 import { NightStepsList } from './night-steps-list'
 import { PlayersList } from './players-list'
 import { WinnerBanner } from './winner-banner'
@@ -91,6 +92,8 @@ export function PlayPanel({ state, dispatch }: PlayPanelProps) {
       )}
 
       <PlayersList state={state} dispatch={dispatch} />
+
+      {state.view === 'day' && <StrikesPanel state={state} dispatch={dispatch} />}
 
       <footer className="space-y-2 pt-2 border-t border-neutral-800">
         {confirm ? (

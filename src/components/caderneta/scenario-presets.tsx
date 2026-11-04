@@ -7,6 +7,7 @@ import {
   PRESETS,
   SAVED_NAME_MAX,
   countEntries,
+  sameCounts,
   summarize,
   type SavedScenario,
   type ScenarioPreset,
@@ -27,11 +28,13 @@ const BALANCE_LABEL: Record<Balance, string> = {
 function Row({
   name,
   counts,
+  selected,
   onApply,
   onRemove,
 }: {
   name: string
   counts: ScenarioCounts
+  selected: boolean
   onApply: () => void
   onRemove?: () => void
 }) {
@@ -41,7 +44,12 @@ function Row({
       <button
         type="button"
         onClick={onApply}
-        className="flex-1 min-w-0 text-left rounded-xl border border-neutral-800 bg-neutral-900/50 px-4 py-3 hover:border-neutral-600 cursor-pointer transition-all"
+        aria-pressed={selected}
+        className={`flex-1 min-w-0 text-left rounded-xl border px-4 py-3 cursor-pointer transition-all ${
+          selected
+            ? 'border-red-600 bg-red-950/20'
+            : 'border-neutral-800 bg-neutral-900/50 hover:border-neutral-600'
+        }`}
       >
         <span className="flex items-baseline justify-between gap-2">
           <span className="text-sm font-medium text-neutral-200 truncate">{name}</span>
@@ -78,6 +86,10 @@ export function ScenarioPresets({ counts, onApply }: ScenarioPresetsProps) {
   const [name, setName] = useState('')
   const [error, setError] = useState('')
 
+  const selectedName =
+    countCards(counts) > 0
+      ? ([...PRESETS, ...list].find((x) => sameCounts(counts, x.counts))?.name ?? null)
+      : null
   const apply = (c: ScenarioCounts) => onApply({ ...emptyCounts(), ...c })
 
   function handleSave(e: FormEvent) {
@@ -91,6 +103,7 @@ export function ScenarioPresets({ counts, onApply }: ScenarioPresetsProps) {
     <details className="rounded-xl border border-neutral-800 bg-neutral-900/30">
       <summary className="px-4 py-3 text-sm font-medium text-neutral-300 cursor-pointer select-none">
         📋 Cenários prontos e salvos
+        {selectedName && <span className="ml-2 text-xs font-bold text-red-500">· {selectedName}</span>}
       </summary>
       <div className="px-3 pb-3 space-y-3">
         <p className="text-[11px] text-neutral-500 leading-relaxed">
@@ -100,7 +113,7 @@ export function ScenarioPresets({ counts, onApply }: ScenarioPresetsProps) {
 
         <ul className="space-y-2">
           {PRESETS.map((p: ScenarioPreset) => (
-            <Row key={p.id} name={p.name} counts={p.counts} onApply={() => apply(p.counts)} />
+            <Row key={p.id} name={p.name} counts={p.counts} selected={sameCounts(counts, p.counts)} onApply={() => apply(p.counts)} />
           ))}
         </ul>
 
@@ -113,6 +126,7 @@ export function ScenarioPresets({ counts, onApply }: ScenarioPresetsProps) {
                   key={s.name}
                   name={s.name}
                   counts={s.counts}
+                  selected={sameCounts(counts, s.counts)}
                   onApply={() => apply(s.counts)}
                   onRemove={() => remove(s.name)}
                 />

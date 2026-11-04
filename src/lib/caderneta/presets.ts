@@ -18,7 +18,7 @@ export const PRESETS: ScenarioPreset[] = [
   { id: 'com-amor', name: 'Com amor', counts: { werewolf: 2, seer: 1, cupid: 1, hunter: 1, villager: 3 } },
   { id: 'rapido', name: 'Jogo Rápido', counts: { werewolf: 2, seer: 1, hunter: 1, huntress: 1, marksman: 1, mad_bomber: 1, cupid: 1 } },
   { id: 'guarda-costas', name: 'Guarda-costas', counts: { werewolf: 2, wolf_cub: 1, seer: 1, bodyguard: 1, hunter: 1, villager: 4 } },
-  { id: 'cacada', name: 'Caçada', counts: { werewolf: 1, alpha_wolf: 1, seer: 1, witch: 1, hunter: 1, villager: 4 } },
+  { id: 'cacada', name: 'Caçada', counts: { werewolf: 2, alpha_wolf: 1, seer: 1, witch: 1, hunter: 1, villager: 4 } },
   { id: 'vila-animada', name: 'Vila animada', counts: { werewolf: 3, seer: 1, witch: 1, bodyguard: 1, mayor: 1, cupid: 1, villager: 4 } },
   { id: 'caotico', name: 'Caótico', counts: { werewolf: 2, seer: 1, witch: 1, tanner: 1, cupid: 1, priest: 1, hunter: 1, lycan: 1, villager: 3 } },
 ]
@@ -33,6 +33,11 @@ export function describeCounts(counts: ScenarioCounts): string {
   return countEntries(counts)
     .map(({ id, n }) => (n > 1 ? `${n}× ${roleName(id)}` : roleName(id)))
     .join(', ')
+}
+
+/** Same cards in the same amounts (zeros and missing entries are equal). */
+export function sameCounts(a: ScenarioCounts, b: ScenarioCounts): boolean {
+  return CARD_CATALOG.every((c) => (a[c.id] ?? 0) === (b[c.id] ?? 0))
 }
 
 export function summarize(counts: ScenarioCounts): { cards: number; points: number; balance: Balance } {

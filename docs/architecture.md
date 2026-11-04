@@ -3,6 +3,15 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — Montagem: preset selecionado, "Iniciar Partida" em dois lugares; Dia: strikes em accordion
+
+- **Preset selecionado**: o cenário (pronto ou salvo) cujas cartas são **iguais** às atuais (`sameCounts`) ganha **borda vermelha**; o título do accordion também mostra o nome ("📋 Cenários prontos e salvos · Jogo Rápido"). Editar qualquer carta tira o destaque.
+- **"Iniciar Partida"** (antes "Ver cenário e entregar cartas"): o mesmo botão agora fica **acima de "Resetar Cenário"** (prop `beforeReset` do `ScenarioCardPicker`) e **no fim da tela**; ambos seguem travados até o nº de cartas bater com os jogadores e abrem a tela de cenário antes de distribuir.
+- **Dia**: o accordion **Strikes** saiu do meio e foi para `strikes-panel.tsx`, **abaixo da lista de jogadores** e **fechado por padrão**; ele abre sozinho quando alguém chega ao 3º strike, para o mestre ver a confirmação de eliminar. A tela de Dia ficou: Manhã (cronômetro) → Anoitecer → Jogadores → Strikes.
+- **Correção no preset "Caçada"**: tinha 9 cartas (eu havia dito 10); agora 2 Lobisomens + Lobo Alfa, 10 cartas, equilibrado. Novo teste fixa o tamanho de cada preset.
+- **Verificado** em build de produção (390 px): os dois botões, travados com 0 cartas e liberados com 8/8, destaque do preset e limpeza ao editar, ordem da tela de Dia, accordion fechado e fluxo de 3 strikes → eliminar. 55 testes.
+- **Files**: `src/lib/caderneta/presets.ts` (+ teste), `src/components/caderneta/{scenario-presets,setup-screen,day-tools,strikes-panel,play-panel}.tsx`, `src/components/scenario-card-picker.tsx`.
+
 ### `<current>` — Pop-up "Instale o Lobinho" (iOS e Android) sempre que o site abre no navegador
 
 - **Quando aparece**: toda vez que o site é aberto no navegador de um celular **e o app não está instalado**. Fechar ("Agora não" / "Entendi") só esconde nesta visita; ao abrir de novo, volta. **Nunca** aparece dentro do app instalado (`display-mode: standalone` ou `navigator.standalone`) e some sozinho ao instalar (`appinstalled` ou depois do prompt nativo).

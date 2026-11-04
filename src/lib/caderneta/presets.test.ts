@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { CARD_CATALOG } from '../cards.ts'
 import {
-  PRESETS, SAVED_MAX, describeCounts, parseSaved, removeScenario, saveScenario, summarize,
+  PRESETS, SAVED_MAX, describeCounts, parseSaved, removeScenario, sameCounts, saveScenario, summarize,
 } from './presets.ts'
 
 test('todo preset usa só papéis do catálogo e é equilibrado (-3..+3)', () => {
@@ -51,4 +51,18 @@ test('saveScenario: nome vazio e zero cartas dão erro; mesmo nome sobrescreve; 
   for (let i = 0; i < SAVED_MAX; i++) full = saveScenario(full, `n${i}`, { seer: 1 }).list
   assert.ok(saveScenario(full, 'extra', { seer: 1 }).error)
   assert.equal(removeScenario(full, 'n0').length, SAVED_MAX - 1)
+})
+
+test('sameCounts: zero e ausente são iguais; quantidade diferente não', () => {
+  assert.equal(sameCounts({ seer: 1, villager: 0 }, { seer: 1 }), true)
+  assert.equal(sameCounts({ seer: 1 }, { seer: 2 }), false)
+  assert.equal(sameCounts({}, { seer: 1 }), false)
+})
+
+test('tamanho de cada preset (guarda contra erro de conta ao editar a lista)', () => {
+  const size = Object.fromEntries(PRESETS.map((p) => [p.id, summarize(p.counts).cards]))
+  assert.deepEqual(size, {
+    'minimo-2-lobos': 6, 'minimo-1-lobo': 6, classico: 8, 'com-amor': 8, rapido: 8,
+    'guarda-costas': 10, cacada: 10, 'vila-animada': 12, caotico: 12,
+  })
 })

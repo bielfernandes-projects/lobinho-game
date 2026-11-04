@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { CARD_CATALOG, DRUNK_ROLE_OPTIONS, roleName, type CardDefinition } from '@/lib/cards'
 import { RoleName } from '@/components/role-name'
 import { RoleInfoModal } from '@/components/role-info-modal'
@@ -23,6 +23,8 @@ interface ScenarioCardPickerProps {
   onDrunkHiddenChange: (value: string) => void
   /** Show the roles that only exist in the Caderneta (no database support yet). */
   cadernetaMode?: boolean
+  /** Rendered right above "Resetar Cenário" (the Caderneta puts its start button there). */
+  beforeReset?: ReactNode
 }
 
 const BALANCE_VIEW = {
@@ -45,6 +47,7 @@ export function ScenarioCardPicker({
   drunkHidden,
   onDrunkHiddenChange,
   cadernetaMode = false,
+  beforeReset,
 }: ScenarioCardPickerProps) {
   const available = (c: CardDefinition) => cadernetaMode || !c.cadernetaOnly
   const [modalCard, setModalCard] = useState<CardDefinition | null>(null)
@@ -109,6 +112,8 @@ export function ScenarioCardPicker({
           </div>
         </div>
       </div>
+
+      {beforeReset}
 
       <button
         type="button"

@@ -58,6 +58,18 @@ export function SetupScreen({ state, dispatch }: SetupScreenProps) {
     })
   }
 
+  // The same button sits above "Resetar Cenário" and at the very bottom.
+  const startButton = (
+    <button
+      type="button"
+      onClick={() => setReviewing(true)}
+      disabled={!valid}
+      className="w-full py-4 rounded-2xl font-bold text-lg tracking-wider bg-red-700 text-white hover:bg-red-600 active:bg-red-800 disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-red-900/40 transition-all duration-200 cursor-pointer"
+    >
+      Iniciar Partida
+    </button>
+  )
+
   if (reviewing) {
     return <ScenarioScreen counts={counts} onConfirm={handleDeal} onBack={() => setReviewing(false)} />
   }
@@ -132,17 +144,11 @@ export function SetupScreen({ state, dispatch }: SetupScreenProps) {
           drunkHidden={drunkHidden}
           onDrunkHiddenChange={setDrunkHidden}
           cadernetaMode
+          beforeReset={startButton}
         />
       </section>
 
-      <button
-        type="button"
-        onClick={() => setReviewing(true)}
-        disabled={!valid}
-        className="w-full py-4 rounded-2xl font-bold text-lg tracking-wider bg-red-700 text-white hover:bg-red-600 active:bg-red-800 disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-red-900/40 transition-all duration-200 cursor-pointer"
-      >
-        Ver cenário e entregar cartas
-      </button>
+      {startButton}
     </div>
   )
 }
