@@ -3,6 +3,16 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — Trello #129: os 5 papéis que faltavam, só na Caderneta (Lobo Mau, Lobo Vegetariano, Wolverine, Bandido, Vampiro)
+
+- **Escopo combinado**: entram na **Caderneta**; o **online** fica para depois que ela estiver redonda. Por isso `CardDefinition.cadernetaOnly` (novo) esconde os 5 do `ScenarioCardPicker` online (prop `cadernetaMode`, ligada só em `setup-screen.tsx`) e do seletor do Bêbado online. **Sem migração**: `players_role_check`, `resolve_night`, `compute_winner` etc. não conhecem esses papéis; o online só os aceitará quando fizermos o SQL.
+- **Catálogo** (`cards.ts`): `bad_wolf` -9, `fruit_brute` -3, `wolverine` -4 (lobos), `hoodlum` 0 (independente), `vampire` -7 (`Team` ganhou `'vampire'`; o picker e a tela de cenário têm o grupo "🧛 Vampiros").
+- **Lobos** (`WOLF_ROLES` em `night-steps.ts` e `WOLF_TEAM_ROLES` em `winner.ts`): acordam no passo dos lobos; `src/lib/caderneta/night-notes.ts` mostra lembretes ali: Lobo Mau vivo (2 adjacentes), Lobo Vegetariano não acorda da noite 2 em diante se houver outros lobos, Wolverine último lobo não mata.
+- **Bandido**: passo da 1ª noite com seleção de 2 alvos (etiqueta nova `hoodlum`). Vitória `hoodlum_win` (prioridade: depois do culto, antes do Curtidor): ele vivo e os 2 alvos mortos. **Simplificação**: encerra na hora (regra alternativa); pela regra base ele só ganharia no fim do jogo, junto com o time vencedor.
+- **Vampiros**: passo toda noite com seleção de 1 alvo (etiqueta `marked`, limpa a cada `toNight`); no Dia o `PlayPanel` avisa "Marcado pelos vampiros: X. Se for indicado hoje, morre na hora". Vitória `vampires_win`: sem lobos vivos e vampiros >= metade dos vivos; com vampiro vivo os lobos não vencem por paridade (precisam eliminá-los também). Não implementado: Caçador virar "Caçador de Vampiros".
+- **Testes**: +6 (`winner.test.ts`, `night-notes.test.ts`); `npm test` 41/41, `tsc` limpo. Não verificado no navegador.
+- **Files**: `src/lib/{cards,night-steps}.ts`, `src/lib/caderneta/{winner,state,night-notes}.ts` (+ testes), `src/components/scenario-card-picker.tsx`, `src/components/caderneta/{setup-screen,scenario-screen,night-steps-list,play-panel}.tsx`, `docs/game_rules.md`.
+
 ### `<current>` — Trello #132: Caderneta sugere anotar as conexões na 1ª noite (Cupido, Lobo Aproveitador, Virginia Wolf)
 
 - Nos passos de acordar `cupid`, `dire_wolf` e `virginia_wolf` (`night-steps-list.tsx`) aparece uma dica "💡 Anote quem … escolheu (n/máx)" com um botão por jogador. Tocar marca/desmarca a **etiqueta que já existia** (`soulmate` para o Cupido, máx. 2 e alimenta a vitória das almas gêmeas; `companion` para Dire/Virginia, máx. 1) via `toggleTag`. Sem mudança de reducer, estado ou banco; o botão "✓ Feito" continua opcional.

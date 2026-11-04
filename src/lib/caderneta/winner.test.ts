@@ -85,3 +85,23 @@ test('Curtidor: só vence se foi linchado (não por outra morte)', () => {
 test('todos mortos: sem vencedor', () => {
   assert.equal(computeWinner([p('villager', false), p('werewolf', false)], null), null)
 })
+
+test('Bandido vence quando os 2 alvos morreram e ele está vivo; morto ou com alvo vivo, não', () => {
+  const win = [p('hoodlum'), p('villager', false, ['hoodlum']), p('seer', false, ['hoodlum']), p('villager'), p('villager'), p('werewolf')]
+  assert.equal(computeWinner(win, null), 'hoodlum_win')
+  assert.notEqual(computeWinner([p('hoodlum', false), p('villager', false, ['hoodlum']), p('seer', false, ['hoodlum']), p('villager'), p('werewolf')], null), 'hoodlum_win')
+  assert.notEqual(computeWinner([p('hoodlum'), p('villager', false, ['hoodlum']), p('seer', true, ['hoodlum']), p('villager'), p('villager'), p('werewolf')], null), 'hoodlum_win')
+})
+
+test('Vampiros: lobos vivos impedem; sem lobos vencem ao ser metade dos vivos; vivos impedem paridade dos lobos', () => {
+  assert.equal(computeWinner([p('vampire'), p('vampire'), p('villager'), p('villager', false)], null), 'vampires_win')
+  assert.equal(computeWinner([p('vampire'), p('villager'), p('villager'), p('seer', false)], null), null)
+  // lobos vivos + vampiro vivo: sem vitória por paridade dos lobos
+  assert.equal(computeWinner([p('werewolf'), p('werewolf'), p('vampire'), p('villager', false)], null), null)
+  // vampiro morto: volta a valer a regra normal
+  assert.equal(computeWinner([p('werewolf'), p('vampire', false), p('villager'), p('seer', false)], null), 'wolves_win')
+})
+
+test('Lobo Mau, Lobo Vegetariano e Wolverine contam como time dos lobos', () => {
+  assert.deepEqual(wolfCounts([p('bad_wolf'), p('fruit_brute'), p('wolverine'), p('villager')]), { alive: 4, wolves: 3, others: 1 })
+})

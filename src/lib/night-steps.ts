@@ -2,7 +2,11 @@
 // Adding a night role = one entry here (plus its panel in renderNightPanel and its SQL).
 
 // Roles that wake with the wolves (the 'wolves' step).
-export const WOLF_ROLES = ['werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf', 'dire_wolf', 'virginia_wolf']
+export const WOLF_ROLES = [
+  'werewolf', 'wolf_cub', 'alpha_wolf', 'lone_wolf', 'dire_wolf', 'virginia_wolf',
+  // Caderneta-only (not in the database yet)
+  'bad_wolf', 'fruit_brute', 'wolverine',
+]
 
 /** Which nights a step happens on. */
 export type NightRule = 'any' | 'first' | 'third' | 'not_first'
@@ -28,6 +32,7 @@ export const NIGHT_STEPS: NightStep[] = [
   { id: 'drunk', roles: ['drunk'], styleRole: 'drunk', label: '🍺 Bêbado', wakeLabel: '🍺 Acordar Bêbado', when: 'third', actions: [] },
   { id: 'masons', roles: ['mason'], styleRole: 'mason', label: '🧱 Maçons', wakeLabel: '🧱 Acordar Maçons', when: 'first', actions: [] },
   { id: 'cupid', roles: ['cupid'], styleRole: 'cupid', label: '💘 Cupido', wakeLabel: '💘 Acordar Cupido', when: 'first', actions: [] },
+  { id: 'hoodlum', roles: ['hoodlum'], styleRole: 'hoodlum', label: '🎯 Bandido', wakeLabel: '🎯 Acordar Bandido', when: 'first', actions: [] },
   { id: 'doppelganger', roles: ['doppelganger'], styleRole: 'doppelganger', label: '🎭 Doppelgänger', wakeLabel: '🎭 Acordar Doppelgänger', when: 'first', actions: ['doppelganger_select'] },
   { id: 'minion', roles: ['minion'], styleRole: 'minion', label: '😈 Lacaio', wakeLabel: '😈 Acordar Lacaio', when: 'first', actions: [] },
   { id: 'priest', roles: ['priest'], styleRole: 'priest', label: '🙏 Padre', wakeLabel: '🙏 Acordar Padre', when: 'any', actions: ['priest_bless'] },
@@ -35,6 +40,7 @@ export const NIGHT_STEPS: NightStep[] = [
   { id: 'wolves', roles: WOLF_ROLES, styleRole: 'werewolf', label: '🐺 Lobisomens', wakeLabel: '🐺 Acordar Lobos', when: 'any', actions: ['werewolf_kill'] },
   { id: 'dire_wolf', roles: ['dire_wolf'], styleRole: 'dire_wolf', label: '🐺 Lobo Aproveitador', wakeLabel: '🐺 Acordar Lobo Aproveitador', when: 'first', actions: ['dire_wolf_companion'] },
   { id: 'virginia_wolf', roles: ['virginia_wolf'], styleRole: 'virginia_wolf', label: '🐺 Virginia Wolf', wakeLabel: '🐺 Acordar Virginia Wolf', when: 'first', actions: ['virginia_partner'] },
+  { id: 'vampires', roles: ['vampire'], styleRole: 'vampire', label: '🧛 Vampiros', wakeLabel: '🧛 Acordar Vampiros', when: 'any', actions: [] },
   { id: 'witch', roles: ['witch'], styleRole: 'witch', label: '🧪 Bruxa', wakeLabel: '🧪 Acordar Bruxa', when: 'not_first', actions: ['witch_save', 'witch_poison', 'witch_skip'] },
   { id: 'seer', roles: ['seer'], styleRole: 'seer', label: '🔮 Vidente', wakeLabel: '🔮 Acordar Vidente', when: 'any', actions: ['seer_investigate'] },
   { id: 'aura_seer', roles: ['aura_seer'], styleRole: 'aura_seer', label: '👁️ Vidente de Aura', wakeLabel: '👁️ Acordar Vidente de Aura', when: 'any', actions: ['aura_investigate'] },

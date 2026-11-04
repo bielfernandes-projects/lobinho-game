@@ -137,6 +137,7 @@ export function SetupScreen({ state, dispatch }: SetupScreenProps) {
           onChange={setCounts}
           drunkHidden={drunkHidden}
           onDrunkHiddenChange={setDrunkHidden}
+          cadernetaMode
         />
       </section>
 

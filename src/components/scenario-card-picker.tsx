@@ -20,6 +20,8 @@ interface ScenarioCardPickerProps {
   onChange: (counts: ScenarioCounts) => void
   drunkHidden: string
   onDrunkHiddenChange: (value: string) => void
+  /** Show the roles that only exist in the Caderneta (no database support yet). */
+  cadernetaMode?: boolean
 }
 
 const BALANCE_VIEW = {
@@ -32,6 +34,7 @@ const GROUPS = [
   { key: 'village', label: '🌿 Time da Vila', color: 'text-emerald-500' },
   { key: 'wolf', label: '🐺 Time dos Lobos', color: 'text-red-500' },
   { key: 'independent', label: '⚖️ Independentes', color: 'text-purple-500' },
+  { key: 'vampire', label: '🧛 Vampiros', color: 'text-fuchsia-500' },
 ] as const
 
 export function ScenarioCardPicker({
@@ -40,7 +43,9 @@ export function ScenarioCardPicker({
   onChange,
   drunkHidden,
   onDrunkHiddenChange,
+  cadernetaMode = false,
 }: ScenarioCardPickerProps) {
+  const available = (c: CardDefinition) => cadernetaMode || !c.cadernetaOnly
   const [modalCard, setModalCard] = useState<CardDefinition | null>(null)
 
   const totalCards = countCards(counts)
@@ -66,7 +71,7 @@ export function ScenarioCardPicker({
             onChange={(e) => onDrunkHiddenChange(e.target.value)}
             className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2 text-sm text-neutral-300"
           >
-            {DRUNK_ROLE_OPTIONS.map((c) => (
+            {DRUNK_ROLE_OPTIONS.filter(available).map((c) => (
               <option key={c.id} value={c.id}>{ROLE_TRANSLATION[c.id] ?? c.name}</option>
             ))}
           </select>
@@ -101,7 +106,7 @@ export function ScenarioCardPicker({
       </button>
 
       {GROUPS.map((group) => {
-        const cards = CARD_CATALOG.filter((c) => c.team === group.key)
+        const cards = CARD_CATALOG.filter((c) => c.team === group.key && available(c))
         if (cards.length === 0) return null
         return (
           <div key={group.key}>

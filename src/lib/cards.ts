@@ -1,4 +1,4 @@
-export type Team = 'village' | 'wolf' | 'independent'
+export type Team = 'village' | 'wolf' | 'independent' | 'vampire'
 
 export interface CardDefinition {
   id: string
@@ -6,6 +6,8 @@ export interface CardDefinition {
   points: number
   description: string
   team: Team
+  /** Only exists in the Caderneta (no database support yet): hidden from the online scenario builder. */
+  cadernetaOnly?: boolean
 }
 
 export const ROLE_STYLE: Record<string, string> = {
@@ -46,6 +48,11 @@ export const ROLE_STYLE: Record<string, string> = {
   dire_wolf: 'bg-red-100 text-red-700 border-red-300',
   virginia_wolf: 'bg-red-100 text-red-700 border-red-300',
   ghost: 'bg-slate-100 text-slate-700 border-slate-300',
+  bad_wolf: 'bg-red-200 text-red-800 border-red-400',
+  fruit_brute: 'bg-red-100 text-red-700 border-red-300',
+  wolverine: 'bg-red-100 text-red-700 border-red-300',
+  hoodlum: 'bg-gray-200 text-gray-700 border-gray-400',
+  vampire: 'bg-fuchsia-100 text-fuchsia-700 border-fuchsia-300',
 }
 
 export const ROLE_LABEL: Record<string, string> = {
@@ -87,6 +94,11 @@ export const ROLE_LABEL: Record<string, string> = {
   dire_wolf: '🐺 Lobo Aproveitador',
   virginia_wolf: '🐺 Virginia Wolf',
   ghost: '👻 Fantasma',
+  bad_wolf: '🐺 Lobo Mau',
+  fruit_brute: '🐺 Lobo Vegetariano',
+  wolverine: '🐺 Wolverine',
+  hoodlum: '🎯 Bandido',
+  vampire: '🧛 Vampiro',
 }
 
 export const ROLE_TRANSLATION: Record<string, string> = {
@@ -128,6 +140,11 @@ export const ROLE_TRANSLATION: Record<string, string> = {
   dire_wolf: 'Lobo Aproveitador',
   virginia_wolf: 'Virginia Wolf',
   ghost: 'Fantasma',
+  bad_wolf: 'Lobo Mau',
+  fruit_brute: 'Lobo Vegetariano',
+  wolverine: 'Wolverine',
+  hoodlum: 'Bandido',
+  vampire: 'Vampiro',
 }
 
 export const CARD_CATALOG: CardDefinition[] = [
@@ -419,6 +436,51 @@ export const CARD_CATALOG: CardDefinition[] = [
     team: 'village',
     description:
       'Você morre obrigatoriamente na 1ª noite. Depois, vê quem é quem na mesa e escreve uma letra por dia como pista para a Vila (sem nomes ou iniciais).',
+  },
+  {
+    id: 'bad_wolf',
+    name: 'Bad Wolf',
+    points: -9,
+    team: 'wolf',
+    cadernetaOnly: true,
+    description:
+      'Acorda com os lobos. Enquanto você estiver vivo, os lobos podem eliminar dois jogadores adjacentes (sentados lado a lado).',
+  },
+  {
+    id: 'fruit_brute',
+    name: 'Fruit Brute',
+    points: -3,
+    team: 'wolf',
+    cadernetaOnly: true,
+    description:
+      'Acorda com os lobos só na 1ª noite. Enquanto houver outros lobos no jogo, não acorda nas noites seguintes.',
+  },
+  {
+    id: 'wolverine',
+    name: 'Wolverine',
+    points: -4,
+    team: 'wolf',
+    cadernetaOnly: true,
+    description:
+      'Acorda com os lobos toda noite. Se for o último lobo do jogo, não consegue eliminar ninguém à noite.',
+  },
+  {
+    id: 'hoodlum',
+    name: 'Hoodlum',
+    points: 0,
+    team: 'independent',
+    cadernetaOnly: true,
+    description:
+      'Na 1ª noite escolha dois jogadores. Você vence se os dois forem eliminados e você ainda estiver vivo.',
+  },
+  {
+    id: 'vampire',
+    name: 'Vampire',
+    points: -7,
+    team: 'vampire',
+    cadernetaOnly: true,
+    description:
+      'Time à parte. Toda noite os vampiros escolhem um alvo em segredo: se ele for indicado durante o dia, morre na hora. Vencem eliminando lobos e vila.',
   },
 ]
 

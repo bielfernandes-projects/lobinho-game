@@ -7,7 +7,7 @@ import { computeWinner, wolfCounts, type Winner } from './winner.ts'
 
 export type Phase = 'setup' | 'deal' | 'play' | 'ended'
 export type View = 'night' | 'day'
-export type Tag = 'soulmate' | 'protected' | 'cult' | 'pox' | 'blessed' | 'companion' | 'doppel'
+export type Tag = 'soulmate' | 'protected' | 'cult' | 'pox' | 'blessed' | 'companion' | 'doppel' | 'hoodlum' | 'marked'
 export type Rng = () => number
 
 export const TAGS: { id: Tag; label: string }[] = [
@@ -18,6 +18,8 @@ export const TAGS: { id: Tag; label: string }[] = [
   { id: 'blessed', label: '🙏 Abençoado' },
   { id: 'companion', label: '🔗 Companheiro' },
   { id: 'doppel', label: '🎭 Alvo do Doppelgänger' },
+  { id: 'hoodlum', label: '🎯 Alvo do Bandido' },
+  { id: 'marked', label: '🧛 Marcado pelos vampiros' },
 ]
 
 export const MAX_STRIKES = 3
@@ -193,7 +195,15 @@ export function reducer(state: CadernetaState, action: Action): CadernetaState {
       }
     case 'toNight':
       return state.phase === 'play'
-        ? { ...state, view: 'night', turn: state.turn + 1, doneSteps: [], lastLynchId: null }
+        ? {
+            ...state,
+            view: 'night',
+            turn: state.turn + 1,
+            doneSteps: [],
+            lastLynchId: null,
+            // The vampires pick a fresh victim every night.
+            players: state.players.map((p) => (p.tags.includes('marked') ? { ...p, tags: p.tags.filter((t) => t !== 'marked') } : p)),
+          }
         : state
     case 'toDay':
       return state.phase === 'play' ? { ...state, view: 'day' } : state

@@ -10,7 +10,7 @@ interface ScenarioScreenProps {
 }
 
 // Aldeia → Lobos → Independentes, like the online scenario screen.
-const TEAM_ORDER = { village: 0, wolf: 1, independent: 2 } as const
+const TEAM_ORDER = { village: 0, wolf: 1, independent: 2, vampire: 3 } as const
 
 export function ScenarioScreen({ counts, onConfirm, onBack }: ScenarioScreenProps) {
   const entries = CARD_CATALOG.filter((c) => (counts[c.id] ?? 0) > 0).sort(

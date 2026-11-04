@@ -2,6 +2,7 @@
 
 import { useState, type Dispatch } from 'react'
 import { DRUNK_ROLE_OPTIONS, ROLE_TRANSLATION } from '@/lib/cards'
+import { wolvesStepNotes } from '@/lib/caderneta/night-notes'
 import { nextStepId, nightSteps, type Action, type CadernetaState, type Tag } from '@/lib/caderneta/state'
 
 interface NightStepsListProps {
@@ -15,6 +16,13 @@ interface NightStepsListProps {
 // `max: null` = no cap (the cult grows every night); `skipRole` = the chooser is not pickable.
 const CONNECTIONS: Record<string, { tag: Tag; max: number | null; hint: string; skipRole?: string }> = {
   cupid: { tag: 'soulmate', max: 2, hint: 'Anote os 2 apaixonados que o Cupido escolheu:' },
+  hoodlum: { tag: 'hoodlum', max: 2, hint: 'Anote os 2 alvos que o Bandido escolheu:', skipRole: 'hoodlum' },
+  vampires: {
+    tag: 'marked',
+    max: 1,
+    hint: 'Anote o alvo dos vampiros (se for indicado de dia, morre na hora):',
+    skipRole: 'vampire',
+  },
   doppelganger: { tag: 'doppel', max: 1, hint: 'Anote o alvo que o Doppelgänger escolheu:', skipRole: 'doppelganger' },
   cult_leader: {
     tag: 'cult',
@@ -90,6 +98,10 @@ export function NightStepsList({ state, dispatch }: NightStepsListProps) {
                 <p className="text-[11px] text-neutral-500">
                   {holders.map((p) => (p.alive ? p.name : `${p.name} †`)).join(', ')}
                 </p>
+                {step.id === 'wolves' &&
+                  wolvesStepNotes(state.players, state.turn).map((note) => (
+                    <p key={note} className="text-[11px] text-amber-400">{note}</p>
+                  ))}
                 {CONNECTIONS[step.id] && (() => {
                   const { tag, max, hint, skipRole } = CONNECTIONS[step.id]
                   const options = state.players.filter((p) => p.role !== skipRole)

@@ -15,6 +15,7 @@ interface PlayPanelProps {
 export function PlayPanel({ state, dispatch }: PlayPanelProps) {
   const { alive, wolves, others } = aliveCounts(state)
   const winner = winnerOf(state)
+  const marked = state.players.filter((p) => p.alive && p.tags.includes('marked'))
   const [confirm, setConfirm] = useState<'end' | 'cancel' | null>(null)
 
   return (
@@ -29,6 +30,12 @@ export function PlayPanel({ state, dispatch }: PlayPanelProps) {
       </header>
 
       {winner && <WinnerBanner winner={winner} onEnd={() => dispatch({ type: 'end' })} />}
+
+      {state.view === 'day' && marked.length > 0 && (
+        <p className="rounded-xl border border-fuchsia-800/50 bg-fuchsia-950/20 px-4 py-3 text-xs text-fuchsia-300">
+          🧛 Marcado pelos vampiros: <b>{marked.map((p) => p.name).join(', ')}</b>. Se for indicado hoje, morre na hora.
+        </p>
+      )}
 
       {state.view === 'night' ? (
         <NightStepsList key={state.turn} state={state} dispatch={dispatch} />
