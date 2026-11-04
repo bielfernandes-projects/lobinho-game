@@ -3,6 +3,13 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — Modo online escondido da home (link discreto no rodapé)
+
+- **Decisão**: a adesão foi na Caderneta (o jogo vive da interação presencial), então o online deixou de ser destaque. Não foi apagado: só saiu da home. Apagar de vez fica para depois de algumas noites de jogo só com a Caderneta.
+- **`/` (home)** agora é só: logo, "Caderneta do Mestre", instalar, "Ajude o Dev" e, no fim, o link sublinhado "Jogar online (criar ou entrar em uma sala)" para `/online`. Virou componente de servidor (sem estado).
+- **`/online`** (`src/app/online/page.tsx`): o formulário de nome/PIN + "Criar Sala"/"Entrar" movido **sem mudar a lógica** (mesmos fluxos para `/lobby/[id]`), com link "← Início". Sair do lobby/jogo continua levando a `/`.
+- **Files**: `src/app/page.tsx`, `src/app/online/page.tsx`.
+
 ### `<current>` — Trello #129: os 5 papéis que faltavam, só na Caderneta (Lobo Mau, Lobo Vegetariano, Wolverine, Bandido, Vampiro)
 
 - **Escopo combinado**: entram na **Caderneta**; o **online** fica para depois que ela estiver redonda. Por isso `CardDefinition.cadernetaOnly` (novo) esconde os 5 do `ScenarioCardPicker` online (prop `cadernetaMode`, ligada só em `setup-screen.tsx`) e do seletor do Bêbado online. **Sem migração**: `players_role_check`, `resolve_night`, `compute_winner` etc. não conhecem esses papéis; o online só os aceitará quando fizermos o SQL.
