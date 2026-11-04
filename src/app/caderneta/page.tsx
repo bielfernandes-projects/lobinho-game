@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { clearCadernetaStorage, useCaderneta } from '@/hooks/use-caderneta'
 import { useIdleReset } from '@/hooks/use-idle-reset'
@@ -12,6 +13,12 @@ import { EndScreen } from '@/components/caderneta/end-screen'
 export default function CadernetaPage() {
   const router = useRouter()
   const { state, dispatch, hydrated } = useCaderneta()
+
+  // A new screen (phase, night/day) always starts at the top, not where the last one was scrolled.
+  const screen = `${state.phase}-${state.view}-${state.turn}`
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [screen])
 
   // Forget everything (players, scenario, game) and go home.
   function leave() {

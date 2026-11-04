@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { CARD_CATALOG, ROLE_STYLE, ROLE_TRANSLATION } from '@/lib/cards'
 import type { ScenarioCounts } from '@/lib/scenario'
 
@@ -13,6 +14,11 @@ interface ScenarioScreenProps {
 const TEAM_ORDER = { village: 0, wolf: 1, independent: 2, vampire: 3 } as const
 
 export function ScenarioScreen({ counts, onConfirm, onBack }: ScenarioScreenProps) {
+  // The setup screen is long and the button that opens this one is at its bottom: start at the top.
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [])
+
   const entries = CARD_CATALOG.filter((c) => (counts[c.id] ?? 0) > 0).sort(
     (a, b) => TEAM_ORDER[a.team] - TEAM_ORDER[b.team] || b.points - a.points,
   )

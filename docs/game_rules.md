@@ -564,7 +564,7 @@ For each role:
 | Wake | Once (one-shot, night) |
 | **Description (EN)** | Once per game, during the night, you can eliminate a player. |
 | **Description (PT)** | Uma vez por jogo, durante a noite, você pode eliminar um jogador. |
-| **Mechanics** | One-shot night kill. Like the Hunter, but the kill happens during the night phase (not on death). Distinct from Hunter — Hunter acts on death, Huntress acts while alive. |
+| **Mechanics** | One-shot night kill, **never on the first night** (she does not wake on night 1; from night 2 on). Like the Hunter, but the kill happens during the night phase (not on death). Distinct from Hunter — Hunter acts on death, Huntress acts while alive. |
 
 #### `prince` — Prince / Príncipe
 | Field | Value |

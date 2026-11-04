@@ -49,7 +49,7 @@ export const NIGHT_STEPS: NightStep[] = [
   { id: 'mentalist', roles: ['mentalist'], styleRole: 'mentalist', label: '🧠 Mentalista', wakeLabel: '🧠 Acordar Mentalista', when: 'any', actions: [] },
   { id: 'sorceress', roles: ['sorceress'], styleRole: 'sorceress', label: '🔮 Feiticeira', wakeLabel: '🔮 Acordar Feiticeira', when: 'any', actions: ['sorceress_search'] },
   { id: 'chupacabra', roles: ['chupacabra'], styleRole: 'chupacabra', label: '🦇 Chupacu', wakeLabel: '🦇 Acordar Chupacu', when: 'any', actions: ['chupacabra_kill'] },
-  { id: 'huntress', roles: ['huntress'], styleRole: 'huntress', label: '🏹 Caçadora', wakeLabel: '🏹 Acordar Caçadora', when: 'any', actions: ['huntress_kill'] },
+  { id: 'huntress', roles: ['huntress'], styleRole: 'huntress', label: '🏹 Caçadora', wakeLabel: '🏹 Acordar Caçadora', when: 'not_first', actions: ['huntress_kill'] },
   { id: 'old_witch', roles: ['old_witch'], styleRole: 'old_witch', label: '🤒 Bruxa Velha', wakeLabel: '🤒 Acordar Bruxa Velha', when: 'any', actions: ['old_witch_pox'] },
   { id: 'cult_leader', roles: ['cult_leader'], styleRole: 'cult_leader', label: '🔮 Líder de Culto', wakeLabel: '🔮 Acordar Líder de Culto', when: 'any', actions: ['cult_convert'] },
 ]

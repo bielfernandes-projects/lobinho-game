@@ -39,6 +39,7 @@ const STEP_HINTS: Record<string, string> = {
   mystic_seer: 'Mostre o papel exato do alvo (a Vidente comum só diz vila ou lobo).',
   revealer: 'Se apontar um lobo, ele é eliminado; se errar, o Revelador é eliminado. Use "Matar" na lista.',
   mentalist: 'Diga só se os dois jogadores apontados são do mesmo time ou não.',
+  huntress: 'Uma vez por jogo. Ela só pode atirar a partir da 2ª noite (por isso não acorda na 1ª).',
 }
 
 export function NightStepsList({ state, dispatch }: NightStepsListProps) {

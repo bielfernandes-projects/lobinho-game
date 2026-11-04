@@ -57,6 +57,15 @@ export function DealScreen({ player, isLast, nextName, onNext }: DealScreenProps
         <p className="text-neutral-400 text-xs">Só quem está com o celular olha a tela.</p>
       </div>
 
+      {/* Instruction first, card below: the eyes go top to bottom. Fixed height so the card never jumps. */}
+      <p className="min-h-14 flex items-center justify-center text-center font-bold text-lg tracking-wider text-red-500">
+        {holding
+          ? 'Solte para esconder'
+          : seen
+            ? 'Segure de novo se quiser rever'
+            : '👇 SEGURE A CARTA ABAIXO PARA VER O SEU PAPEL'}
+      </p>
+
       <div
         className={`relative w-64 aspect-[7/10] rounded-2xl overflow-hidden border touch-none select-none [-webkit-touch-callout:none] cursor-pointer ${
           seen ? 'border-neutral-800' : 'border-red-700 animate-pulse'
@@ -93,11 +102,6 @@ export function DealScreen({ player, isLast, nextName, onNext }: DealScreenProps
           />
         )}
       </div>
-
-      {!seen && (
-        <p className="text-red-500 font-bold text-lg tracking-wider">👆 SEGURE A CARTA PARA VER</p>
-      )}
-      {holding && <p className="text-neutral-400 text-sm">Solte para esconder.</p>}
 
       {seen && !holding && (
         <button

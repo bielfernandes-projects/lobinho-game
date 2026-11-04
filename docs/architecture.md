@@ -3,6 +3,15 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — Instrução acima da carta, Caçadora só a partir da 2ª noite, telas novas abrem no topo; prints da landing refeitos
+
+- **Carta (`deal-screen.tsx`)**: a instrução agora fica **acima** da carta (a leitura vai de cima para baixo) e muda conforme o momento: "👇 SEGURE A CARTA ABAIXO PARA VER O SEU PAPEL" → "Solte para esconder" (enquanto segura) → "Segure de novo se quiser rever". Altura fixa (`min-h-14`) para a carta não pular.
+- **Caçadora (Huntress)**: `when: 'not_first'` em `NIGHT_STEPS`, então **não acorda na 1ª noite** (Caderneta e online, que usam a mesma tabela). Descrição da carta: "Uma vez por jogo, a partir da 2ª noite…" e lembrete no passo da noite. O SQL do online ainda aceitaria um tiro na noite 1 se alguém forçasse; a UI não a acorda mais.
+- **Scroll**: `ScenarioScreen` rola para o topo ao abrir (o botão que a abre fica no fim da montagem longa) e `caderneta/page.tsx` rola para o topo a cada mudança de tela (`fase-noite/dia-turno`), então Anoitecer/Amanhecer também abrem no topo.
+- **Landing**: os 4 prints (`public/landing/passo-1..4.png`) foram **refeitos** com as telas atuais (montagem com "Iniciar Partida" e cenários prontos, carta com a instrução acima, noite, vitória).
+- **Verificado** em build de produção (390 px): cenário abre com `scrollY` 0 mesmo vindo da página rolada ao fim; instrução acima da carta e sem salto ao segurar; Caçadora ausente na noite 1 e presente na 2; Amanhecer abre o Dia no topo. 55 testes.
+- **Files**: `src/components/caderneta/{deal-screen,scenario-screen,night-steps-list}.tsx`, `src/app/caderneta/page.tsx`, `src/lib/{night-steps,cards}.ts`, `public/landing/*`.
+
 ### `<current>` — Montagem: preset selecionado, "Iniciar Partida" em dois lugares; Dia: strikes em accordion
 
 - **Preset selecionado**: o cenário (pronto ou salvo) cujas cartas são **iguais** às atuais (`sameCounts`) ganha **borda vermelha**; o título do accordion também mostra o nome ("📋 Cenários prontos e salvos · Jogo Rápido"). Editar qualquer carta tira o destaque.

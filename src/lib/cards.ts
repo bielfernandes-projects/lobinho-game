@@ -384,7 +384,7 @@ export const CARD_CATALOG: CardDefinition[] = [
     points: 3,
     team: 'village',
     description:
-      'Uma vez por jogo, durante a noite, você pode eliminar um jogador.',
+      'Uma vez por jogo, a partir da 2ª noite, você pode eliminar um jogador.',
   },
   {
     id: 'tough_guy',
