@@ -3,6 +3,14 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — Pop-up "Instale o Lobinho" (iOS e Android) sempre que o site abre no navegador
+
+- **Quando aparece**: toda vez que o site é aberto no navegador de um celular **e o app não está instalado**. Fechar ("Agora não" / "Entendi") só esconde nesta visita; ao abrir de novo, volta. **Nunca** aparece dentro do app instalado (`display-mode: standalone` ou `navigator.standalone`) e some sozinho ao instalar (`appinstalled` ou depois do prompt nativo).
+- **iOS** (iPhone/iPad, inclusive iPadOS em modo desktop): o Safari não dispara `beforeinstallprompt`, então o pop-up mostra o passo a passo "Compartilhar → Adicionar à Tela de Início → Adicionar". **Android**: só aparece quando o navegador oferece a instalação (evento `beforeinstallprompt`); o botão **Instalar** chama o prompt nativo. Desktop não recebe o pop-up.
+- **Código**: `src/lib/install.ts` (`installMode`, `isIosUa`; lógica pura com `install.test.ts`, +4 testes), `src/components/install-popup.tsx` (montado em `src/app/layout.tsx`, vale em todas as páginas; reaproveita `useInstallPrompt`). O botão discreto "📲 Instalar App" da landing continua existindo.
+- **Verificado** em build de produção com Chrome headless: iPhone no navegador mostra o passo a passo, fecha com "Entendi" e volta ao abrir outra página; Android mostra com o evento de instalação e "Instalar" chama o prompt; iPhone/Android com sinal de app instalado nunca mostram; desktop não mostra. **Não testado em aparelhos reais** (a emulação injeta o sinal de "instalado").
+- **Limites conhecidos**: Android só mostra se o navegador considerar o site instalável (HTTPS + manifest + service worker, que já existem; Chrome e similares). Firefox Android e navegadores embutidos (Instagram etc.) não disparam o evento, então ali não aparece.
+
 ### `<current>` — Conferência dos 9 papéis na linha do cenário; sem aviso de "sem lobos/Vidente"; campo de nome sem estouro
 
 - **Conferido por script** (build de produção, larguras 300, 320, 360, 390 e 412 px): Bodyguard, Aura Seer, Apprentice Seer, Mystic Seer, Wolf Cub, Dire Wolf, Fruit Brute, Cult Leader e Lone Wolf têm o `[+x]` visível, sem tocar no ⓘ nem estourar a linha.

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Bebas_Neue } from "next/font/google";
 import "./globals.css";
 import { SupabaseProvider } from "@/components/supabase-provider";
 import { ConnectionProvider } from "@/components/reconnection-modal";
+import { InstallPopup } from "@/components/install-popup";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -61,6 +62,7 @@ export default function RootLayout({
         <SupabaseProvider>
           <ConnectionProvider>
             {children}
+            <InstallPopup />
           </ConnectionProvider>
         </SupabaseProvider>
       </body>
