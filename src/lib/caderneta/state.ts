@@ -1,6 +1,6 @@
 // Caderneta do Mestre: pure state + reducer. No React, no Supabase.
 // Relative `.ts` imports on purpose: this file is run directly by `node --test`.
-import { CARD_CATALOG, DRUNK_ALLOWED } from '../cards.ts'
+import { CARD_CATALOG } from '../cards.ts'
 import { NIGHT_STEPS, stepIsAvailable, type NightStep } from '../night-steps.ts'
 import { MAX_PLAYERS, rolesFromCounts, type ScenarioCounts } from '../scenario.ts'
 import { computeWinner, wolfCounts, type Winner } from './winner.ts'
@@ -98,10 +98,8 @@ export function drawRoles(counts: ScenarioCounts, rng: Rng = Math.random): strin
   return roles
 }
 
-export function pickDrunkRole(hasDrunk: boolean, choice: string, rng: Rng = Math.random): string | null {
-  if (!hasDrunk) return null
-  if (choice !== 'random') return choice
-  return DRUNK_ALLOWED[Math.floor(rng() * DRUNK_ALLOWED.length)]
+export function pickDrunkRole(hasDrunk: boolean, choice: string): string | null {
+  return hasDrunk ? choice : null
 }
 
 export function addName(names: string[], raw: string): { names: string[]; error: string | null } {

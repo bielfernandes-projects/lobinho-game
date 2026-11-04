@@ -414,6 +414,7 @@ For each role:
 
 > **Status note (as of the most recent code state):**
 > **Implemented** (37 player roles + moderator): `villager`, `seer`, `witch`, `aura_seer`, `bodyguard`, `priest`, `hunter`, `prince`, `mayor`, `mason`, `lycan`, `pacifist`, `idiot`, `werewolf`, `wolf_cub`, `alpha_wolf`, `lone_wolf`, `sorceress`, `cupid`, `cult_leader`, `tanner`, `diseased`, `cursed`, `doppelganger`, `marksman`, `squire`, `chupacabra`, `minion`, `huntress`, `tough_guy`, `martyr`, `apprentice_seer`, `old_witch`, `drunk`, `dire_wolf`, `virginia_wolf`, `ghost` (card + variant).
+> **Drunk**: the Moderator **chooses** the hidden role (any card except the Drunk; Villager and Werewolf listed first, Villager is the default) — no random draw. In Caderneta mode the choice can also be changed at the night-3 reveal; online it is fixed at scenario time.
 > **NOT yet implemented** (to be added in future iterations): `bad_wolf`, `fruit_brute`, `wolverine`, `hoodlum`, `vampire`.
 
 ### 7.3 Village Roles (Aldeia)

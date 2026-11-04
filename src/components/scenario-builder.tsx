@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { DRUNK_ALLOWED } from '@/lib/cards'
 import { ScenarioCardPicker } from '@/components/scenario-card-picker'
 import { useScenarioCounts } from '@/hooks/use-scenario-counts'
 import { isValidScenario, rolesFromCounts } from '@/lib/scenario'
@@ -16,7 +15,7 @@ interface ScenarioBuilderProps {
 export function ScenarioBuilder({ roomId, playerCount }: ScenarioBuilderProps) {
   const [counts, setCounts] = useScenarioCounts()
   const [revealMode, setRevealMode] = useState<RevealMode>('team')
-  const [drunkHidden, setDrunkHidden] = useState('random')
+  const [drunkHidden, setDrunkHidden] = useState('villager')
   const [ghostVariant, setGhostVariant] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -31,12 +30,7 @@ export function ScenarioBuilder({ roomId, playerCount }: ScenarioBuilderProps) {
 
     const roles = rolesFromCounts(counts)
 
-    const hiddenRole =
-      (counts.drunk ?? 0) > 0
-        ? drunkHidden === 'random'
-          ? DRUNK_ALLOWED[Math.floor(Math.random() * DRUNK_ALLOWED.length)]
-          : drunkHidden
-        : null
+    const hiddenRole = (counts.drunk ?? 0) > 0 ? drunkHidden : null
 
     const { error: revealError } = await supabase
       .from('rooms')

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, type Dispatch } from 'react'
-import { ROLE_TRANSLATION } from '@/lib/cards'
+import { DRUNK_ROLE_OPTIONS, ROLE_TRANSLATION } from '@/lib/cards'
 import { nextStepId, nightSteps, type Action, type CadernetaState } from '@/lib/caderneta/state'
 
 interface NightStepsListProps {
@@ -11,6 +11,7 @@ interface NightStepsListProps {
 
 export function NightStepsList({ state, dispatch }: NightStepsListProps) {
   const [confirming, setConfirming] = useState(false)
+  const [drunkChoice, setDrunkChoice] = useState<string | null>(null)
   const steps = nightSteps(state)
   const next = nextStepId(state)
   const pending = steps.filter((s) => !state.doneSteps.includes(s.id)).length
@@ -25,7 +26,7 @@ export function NightStepsList({ state, dispatch }: NightStepsListProps) {
   }
 
   function revealDrunk() {
-    const hidden = state.drunkHiddenRole
+    const hidden = drunkChoice ?? state.drunkHiddenRole
     if (!hidden) return
     for (const p of state.players) {
       if (p.role === 'drunk') dispatch({ type: 'setRole', id: p.id, role: hidden })
@@ -74,9 +75,18 @@ export function NightStepsList({ state, dispatch }: NightStepsListProps) {
                 </p>
                 {step.id === 'drunk' && state.drunkHiddenRole && (
                   <div className="flex items-center gap-2">
-                    <span className="flex-1 text-[11px] text-amber-500">
-                      Papel oculto: {ROLE_TRANSLATION[state.drunkHiddenRole] ?? state.drunkHiddenRole}
-                    </span>
+                    <label className="flex-1 text-[11px] text-amber-500 space-y-1">
+                      Novo papel
+                      <select
+                        value={drunkChoice ?? state.drunkHiddenRole}
+                        onChange={(e) => setDrunkChoice(e.target.value)}
+                        className="block w-full bg-neutral-900 border border-neutral-800 rounded-lg px-2 py-1.5 text-xs text-neutral-300"
+                      >
+                        {DRUNK_ROLE_OPTIONS.map((c) => (
+                          <option key={c.id} value={c.id}>{ROLE_TRANSLATION[c.id] ?? c.name}</option>
+                        ))}
+                      </select>
+                    </label>
                     <button
                       type="button"
                       onClick={revealDrunk}

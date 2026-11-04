@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { CARD_CATALOG, DRUNK_ALLOWED, type CardDefinition } from '@/lib/cards'
+import { CARD_CATALOG, DRUNK_ROLE_OPTIONS, ROLE_TRANSLATION, type CardDefinition } from '@/lib/cards'
 import { RoleInfoModal } from '@/components/role-info-modal'
 import {
   MAX_PLAYERS,
@@ -66,9 +66,8 @@ export function ScenarioCardPicker({
             onChange={(e) => onDrunkHiddenChange(e.target.value)}
             className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2 text-sm text-neutral-300"
           >
-            <option value="random">🎲 Sortear</option>
-            {CARD_CATALOG.filter((c) => DRUNK_ALLOWED.includes(c.id)).map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
+            {DRUNK_ROLE_OPTIONS.map((c) => (
+              <option key={c.id} value={c.id}>{ROLE_TRANSLATION[c.id] ?? c.name}</option>
             ))}
           </select>
           <p className="text-neutral-600 text-[10px] leading-tight">

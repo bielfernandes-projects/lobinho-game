@@ -3,6 +3,7 @@
 import { useRef, useState, type Dispatch, type FormEvent } from 'react'
 import { CARD_CATALOG } from '@/lib/cards'
 import { ScenarioCardPicker } from '@/components/scenario-card-picker'
+import { ScenarioScreen } from '@/components/caderneta/scenario-screen'
 import { useScenarioCounts } from '@/hooks/use-scenario-counts'
 import { isValidScenario } from '@/lib/scenario'
 import {
@@ -21,7 +22,8 @@ interface SetupScreenProps {
 
 export function SetupScreen({ state, dispatch }: SetupScreenProps) {
   const [counts, setCounts] = useScenarioCounts('session')
-  const [drunkHidden, setDrunkHidden] = useState('random')
+  const [drunkHidden, setDrunkHidden] = useState('villager')
+  const [reviewing, setReviewing] = useState(false)
   const [nameInput, setNameInput] = useState('')
   const [error, setError] = useState('')
   const nameRef = useRef<HTMLInputElement>(null)
@@ -61,6 +63,10 @@ export function SetupScreen({ state, dispatch }: SetupScreenProps) {
       roles: drawRoles(counts),
       drunkHiddenRole: pickDrunkRole((counts.drunk ?? 0) > 0, drunkHidden),
     })
+  }
+
+  if (reviewing) {
+    return <ScenarioScreen counts={counts} onConfirm={handleDeal} onBack={() => setReviewing(false)} />
   }
 
   return (
@@ -140,11 +146,11 @@ export function SetupScreen({ state, dispatch }: SetupScreenProps) {
 
       <button
         type="button"
-        onClick={handleDeal}
+        onClick={() => setReviewing(true)}
         disabled={!valid}
         className="w-full py-4 rounded-2xl font-bold text-lg tracking-wider bg-red-700 text-white hover:bg-red-600 active:bg-red-800 disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-red-900/40 transition-all duration-200 cursor-pointer"
       >
-        Sortear e entregar cartas
+        Ver cenário e entregar cartas
       </button>
     </div>
   )

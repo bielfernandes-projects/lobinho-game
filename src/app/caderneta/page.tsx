@@ -49,6 +49,7 @@ export default function CadernetaPage() {
           key={state.dealIndex}
           player={dealing}
           isLast={state.dealIndex === state.players.length - 1}
+          nextName={state.players[state.dealIndex + 1]?.name}
           onNext={() => dispatch({ type: 'nextDeal' })}
         />
       )}

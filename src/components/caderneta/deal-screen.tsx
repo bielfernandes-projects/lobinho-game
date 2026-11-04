@@ -8,14 +8,15 @@ import type { CadernetaPlayer } from '@/lib/caderneta/state'
 interface DealScreenProps {
   player: CadernetaPlayer
   isLast: boolean
+  nextName?: string
   onNext: () => void
 }
 
-type Step = 'handoff' | 'view' | 'return'
+type Step = 'view' | 'return'
 
 // Render with `key={dealIndex}` so each player starts from the neutral hand-off screen.
-export function DealScreen({ player, isLast, onNext }: DealScreenProps) {
-  const [step, setStep] = useState<Step>('handoff')
+export function DealScreen({ player, isLast, nextName, onNext }: DealScreenProps) {
+  const [step, setStep] = useState<Step>('view')
   const [holding, setHolding] = useState(false)
   const [seen, setSeen] = useState(false)
   const card = CARD_CATALOG.find((c) => c.id === player.role)
@@ -30,22 +31,6 @@ export function DealScreen({ player, isLast, onNext }: DealScreenProps) {
       window.removeEventListener('blur', hide)
     }
   }, [])
-
-  if (step === 'handoff') {
-    return (
-      <div className="min-h-[70dvh] flex flex-col items-center justify-center gap-8 text-center">
-        <p className="text-neutral-500 text-xs uppercase tracking-widest">Passe o celular para</p>
-        <p className="font-display text-6xl tracking-widest text-red-600 break-words max-w-full">{player.name}</p>
-        <button
-          type="button"
-          onClick={() => setStep('view')}
-          className="w-full max-w-xs py-4 rounded-2xl font-bold tracking-wider bg-primary hover:bg-primary-hover active:bg-primary-active text-white shadow-lg shadow-red-900/30 cursor-pointer transition-all"
-        >
-          Estou com o celular
-        </button>
-      </div>
-    )
-  }
 
   if (step === 'return') {
     return (
@@ -64,13 +49,17 @@ export function DealScreen({ player, isLast, onNext }: DealScreenProps) {
   }
 
   return (
-    <div className="min-h-[70dvh] flex flex-col items-center justify-center gap-6 text-center">
-      <p className="text-neutral-400 text-sm">
-        <span className="text-neutral-200 font-bold">{player.name}</span>, segure a carta para ver.
-      </p>
+    <div className="min-h-[70dvh] flex flex-col items-center justify-center gap-5 text-center">
+      <div className="space-y-1">
+        <p className="text-neutral-500 text-xs uppercase tracking-widest">Vez de</p>
+        <p className="font-display text-5xl tracking-widest text-red-600 break-words max-w-full">{player.name}</p>
+        <p className="text-neutral-400 text-xs">Só quem está com o celular olha a tela.</p>
+      </div>
 
       <div
-        className="relative w-64 aspect-[7/10] rounded-2xl overflow-hidden border border-neutral-800 touch-none select-none [-webkit-touch-callout:none] cursor-pointer"
+        className={`relative w-64 aspect-[7/10] rounded-2xl overflow-hidden border touch-none select-none [-webkit-touch-callout:none] cursor-pointer ${
+          seen ? 'border-neutral-800' : 'border-red-700 animate-pulse'
+        }`}
         onPointerDown={(e) => {
           try {
             e.currentTarget.setPointerCapture(e.pointerId)
@@ -104,13 +93,18 @@ export function DealScreen({ player, isLast, onNext }: DealScreenProps) {
         )}
       </div>
 
+      {!seen && (
+        <p className="text-red-500 font-bold text-lg tracking-wider">👆 SEGURE A CARTA PARA VER</p>
+      )}
+      {holding && <p className="text-neutral-400 text-sm">Solte para esconder.</p>}
+
       {seen && !holding && (
         <button
           type="button"
           onClick={() => (isLast ? setStep('return') : onNext())}
           className="w-full max-w-xs py-3.5 rounded-2xl font-bold tracking-wider bg-primary hover:bg-primary-hover active:bg-primary-active text-white shadow-lg shadow-red-900/30 cursor-pointer transition-all"
         >
-          {isLast ? 'Devolver ao mestre' : 'Próximo'}
+          {isLast ? 'Devolver ao mestre' : `Pronto! Passar para ${nextName}`}
         </button>
       )}
     </div>

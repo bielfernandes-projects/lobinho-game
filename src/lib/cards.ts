@@ -422,9 +422,10 @@ export const CARD_CATALOG: CardDefinition[] = [
   },
 ]
 
-// Reserve roles the Drunk may become: none with a crucial action on nights 1-2 (official recommendation).
-export const DRUNK_ALLOWED = [
-  'villager', 'werewolf', 'wolf_cub', 'alpha_wolf', 'hunter', 'prince', 'mayor', 'lycan', 'tanner',
-  'pacifist', 'idiot', 'squire', 'marksman', 'diseased', 'cursed', 'martyr', 'tough_guy', 'huntress',
-  'apprentice_seer',
+// Roles the Drunk may become (the master picks; any card but the Drunk itself).
+// Villager and Werewolf come first: they are by far the most used.
+const DRUNK_FIRST = ['villager', 'werewolf']
+export const DRUNK_ROLE_OPTIONS: CardDefinition[] = [
+  ...DRUNK_FIRST.map((id) => CARD_CATALOG.find((c) => c.id === id)!),
+  ...CARD_CATALOG.filter((c) => c.id !== 'drunk' && !DRUNK_FIRST.includes(c.id)),
 ]

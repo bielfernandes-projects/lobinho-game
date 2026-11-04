@@ -38,10 +38,9 @@ test('drawRoles usa cada carta exatamente uma vez e é determinístico com rng f
   assert.deepEqual([...a].sort(), [...rolesFromCounts(counts)].sort())
 })
 
-test('pickDrunkRole: sem bêbado é null, escolha explícita vale, sorteio vem da lista', () => {
-  assert.equal(pickDrunkRole(false, 'random'), null)
-  assert.equal(pickDrunkRole(true, 'hunter'), 'hunter')
-  assert.equal(pickDrunkRole(true, 'random', () => 0), 'villager')
+test('pickDrunkRole: sem bêbado é null, com bêbado vale a escolha do mestre', () => {
+  assert.equal(pickDrunkRole(false, 'villager'), null)
+  assert.equal(pickDrunkRole(true, 'seer'), 'seer')
 })
 
 test('addName: apara, rejeita vazio, duplicado, longo e excesso', () => {
