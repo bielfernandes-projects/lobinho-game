@@ -2,7 +2,7 @@
   "name": "Lobinho",
   "short_name": "Lobinho",
   "description": "A Werewolf Game Based — Jogo de dedução social multiplayer",
-  "start_url": "/",
+  "start_url": "/caderneta",
   "display": "standalone",
   "background_color": "#0a0a0a",
   "theme_color": "#0a0a0a",

@@ -3,6 +3,14 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — Landing page `/` + tutorial rápido em 4 passos; PWA abre em `/caderneta`
+
+- **`/` agora é uma landing estática** (componente de servidor, PT-BR) para quem não conhece o app: hero (logo, "O mestre de Werewolf no seu bolso", **Começar** → `/caderneta`, instalar), **Como funciona** (4 passos com prints reais em molduras de celular), **Por que usar** (3 cartões), chamada final e rodapé (Ajude o Dev + link discreto "Jogar online" → `/online`). `metadata` próprio (título/descrição). O app em si (`/caderneta`) não mudou.
+- **`start_url` = `/caderneta`** em `public/manifest.json` e `public/site.webmanifest`: o app instalado abre direto na Caderneta. Quem já instalou pode continuar abrindo em `/` até o navegador reler o manifest.
+- **Prints = dependência da UI**: `public/landing/passo-1..4.png` (390×844 @2x) mostram montagem, "Vez de NOME", noite 1 com dicas do Cupido e banner de vitória. Se essas telas mudarem muito, refazer. Foram gerados com Chrome headless via CDP semeando `sessionStorage` (`lobinho:caderneta:v1` e `lobinho:caderneta:scenario`) com 8 jogadores fictícios. Atenção: o `next start` só serve arquivos de `public/` que existiam quando subiu; reiniciar o servidor depois de adicionar imagens.
+- **Verificado** (build de produção): `/` em 390 px e 1280 px sem rolagem horizontal, um `h1`, nenhuma imagem quebrada, links `/caderneta` e `/online`, `start_url` novo; `tsc` limpo e 41 testes passando.
+- **Files**: `src/app/page.tsx`, `src/components/landing/{phone-frame,how-it-works}.tsx`, `public/landing/*`, `public/{manifest.json,site.webmanifest}`, `docs/superpowers/{specs,plans}/*landing*`.
+
 ### `<current>` — Modo online escondido da home (link discreto no rodapé)
 
 - **Decisão**: a adesão foi na Caderneta (o jogo vive da interação presencial), então o online deixou de ser destaque. Não foi apagado: só saiu da home. Apagar de vez fica para depois de algumas noites de jogo só com a Caderneta.
