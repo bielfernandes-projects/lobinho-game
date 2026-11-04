@@ -3,6 +3,10 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — Termômetro fixo com contagem de cartas
+
+- **Termômetro fixo mostra a contagem de cartas** (`Cartas: x/y ✅`, `scenario-card-picker.tsx`), igual ao rodapé da lista, para valer enquanto se rola o cenário (Caderneta e online).
+
 ### `<current>` — Landing page `/` + tutorial rápido em 4 passos; PWA abre em `/caderneta`
 
 - **`/` agora é uma landing estática** (componente de servidor, PT-BR) para quem não conhece o app: hero (logo, "O mestre de Werewolf no seu bolso", **Começar** → `/caderneta`, instalar), **Como funciona** (4 passos com prints reais em molduras de celular), **Por que usar** (3 cartões), chamada final e rodapé (Ajude o Dev + link discreto "Jogar online" → `/online`). `metadata` próprio (título/descrição). O app em si (`/caderneta`) não mudou.

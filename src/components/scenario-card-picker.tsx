@@ -84,7 +84,12 @@ export function ScenarioCardPicker({
       {/* Termômetro: fica fixo no topo enquanto a lista de cartas rola. */}
       <div className="sticky top-[env(safe-area-inset-top,0px)] z-10 bg-midnight pt-1 pb-2">
         <div className="rounded-xl border border-neutral-800 bg-neutral-900 px-4 py-3 space-y-1.5">
-          <p className={`text-xs font-bold tracking-wider uppercase ${view.text}`}>{view.label}</p>
+          <div className="flex items-center justify-between gap-2">
+            <p className={`text-xs font-bold tracking-wider uppercase ${view.text}`}>{view.label}</p>
+            <p className={`text-xs font-mono ${isValid ? 'text-emerald-500' : 'text-neutral-500'}`}>
+              Cartas: {totalCards}/{playerCount} {isValid ? '✅' : ''}
+            </p>
+          </div>
           <div className="flex items-center gap-2">
             <div className="flex-1 h-1.5 rounded-full bg-neutral-800 overflow-hidden flex">
               <div
