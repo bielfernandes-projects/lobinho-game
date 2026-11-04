@@ -7,7 +7,7 @@ import { computeWinner, wolfCounts, type Winner } from './winner.ts'
 
 export type Phase = 'setup' | 'deal' | 'play' | 'ended'
 export type View = 'night' | 'day'
-export type Tag = 'soulmate' | 'protected' | 'cult' | 'pox' | 'blessed' | 'companion'
+export type Tag = 'soulmate' | 'protected' | 'cult' | 'pox' | 'blessed' | 'companion' | 'doppel'
 export type Rng = () => number
 
 export const TAGS: { id: Tag; label: string }[] = [
@@ -17,6 +17,7 @@ export const TAGS: { id: Tag; label: string }[] = [
   { id: 'pox', label: '🤒 Varíola' },
   { id: 'blessed', label: '🙏 Abençoado' },
   { id: 'companion', label: '🔗 Companheiro' },
+  { id: 'doppel', label: '🎭 Alvo do Doppelgänger' },
 ]
 
 export const MAX_STRIKES = 3

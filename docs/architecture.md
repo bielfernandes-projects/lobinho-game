@@ -6,8 +6,9 @@ A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, S
 ### `<current>` — Trello #132: Caderneta sugere anotar as conexões na 1ª noite (Cupido, Lobo Aproveitador, Virginia Wolf)
 
 - Nos passos de acordar `cupid`, `dire_wolf` e `virginia_wolf` (`night-steps-list.tsx`) aparece uma dica "💡 Anote quem … escolheu (n/máx)" com um botão por jogador. Tocar marca/desmarca a **etiqueta que já existia** (`soulmate` para o Cupido, máx. 2 e alimenta a vitória das almas gêmeas; `companion` para Dire/Virginia, máx. 1) via `toggleTag`. Sem mudança de reducer, estado ou banco; o botão "✓ Feito" continua opcional.
-- **Limite conhecido**: Dire Wolf e Virginia Wolf compartilham a etiqueta `companion`; com os dois no cenário, os dois passos mostram a mesma seleção. Doppelgänger e Líder de Culto (não é conexão de 1ª noite) ficaram de fora.
-- **Files**: `src/components/caderneta/night-steps-list.tsx`.
+- **Acrescentado depois**: **Doppelgänger** (nova etiqueta `doppel` "🎭 Alvo do Doppelgänger", máx. 1, 1ª noite) e **Líder de Culto** (etiqueta `cult` existente, sem limite, toda noite; o próprio líder não aparece na lista, o contador mostra marcados/vivos). Como `winner.ts` já usa `cult`, o banner "O CULTO DOMINOU A VILA!" aparece sozinho quando todos os vivos estão no culto.
+- **Limite conhecido**: Dire Wolf e Virginia Wolf compartilham a etiqueta `companion`; com os dois no cenário, os dois passos mostram a mesma seleção.
+- **Files**: `src/components/caderneta/night-steps-list.tsx`, `src/lib/caderneta/state.ts` (tag `doppel`).
 
 ### `<current>` — Trello #130/#131 + handoff das cartas: cenário na Caderneta, Bêbado escolhido pelo mestre, "Vez de" em uma tela só
 

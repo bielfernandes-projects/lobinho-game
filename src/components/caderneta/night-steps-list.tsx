@@ -12,8 +12,16 @@ interface NightStepsListProps {
 // First-night steps where a role links players. The master taps who was chosen and the app
 // reuses the existing tag (the soulmate tag feeds the win check).
 // ponytail: Dire Wolf and Virginia Wolf share the 'companion' tag; both in one game show the same picks.
-const CONNECTIONS: Record<string, { tag: Tag; max: number; hint: string }> = {
+// `max: null` = no cap (the cult grows every night); `skipRole` = the chooser is not pickable.
+const CONNECTIONS: Record<string, { tag: Tag; max: number | null; hint: string; skipRole?: string }> = {
   cupid: { tag: 'soulmate', max: 2, hint: 'Anote os 2 apaixonados que o Cupido escolheu:' },
+  doppelganger: { tag: 'doppel', max: 1, hint: 'Anote o alvo que o Doppelgänger escolheu:', skipRole: 'doppelganger' },
+  cult_leader: {
+    tag: 'cult',
+    max: null,
+    hint: 'Anote quem já entrou no culto (o culto vence quando todos os vivos estiverem nele):',
+    skipRole: 'cult_leader',
+  },
   dire_wolf: { tag: 'companion', max: 1, hint: 'Anote o companheiro que o Lobo Aproveitador escolheu:' },
   virginia_wolf: { tag: 'companion', max: 1, hint: 'Anote o par que a Virginia Wolf escolheu:' },
 }
@@ -83,22 +91,24 @@ export function NightStepsList({ state, dispatch }: NightStepsListProps) {
                   {holders.map((p) => (p.alive ? p.name : `${p.name} †`)).join(', ')}
                 </p>
                 {CONNECTIONS[step.id] && (() => {
-                  const { tag, max, hint } = CONNECTIONS[step.id]
-                  const picked = state.players.filter((p) => p.tags.includes(tag)).length
+                  const { tag, max, hint, skipRole } = CONNECTIONS[step.id]
+                  const options = state.players.filter((p) => p.role !== skipRole)
+                  const picked = options.filter((p) => p.tags.includes(tag)).length
+                  const total = max ?? options.filter((p) => p.alive).length
                   return (
                     <div className="space-y-1.5">
                       <p className="text-[11px] text-amber-400">
-                        💡 {hint} ({picked}/{max})
+                        💡 {hint} ({picked}/{total})
                       </p>
                       <div className="flex flex-wrap gap-1.5">
-                        {state.players.map((p) => {
+                        {options.map((p) => {
                           const on = p.tags.includes(tag)
                           return (
                             <button
                               key={p.id}
                               type="button"
                               onClick={() => dispatch({ type: 'toggleTag', id: p.id, tag })}
-                              disabled={!on && picked >= max}
+                              disabled={!on && max !== null && picked >= max}
                               aria-pressed={on}
                               className={`px-2.5 py-1 rounded-full border text-[11px] cursor-pointer transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
                                 on
