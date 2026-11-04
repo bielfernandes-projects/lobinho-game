@@ -3,6 +3,15 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — Caçador de Vampiros (Caderneta) + aviso no cenário Online + card #133
+
+- **Princípio de produto** (dito pelo usuário em 2026-11-04): qualquer pessoa deve conseguir mestrar na primeira vez; o app explica ordem, papéis e exceções de regra. Está na memória (`anyone-can-be-master`) e guia novas telas.
+- **Caçador de Vampiros**: com um Vampiro vivo no jogo, quando um Caçador morre aparece um aviso explicando a regra ("se foi morto pelos vampiros, leva o vampiro mais próximo na mesa") com **"🔫 Foi morto pelos vampiros"** (mata o vampiro mais próximo, `hunterShot`) ou **"Morreu de outro jeito"** (`hunterSkip`). Empate de distância: o app lista os vampiros empatados e o mestre escolhe com "Matar". A tela de cenário também explica a regra quando há Caçador e Vampiro. `closestVampires`/`pendingHunters` em `state.ts`; novo campo `hunterHandled` (reviver rearma; partidas antigas carregam). Distância = assentos na mesa circular (ordem dos nomes).
+- **Aviso no cenário Online** (`scenario-card-picker.tsx`, só quando `!cadernetaMode`): "Alguns papéis (...) ainda estão sendo adicionados ao modo online".
+- **Trello #133** criado em Não Iniciado: levar os papéis só da Caderneta para o online (migrações, SQL, painéis), depois remover `cadernetaOnly`.
+- **Testes**: 49 passando. A interface do aviso do Caçador não foi verificada no navegador.
+- **Files**: `src/lib/caderneta/state.ts` (+ teste), `src/components/caderneta/{play-panel,scenario-screen}.tsx`, `src/components/scenario-card-picker.tsx`.
+
 ### `<current>` — Nomes dos papéis em inglês e português: "Werewolf (Lobisomem)"
 
 - **Formato**: inglês normal + português **menor** entre parênteses (`text-[0.75em]`, mais claro). Quando os nomes coincidem (ex.: Wolverine, Mad Bomber) aparece só um. Helpers em `src/lib/cards.ts`: `roleNameParts(id)` e `roleName(id)` (texto puro) e o componente `src/components/role-name.tsx` (`<RoleName id emoji />`, com o parêntese estilizado).

@@ -51,6 +51,8 @@ export interface CadernetaState {
   lastLynchId: string | null
   /** Mad Bombers whose blast the master already resolved (cleared if the bomber is revived). */
   bomberHandled: string[]
+  /** Dead Hunters whose "Vampire Hunter" shot the master already resolved. */
+  hunterHandled: string[]
 }
 
 export type Action =
@@ -72,6 +74,8 @@ export type Action =
   | { type: 'removeStrike'; id: string }
   | { type: 'bomb'; id: string }
   | { type: 'bombSkip'; id: string }
+  | { type: 'hunterShot'; id: string; target: string }
+  | { type: 'hunterSkip'; id: string }
   | { type: 'end' }
 
 const ROLE_IDS = new Set<string>(CARD_CATALOG.map((c) => c.id))
@@ -91,6 +95,7 @@ export function initialState(): CadernetaState {
     doneSteps: [],
     lastLynchId: null,
     bomberHandled: [],
+    hunterHandled: [],
   }
 }
 
@@ -162,6 +167,7 @@ export function reducer(state: CadernetaState, action: Action): CadernetaState {
         doneSteps: [],
         lastLynchId: null,
         bomberHandled: [],
+        hunterHandled: [],
       }
     }
     case 'nextDeal': {
@@ -175,7 +181,11 @@ export function reducer(state: CadernetaState, action: Action): CadernetaState {
       return { ...initialState(), names: state.names }
     case 'setAlive': {
       const base = action.alive
-        ? { ...state, bomberHandled: state.bomberHandled.filter((b) => b !== action.id) }
+        ? {
+            ...state,
+            bomberHandled: state.bomberHandled.filter((b) => b !== action.id),
+            hunterHandled: state.hunterHandled.filter((b) => b !== action.id),
+          }
         : state
       const next = mapPlayer(base, action.id, (p) => ({ ...p, alive: action.alive }))
       // Bringing the lynched player back undoes the lynch.
@@ -229,6 +239,16 @@ export function reducer(state: CadernetaState, action: Action): CadernetaState {
         bomberHandled: [...new Set([...state.bomberHandled, action.id])],
       }
     }
+    case 'hunterShot': {
+      if (state.phase !== 'play') return state
+      return {
+        ...state,
+        players: state.players.map((p) => (p.id === action.target ? { ...p, alive: false } : p)),
+        hunterHandled: [...new Set([...state.hunterHandled, action.id])],
+      }
+    }
+    case 'hunterSkip':
+      return { ...state, hunterHandled: [...new Set([...state.hunterHandled, action.id])] }
     case 'bombSkip':
       return { ...state, bomberHandled: [...new Set([...state.bomberHandled, action.id])] }
     case 'end':
@@ -255,6 +275,37 @@ export function bombTargets(players: readonly CadernetaPlayer[], bomberId: strin
   }
   const ids = [nearestAlive(-1), nearestAlive(1)].filter((x): x is string => x !== null)
   return [...new Set(ids)]
+}
+
+/**
+ * With Vampires in the game the Hunter is a Vampire Hunter: if the Vampires kill him he takes the
+ * closest living Vampire with him. Returns every living Vampire at the smallest seat distance
+ * (more than one means a tie the master settles).
+ */
+export function closestVampires(players: readonly CadernetaPlayer[], hunterId: string): string[] {
+  const i = players.findIndex((p) => p.id === hunterId)
+  if (i < 0) return []
+  const n = players.length
+  let best = Infinity
+  let ids: string[] = []
+  players.forEach((p, j) => {
+    if (!p.alive || p.role !== 'vampire') return
+    const d = Math.min((j - i + n) % n, (i - j + n) % n)
+    if (d < best) {
+      best = d
+      ids = [p.id]
+    } else if (d === best) ids.push(p.id)
+  })
+  return ids
+}
+
+/** Dead Hunters in a game that still has a living Vampire, not resolved yet. */
+export function pendingHunters(state: CadernetaState): CadernetaPlayer[] {
+  if (state.phase !== 'play') return []
+  if (!state.players.some((p) => p.alive && p.role === 'vampire')) return []
+  return state.players.filter(
+    (p) => p.role === 'hunter' && !p.alive && !state.hunterHandled.includes(p.id),
+  )
 }
 
 /** Dead Mad Bombers whose blast has not been resolved yet. */
@@ -337,6 +388,8 @@ export function sanitizeState(raw: unknown): CadernetaState | null {
   // Absent in games saved before the Mad Bomber existed.
   const bomberHandled = s.bomberHandled ?? []
   if (!isStringArray(bomberHandled)) return null
+  const hunterHandled = s.hunterHandled ?? []
+  if (!isStringArray(hunterHandled)) return null
   return {
     v: STATE_VERSION,
     phase,
@@ -349,5 +402,6 @@ export function sanitizeState(raw: unknown): CadernetaState | null {
     doneSteps: s.doneSteps,
     lastLynchId,
     bomberHandled,
+    hunterHandled,
   }
 }

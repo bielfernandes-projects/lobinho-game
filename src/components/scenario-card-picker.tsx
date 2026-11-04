@@ -62,6 +62,13 @@ export function ScenarioCardPicker({
 
   return (
     <div className="space-y-4">
+      {!cadernetaMode && (
+        <p className="rounded-xl border border-neutral-800 bg-neutral-900/50 px-4 py-3 text-[11px] leading-relaxed text-neutral-500">
+          🚧 Alguns papéis (como Vampiro, Lobo Mau, Mad Bomber e os da Hunting Party) ainda estão sendo adicionados
+          ao modo online. Hoje eles já funcionam na Caderneta do Mestre.
+        </p>
+      )}
+
       {(counts.drunk ?? 0) > 0 && (
         <div className="rounded-xl border border-amber-900/40 bg-amber-950/10 px-4 py-3 space-y-2">
           <p className="text-amber-500 text-[10px] uppercase tracking-widest font-bold">

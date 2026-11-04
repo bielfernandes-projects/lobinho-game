@@ -2,7 +2,7 @@
 
 import { useState, type Dispatch } from 'react'
 import { hoodlumDone } from '@/lib/caderneta/winner'
-import { aliveCounts, bombTargets, pendingBombers, winnerOf, type Action, type CadernetaState } from '@/lib/caderneta/state'
+import { aliveCounts, bombTargets, closestVampires, pendingBombers, pendingHunters, winnerOf, type Action, type CadernetaState } from '@/lib/caderneta/state'
 import { DayTools } from './day-tools'
 import { NightStepsList } from './night-steps-list'
 import { PlayersList } from './players-list'
@@ -19,6 +19,7 @@ export function PlayPanel({ state, dispatch }: PlayPanelProps) {
   const hoodlumId = hoodlumDone(state.players)?.id
   const hoodlum = state.players.find((p) => p.id === hoodlumId)
   const bombers = pendingBombers(state)
+  const hunters = pendingHunters(state)
   const marked = state.players.filter((p) => p.alive && p.tags.includes('marked'))
   const [confirm, setConfirm] = useState<'end' | 'cancel' | null>(null)
 
@@ -34,6 +35,39 @@ export function PlayPanel({ state, dispatch }: PlayPanelProps) {
       </header>
 
       {winner && <WinnerBanner winner={winner} onEnd={() => dispatch({ type: 'end' })} />}
+
+      {hunters.map((h) => {
+        const near = closestVampires(state.players, h.id)
+        const names = near.map((id) => state.players.find((p) => p.id === id)?.name).join(' ou ')
+        return (
+          <div key={h.id} className="rounded-xl border border-fuchsia-800/60 bg-fuchsia-950/20 px-4 py-3 space-y-2 text-xs text-fuchsia-200">
+            <p>
+              🔫 <b>{h.name}</b> (Caçador) morreu e há Vampiros no jogo, então ele é um Caçador de Vampiros: se
+              foi morto <b>pelos vampiros</b>, leva junto o vampiro mais próximo dele na mesa.{' '}
+              {near.length === 1 ? <>O mais próximo é <b>{names}</b>.</> : <>Empate entre <b>{names}</b>: você escolhe quem morre (use &quot;Matar&quot; na lista).</>}{' '}
+              Se ele morreu de outro jeito, nada acontece.
+            </p>
+            <div className="flex gap-2">
+              {near.length === 1 && (
+                <button
+                  type="button"
+                  onClick={() => dispatch({ type: 'hunterShot', id: h.id, target: near[0] })}
+                  className="flex-1 py-2 rounded-lg font-bold bg-fuchsia-700 text-white hover:bg-fuchsia-600 cursor-pointer"
+                >
+                  🔫 Foi morto pelos vampiros
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => dispatch({ type: 'hunterSkip', id: h.id })}
+                className="flex-1 py-2 rounded-lg font-bold border border-neutral-700 text-neutral-300 hover:bg-neutral-800 cursor-pointer"
+              >
+                {near.length === 1 ? 'Morreu de outro jeito' : 'Já resolvi'}
+              </button>
+            </div>
+          </div>
+        )
+      })}
 
       {bombers.map((b) => {
         const victims = bombTargets(state.players, b.id)
