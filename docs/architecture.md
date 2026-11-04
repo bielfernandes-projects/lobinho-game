@@ -3,6 +3,12 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — Trello #132: Caderneta sugere anotar as conexões na 1ª noite (Cupido, Lobo Aproveitador, Virginia Wolf)
+
+- Nos passos de acordar `cupid`, `dire_wolf` e `virginia_wolf` (`night-steps-list.tsx`) aparece uma dica "💡 Anote quem … escolheu (n/máx)" com um botão por jogador. Tocar marca/desmarca a **etiqueta que já existia** (`soulmate` para o Cupido, máx. 2 e alimenta a vitória das almas gêmeas; `companion` para Dire/Virginia, máx. 1) via `toggleTag`. Sem mudança de reducer, estado ou banco; o botão "✓ Feito" continua opcional.
+- **Limite conhecido**: Dire Wolf e Virginia Wolf compartilham a etiqueta `companion`; com os dois no cenário, os dois passos mostram a mesma seleção. Doppelgänger e Líder de Culto (não é conexão de 1ª noite) ficaram de fora.
+- **Files**: `src/components/caderneta/night-steps-list.tsx`.
+
 ### `<current>` — Trello #130/#131 + handoff das cartas: cenário na Caderneta, Bêbado escolhido pelo mestre, "Vez de" em uma tela só
 
 - **#130 Explicação de cenário (Caderneta)**: novo `src/components/caderneta/scenario-screen.tsx`. O botão da montagem agora é "Ver cenário e entregar cartas" e abre uma tela com os papéis do cenário (nome, quantidade, descrição; ordem Aldeia → Lobos → Independentes, como a tela online) e os botões "Sortear e entregar cartas" / "Voltar para a montagem". Estado local (`reviewing` em `setup-screen.tsx`), sem mudança no reducer; recarregar a página volta à montagem.
