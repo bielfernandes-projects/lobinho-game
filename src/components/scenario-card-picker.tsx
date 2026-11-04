@@ -134,10 +134,11 @@ export function ScenarioCardPicker({
                     key={card.id}
                     className="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-neutral-800 bg-neutral-900/50"
                   >
-                    <span className="flex-1 text-sm font-medium text-neutral-300 truncate flex items-center gap-2">
-                      <span><RoleName id={card.id} /></span>
+                    {/* The name may wrap onto a second line; the points never get cut or pushed under the buttons. */}
+                    <span className="flex-1 min-w-0 text-sm font-medium text-neutral-300 leading-snug">
+                      <RoleName id={card.id} />{' '}
                       <span
-                        className={`text-xs font-mono ${
+                        className={`text-xs font-mono whitespace-nowrap ${
                           card.points > 0 ? 'text-emerald-500' : card.points < 0 ? 'text-red-500' : 'text-yellow-500'
                         }`}
                       >
@@ -149,12 +150,12 @@ export function ScenarioCardPicker({
                       type="button"
                       onClick={() => setModalCard(card)}
                       aria-label={`Sobre ${card.name}`}
-                      className="text-neutral-600 hover:text-neutral-400 text-xs transition-colors cursor-pointer"
+                      className="shrink-0 text-neutral-600 hover:text-neutral-400 text-xs transition-colors cursor-pointer"
                     >
                       ⓘ
                     </button>
 
-                    <div className="flex items-center gap-1.5">
+                    <div className="shrink-0 flex items-center gap-1.5">
                       <button
                         type="button"
                         onClick={() => setCount(card.id, -1)}

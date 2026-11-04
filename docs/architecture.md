@@ -3,6 +3,12 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — Ajustes de layout: cenários prontos fechados e valor da carta sempre visível
+
+- **Cenários prontos e salvos** agora começam **fechados** (`<details>` sem `open` em `scenario-presets.tsx`).
+- **Linha de carta do cenário** (`scenario-card-picker.tsx`): com o nome em inglês + português a linha ficou larga e o `[+x]` era cortado/escondido atrás do botão ⓘ no celular. Agora o nome e o valor fluem como texto em linha (`min-w-0`, `leading-snug`): o nome pode quebrar em duas linhas, o valor é `whitespace-nowrap` e os botões (ⓘ e contador) são `shrink-0`. Verificado em build de produção com tela de 320 px: nas 46 linhas, nenhum valor sobrepõe o ⓘ nem estoura a linha; checagem feita por script que mede as caixas.
+- **Files**: `src/components/scenario-card-picker.tsx`, `src/components/caderneta/scenario-presets.tsx`.
+
 ### `<current>` — Correção: o app só AVISA sobre vizinhos; quem elimina é o mestre. Alpha Wolf da expansão
 
 - **Regra de ouro (dita pelo usuário)**: o app **não sabe quem está sentado ao lado de quem**, então em todo papel que depende da posição física o app **avisa e o mestre faz as eliminações** (botão "Matar" na lista). Isso vale para o **Mad Bomber**, o **Caçador de Vampiros** e o **Lobo Mau** (2 adjacentes).

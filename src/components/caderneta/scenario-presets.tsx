@@ -88,7 +88,7 @@ export function ScenarioPresets({ counts, onApply }: ScenarioPresetsProps) {
   }
 
   return (
-    <details open className="rounded-xl border border-neutral-800 bg-neutral-900/30">
+    <details className="rounded-xl border border-neutral-800 bg-neutral-900/30">
       <summary className="px-4 py-3 text-sm font-medium text-neutral-300 cursor-pointer select-none">
         📋 Cenários prontos e salvos
       </summary>
