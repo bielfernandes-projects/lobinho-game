@@ -3,10 +3,12 @@ import assert from 'node:assert/strict'
 import {
   addName,
   aliveCounts,
+  bombTargets,
   drawRoles,
   initialState,
   nextStepId,
   nightSteps,
+  pendingBombers,
   pickDrunkRole,
   reducer,
   sanitizeState,
@@ -201,4 +203,34 @@ test('sanitizeState: ida e volta por JSON e rejeição de lixo', () => {
     null,
   )
   assert.equal(sanitizeState({ ...s, phase: 'deal', dealIndex: 99 }), null)
+})
+
+test('Mad Bomber: leva os vivos mais próximos de cada lado (mesa circular) e só uma vez', () => {
+  const names = ['A', 'B', 'C', 'D', 'E', 'F']
+  const roles = ['villager', 'villager', 'mad_bomber', 'villager', 'villager', 'villager']
+  let s = reducer(initialState(), { type: 'setNames', names })
+  s = reducer(s, { type: 'deal', roles, drunkHiddenRole: null })
+  s = reducer(s, { type: 'nextDeal' })
+  for (let i = 1; i < names.length; i++) s = reducer(s, { type: 'nextDeal' })
+  assert.equal(s.phase, 'play')
+  s = reducer(s, { type: 'setAlive', id: 'p2', alive: false })
+  assert.deepEqual(pendingBombers(s).map((p) => p.id), ['p2'])
+  assert.deepEqual(bombTargets(s.players, 'p2'), ['p1', 'p3'])
+  // o vizinho da esquerda já morto: vale o vivo seguinte
+  const s2 = reducer(s, { type: 'setAlive', id: 'p1', alive: false })
+  assert.deepEqual(bombTargets(s2.players, 'p2'), ['p0', 'p3'])
+  s = reducer(s, { type: 'bomb', id: 'p2' })
+  assert.deepEqual(s.players.filter((p) => !p.alive).map((p) => p.id), ['p1', 'p2', 'p3'])
+  assert.deepEqual(pendingBombers(s), [])
+  // reviver o bombardeiro rearma o aviso para a próxima morte
+  s = reducer(s, { type: 'setAlive', id: 'p2', alive: true })
+  s = reducer(s, { type: 'setAlive', id: 'p2', alive: false })
+  assert.equal(pendingBombers(s).length, 1)
+})
+
+test('bombTargets: na mesa circular o último e o primeiro são vizinhos; sozinho não leva ninguém', () => {
+  const mk = (alive: boolean[]) => alive.map((a, i) => ({ id: `p${i}`, name: `${i}`, role: 'villager', alive: a, tags: [], note: '', strikes: 0 }))
+  assert.deepEqual(bombTargets(mk([false, true, true, true]), 'p0').sort(), ['p1', 'p3'])
+  assert.deepEqual(bombTargets(mk([false, false, false, true]), 'p0'), ['p3'])
+  assert.deepEqual(bombTargets(mk([false, false]), 'p0'), [])
 })

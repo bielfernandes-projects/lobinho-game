@@ -3,6 +3,14 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — Cenários prontos e salvos + Jogo Rápido + Mínimo + Mad Bomber (Caderneta)
+
+- **Cenários prontos** (`src/lib/caderneta/presets.ts`, `PRESETS`): sugestões do Lobinho (não há lista oficial publicada), todas **equilibradas (-3..+3) por teste**: Mínimo (6: 2 lobos, Vidente, Bruxa, 2 Aldeões), Mínimo com 1 lobo (6), Clássico (8), Com amor (8), **Jogo Rápido** (8: Vidente, Caçador, Caçadora, Atirador, Mad Bomber, Cupido, 2 Lobisomens, sem aldeões comuns), Guarda-costas (10), Caçada (10), Vila animada (12), Caótico (12). A lista (`scenario-presets.tsx`, acima das cartas) mostra para cada um as cartas, o total e o equilíbrio. Aplicar **só preenche as cartas, sem exigir o nº de jogadores**: se não bater, o contador `x/y` da barra fixa mostra e o botão de sortear fica travado até casar.
+- **Cenários salvos**: `useSavedScenarios` + `saveScenario/parseSaved/removeScenario` guardam **só as cartas e o nome** em `localStorage` (`lobinho:caderneta:saved-scenarios`), máx. 20, mesmo nome sobrescreve, leitura descarta dado corrompido. Ficam só no aparelho/navegador (a tela avisa).
+- **Mad Bomber** (novo, Caderneta-only, vila, **-2 = valor estimado, não conferido com a carta oficial**): quando morre, leva o vivo mais próximo de cada lado. A Caderneta usa a **ordem em que os nomes foram digitados como ordem da mesa** (circular; a tela de montagem avisa). `bombTargets`/`pendingBombers` (`state.ts`); no painel aparece "💣 X (Mad Bomber) morreu. Leva junto: A e B" com **"💥 Eliminar os vizinhos"** (ação `bomb`, mata os dois e marca resolvido) ou **"Já resolvi"** (`bombSkip`). Novo campo `bomberHandled` no estado (partidas salvas antigas ainda carregam); reviver o bombardeiro rearma o aviso. Se um vizinho for outro Mad Bomber, o aviso dele aparece em seguida.
+- **Testes**: 41 → 48 (`presets.test.ts` novo, +2 em `state.test.ts`). Verificado no navegador (build de produção): 9 presets listados, aplicar Jogo Rápido dá 8/8 ✅, salvar persiste após recarregar, aviso do Mad Bomber elimina os vizinhos certos.
+- **Files**: `src/lib/{cards}.ts`, `src/lib/caderneta/{presets,state}.ts` (+ testes), `src/hooks/use-saved-scenarios.ts`, `src/components/caderneta/{scenario-presets,setup-screen,play-panel}.tsx`, `docs/game_rules.md`.
+
 ### `<current>` — Termômetro fixo com contagem de cartas
 
 - **Termômetro fixo mostra a contagem de cartas** (`Cartas: x/y ✅`, `scenario-card-picker.tsx`), igual ao rodapé da lista, para valer enquanto se rola o cenário (Caderneta e online).

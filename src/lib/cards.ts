@@ -53,6 +53,7 @@ export const ROLE_STYLE: Record<string, string> = {
   wolverine: 'bg-red-100 text-red-700 border-red-300',
   hoodlum: 'bg-gray-200 text-gray-700 border-gray-400',
   vampire: 'bg-fuchsia-100 text-fuchsia-700 border-fuchsia-300',
+  mad_bomber: 'bg-orange-100 text-orange-700 border-orange-300',
 }
 
 export const ROLE_LABEL: Record<string, string> = {
@@ -99,6 +100,7 @@ export const ROLE_LABEL: Record<string, string> = {
   wolverine: '🐺 Wolverine',
   hoodlum: '🎯 Bandido',
   vampire: '🧛 Vampiro',
+  mad_bomber: '💣 Mad Bomber',
 }
 
 export const ROLE_TRANSLATION: Record<string, string> = {
@@ -145,6 +147,7 @@ export const ROLE_TRANSLATION: Record<string, string> = {
   wolverine: 'Wolverine',
   hoodlum: 'Bandido',
   vampire: 'Vampiro',
+  mad_bomber: 'Mad Bomber',
 }
 
 export const CARD_CATALOG: CardDefinition[] = [
@@ -481,6 +484,16 @@ export const CARD_CATALOG: CardDefinition[] = [
     cadernetaOnly: true,
     description:
       'Time à parte. Toda noite os vampiros escolhem um alvo em segredo: se ele for indicado durante o dia, morre na hora. Vencem eliminando lobos e vila.',
+  },
+  {
+    id: 'mad_bomber',
+    name: 'Mad Bomber',
+    // ponytail: estimated value, not checked against the official card; revisit if the table feels off.
+    points: -2,
+    team: 'village',
+    cadernetaOnly: true,
+    description:
+      'Quando você morrer, os dois jogadores sentados ao seu lado (esquerda e direita) morrem junto com você.',
   },
 ]
 

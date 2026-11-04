@@ -3,6 +3,7 @@
 import { useRef, useState, type Dispatch, type FormEvent } from 'react'
 import { CARD_CATALOG } from '@/lib/cards'
 import { ScenarioCardPicker } from '@/components/scenario-card-picker'
+import { ScenarioPresets } from '@/components/caderneta/scenario-presets'
 import { ScenarioScreen } from '@/components/caderneta/scenario-screen'
 import { useScenarioCounts } from '@/hooks/use-scenario-counts'
 import { isValidScenario } from '@/lib/scenario'
@@ -80,6 +81,9 @@ export function SetupScreen({ state, dispatch }: SetupScreenProps) {
 
       <section className="space-y-3">
         <h2 className="text-neutral-400 text-xs uppercase tracking-widest">Jogadores ({playerCount})</h2>
+        <p className="text-neutral-600 text-[11px]">
+          Digite na ordem em que sentam à mesa (o Mad Bomber leva quem está ao lado).
+        </p>
         <form onSubmit={handleAdd} className="flex gap-2">
           <input
             ref={nameRef}
@@ -131,6 +135,7 @@ export function SetupScreen({ state, dispatch }: SetupScreenProps) {
 
       <section className="space-y-3">
         <h2 className="text-neutral-400 text-xs uppercase tracking-widest">Cenário</h2>
+        <ScenarioPresets counts={counts} onApply={setCounts} />
         <ScenarioCardPicker
           playerCount={playerCount}
           counts={counts}

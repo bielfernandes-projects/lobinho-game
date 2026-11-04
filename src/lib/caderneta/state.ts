@@ -49,6 +49,8 @@ export interface CadernetaState {
   doneSteps: string[]
   /** Player the host lynched last (the Tanner only wins if he was lynched). */
   lastLynchId: string | null
+  /** Mad Bombers whose blast the master already resolved (cleared if the bomber is revived). */
+  bomberHandled: string[]
 }
 
 export type Action =
@@ -68,6 +70,8 @@ export type Action =
   | { type: 'toDay' }
   | { type: 'addStrike'; id: string }
   | { type: 'removeStrike'; id: string }
+  | { type: 'bomb'; id: string }
+  | { type: 'bombSkip'; id: string }
   | { type: 'end' }
 
 const ROLE_IDS = new Set<string>(CARD_CATALOG.map((c) => c.id))
@@ -86,6 +90,7 @@ export function initialState(): CadernetaState {
     turn: 1,
     doneSteps: [],
     lastLynchId: null,
+    bomberHandled: [],
   }
 }
 
@@ -156,6 +161,7 @@ export function reducer(state: CadernetaState, action: Action): CadernetaState {
         turn: 1,
         doneSteps: [],
         lastLynchId: null,
+        bomberHandled: [],
       }
     }
     case 'nextDeal': {
@@ -168,7 +174,10 @@ export function reducer(state: CadernetaState, action: Action): CadernetaState {
     case 'cancel':
       return { ...initialState(), names: state.names }
     case 'setAlive': {
-      const next = mapPlayer(state, action.id, (p) => ({ ...p, alive: action.alive }))
+      const base = action.alive
+        ? { ...state, bomberHandled: state.bomberHandled.filter((b) => b !== action.id) }
+        : state
+      const next = mapPlayer(base, action.id, (p) => ({ ...p, alive: action.alive }))
       // Bringing the lynched player back undoes the lynch.
       return action.alive && action.id === state.lastLynchId ? { ...next, lastLynchId: null } : next
     }
@@ -211,12 +220,50 @@ export function reducer(state: CadernetaState, action: Action): CadernetaState {
       return mapPlayer(state, action.id, (p) => ({ ...p, strikes: clampStrikes(p.strikes + 1) }))
     case 'removeStrike':
       return mapPlayer(state, action.id, (p) => ({ ...p, strikes: clampStrikes(p.strikes - 1) }))
+    case 'bomb': {
+      if (state.phase !== 'play') return state
+      const victims = bombTargets(state.players, action.id)
+      return {
+        ...state,
+        players: state.players.map((p) => (victims.includes(p.id) ? { ...p, alive: false } : p)),
+        bomberHandled: [...new Set([...state.bomberHandled, action.id])],
+      }
+    }
+    case 'bombSkip':
+      return { ...state, bomberHandled: [...new Set([...state.bomberHandled, action.id])] }
     case 'end':
       return state.phase === 'play' ? { ...state, phase: 'ended' } : state
   }
 }
 
 // ---- selectors ----
+
+/**
+ * Who a dead Mad Bomber takes with him: the nearest living player on each side of his seat.
+ * The seat order is the order the names were typed (circular). Returns ids, bomber excluded.
+ */
+export function bombTargets(players: readonly CadernetaPlayer[], bomberId: string): string[] {
+  const i = players.findIndex((p) => p.id === bomberId)
+  if (i < 0) return []
+  const n = players.length
+  const nearestAlive = (step: 1 | -1): string | null => {
+    for (let k = 1; k < n; k++) {
+      const p = players[(i + step * k + n * k) % n]
+      if (p.alive) return p.id
+    }
+    return null
+  }
+  const ids = [nearestAlive(-1), nearestAlive(1)].filter((x): x is string => x !== null)
+  return [...new Set(ids)]
+}
+
+/** Dead Mad Bombers whose blast has not been resolved yet. */
+export function pendingBombers(state: CadernetaState): CadernetaPlayer[] {
+  if (state.phase !== 'play') return []
+  return state.players.filter(
+    (p) => p.role === 'mad_bomber' && !p.alive && !state.bomberHandled.includes(p.id),
+  )
+}
 
 /** Current roles of everyone, alive or dead (the host may still "wake" dead roles to bluff). */
 export function rolesInGame(state: CadernetaState): Set<string> {
@@ -287,6 +334,9 @@ export function sanitizeState(raw: unknown): CadernetaState | null {
   // Absent in games saved before the lynch existed: treat as "nobody lynched".
   const lastLynchId = s.lastLynchId ?? null
   if (lastLynchId !== null && typeof lastLynchId !== 'string') return null
+  // Absent in games saved before the Mad Bomber existed.
+  const bomberHandled = s.bomberHandled ?? []
+  if (!isStringArray(bomberHandled)) return null
   return {
     v: STATE_VERSION,
     phase,
@@ -298,5 +348,6 @@ export function sanitizeState(raw: unknown): CadernetaState | null {
     turn: s.turn,
     doneSteps: s.doneSteps,
     lastLynchId,
+    bomberHandled,
   }
 }

@@ -2,7 +2,7 @@
 
 import { useState, type Dispatch } from 'react'
 import { hoodlumDone } from '@/lib/caderneta/winner'
-import { aliveCounts, winnerOf, type Action, type CadernetaState } from '@/lib/caderneta/state'
+import { aliveCounts, bombTargets, pendingBombers, winnerOf, type Action, type CadernetaState } from '@/lib/caderneta/state'
 import { DayTools } from './day-tools'
 import { NightStepsList } from './night-steps-list'
 import { PlayersList } from './players-list'
@@ -18,6 +18,7 @@ export function PlayPanel({ state, dispatch }: PlayPanelProps) {
   const winner = winnerOf(state)
   const hoodlumId = hoodlumDone(state.players)?.id
   const hoodlum = state.players.find((p) => p.id === hoodlumId)
+  const bombers = pendingBombers(state)
   const marked = state.players.filter((p) => p.alive && p.tags.includes('marked'))
   const [confirm, setConfirm] = useState<'end' | 'cancel' | null>(null)
 
@@ -33,6 +34,39 @@ export function PlayPanel({ state, dispatch }: PlayPanelProps) {
       </header>
 
       {winner && <WinnerBanner winner={winner} onEnd={() => dispatch({ type: 'end' })} />}
+
+      {bombers.map((b) => {
+        const victims = bombTargets(state.players, b.id)
+          .map((id) => state.players.find((p) => p.id === id)?.name)
+          .filter(Boolean)
+          .join(' e ')
+        return (
+          <div key={b.id} className="rounded-xl border border-orange-800/60 bg-orange-950/20 px-4 py-3 space-y-2 text-xs text-orange-200">
+            <p>
+              💣 <b>{b.name}</b> (Mad Bomber) morreu.{' '}
+              {victims ? <>Leva junto: <b>{victims}</b>.</> : 'Não há ninguém vivo ao lado.'}
+            </p>
+            <div className="flex gap-2">
+              {victims && (
+                <button
+                  type="button"
+                  onClick={() => dispatch({ type: 'bomb', id: b.id })}
+                  className="flex-1 py-2 rounded-lg font-bold bg-orange-700 text-white hover:bg-orange-600 cursor-pointer"
+                >
+                  💥 Eliminar os vizinhos
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => dispatch({ type: 'bombSkip', id: b.id })}
+                className="flex-1 py-2 rounded-lg font-bold border border-neutral-700 text-neutral-300 hover:bg-neutral-800 cursor-pointer"
+              >
+                Já resolvi
+              </button>
+            </div>
+          </div>
+        )
+      })}
 
       {hoodlum && (
         <p className="rounded-xl border border-neutral-600 bg-neutral-900 px-4 py-3 text-xs text-neutral-300">
