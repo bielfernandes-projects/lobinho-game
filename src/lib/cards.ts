@@ -312,7 +312,7 @@ export const CARD_CATALOG: CardDefinition[] = [
     points: -9,
     team: 'wolf',
     description:
-      'Uma vez por jogo, você pode transformar a vítima dos lobos em um Lobisomem em vez de matá-la.',
+      'Uma vez por jogo, depois que um Lobisomem for eliminado durante o dia, você pode transformar a vítima dos lobos em Lobisomem em vez de matá-la.',
   },
   {
     id: 'hunter',

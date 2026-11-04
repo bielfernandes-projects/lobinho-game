@@ -81,9 +81,6 @@ export function SetupScreen({ state, dispatch }: SetupScreenProps) {
 
       <section className="space-y-3">
         <h2 className="text-neutral-400 text-xs uppercase tracking-widest">Jogadores ({playerCount})</h2>
-        <p className="text-neutral-600 text-[11px]">
-          Digite na ordem em que sentam à mesa (o Mad Bomber leva quem está ao lado).
-        </p>
         <form onSubmit={handleAdd} className="flex gap-2">
           <input
             ref={nameRef}

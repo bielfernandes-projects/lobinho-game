@@ -3,6 +3,14 @@
 ## Overview
 A real-time multiplayer Werewolf (Lobisomem) party game built with Next.js 16, Supabase (PostgreSQL + Realtime), and Tailwind CSS. Host creates a room, players join, host configures the role scenario, and the classic night/day cycle plays out with a Tribunal day-phase system.
 
+### `<current>` — Correção: o app só AVISA sobre vizinhos; quem elimina é o mestre. Alpha Wolf da expansão
+
+- **Regra de ouro (dita pelo usuário)**: o app **não sabe quem está sentado ao lado de quem**, então em todo papel que depende da posição física o app **avisa e o mestre faz as eliminações** (botão "Matar" na lista). Isso vale para o **Mad Bomber**, o **Caçador de Vampiros** e o **Lobo Mau** (2 adjacentes).
+- **Removido**: `bombTargets`, `closestVampires`, as ações `bomb`/`hunterShot` e o aviso "digite os nomes na ordem da mesa" da montagem (a ordem não importa mais). Ficaram `pendingBombers`/`pendingHunters` e as ações `bombSkip`/`hunterSkip` (botão "Já resolvi"), que só dispensam o aviso. Os avisos agora explicam em texto simples: quem morreu, o que a regra manda e que o mestre confere a mesa e elimina.
+- **Alpha Wolf (Hunting Party) aplicado**: descrição na carta e lembrete no passo dos lobos ("uma vez por jogo, só depois que um Lobisomem foi eliminado durante o dia, podem transformar a vítima em Lobisomem"). **No online** a mecânica continua a original (sem a condição), e a descrição da carta também aparece lá; alinhar isso é parte do card #133.
+- **Testes**: 49 passando (testes de vizinhança removidos; novos de "o app não elimina sozinho" e do lembrete do Alfa). Interface dos avisos não verificada no navegador.
+- **Files**: `src/lib/caderneta/{state,night-notes}.ts` (+ testes), `src/lib/cards.ts`, `src/components/caderneta/{play-panel,scenario-screen,setup-screen}.tsx`.
+
 ### `<current>` — Caçador de Vampiros (Caderneta) + aviso no cenário Online + card #133
 
 - **Princípio de produto** (dito pelo usuário em 2026-11-04): qualquer pessoa deve conseguir mestrar na primeira vez; o app explica ordem, papéis e exceções de regra. Está na memória (`anyone-can-be-master`) e guia novas telas.

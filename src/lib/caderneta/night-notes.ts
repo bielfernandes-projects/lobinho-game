@@ -8,7 +8,14 @@ export function wolvesStepNotes(players: readonly WinnerPlayer[], turn: number):
   const wolfTeamAlive = alive.filter((p) => WOLF_TEAM_ROLES.includes(p.role))
   const notes: string[] = []
 
-  if (has('bad_wolf')) notes.push('🐺 Lobo Mau vivo: os lobos podem eliminar 2 jogadores adjacentes.')
+  if (has('bad_wolf')) {
+    notes.push('🐺 Lobo Mau vivo: os lobos podem eliminar 2 jogadores sentados lado a lado (você confere na mesa).')
+  }
+  if (has('alpha_wolf')) {
+    notes.push(
+      '🐺 Lobo Alfa vivo: uma vez por jogo, só depois que um Lobisomem foi eliminado durante o dia, os lobos podem transformar a vítima em Lobisomem em vez de matá-la.',
+    )
+  }
   if (has('fruit_brute') && turn > 1) {
     const others = wolfTeamAlive.some((p) => p.role !== 'fruit_brute')
     if (others) notes.push('🍎 Lobo Vegetariano não acorda esta noite (há outros lobos).')

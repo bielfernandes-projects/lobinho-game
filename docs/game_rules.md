@@ -418,9 +418,9 @@ For each role:
 
 > **Status note (as of the most recent code state):**
 > **Implemented** (37 player roles + moderator): `villager`, `seer`, `witch`, `aura_seer`, `bodyguard`, `priest`, `hunter`, `prince`, `mayor`, `mason`, `lycan`, `pacifist`, `idiot`, `werewolf`, `wolf_cub`, `alpha_wolf`, `lone_wolf`, `sorceress`, `cupid`, `cult_leader`, `tanner`, `diseased`, `cursed`, `doppelganger`, `marksman`, `squire`, `chupacabra`, `minion`, `huntress`, `tough_guy`, `martyr`, `apprentice_seer`, `old_witch`, `drunk`, `dire_wolf`, `virginia_wolf`, `ghost` (card + variant).
-> **Caderneta-only, village (Hunting Party)**: `mad_bomber` (-2, confirmed on the card), `mystic_seer` (+9), `revealer` (+4), `mentalist` (+6). Mad Bomber: when he dies, the nearest living player on each side of his seat also dies; the Caderneta takes the seating order from the order the names were typed. The Hunting Party Alpha Wolf card adds a condition to the existing `alpha_wolf` (only usable after a Werewolf was eliminated during the day); the app still uses the original text.
+> **Caderneta-only, village (Hunting Party)**: `mad_bomber` (-2, confirmed on the card), `mystic_seer` (+9), `revealer` (+4), `mentalist` (+6). Mad Bomber: when he dies, the players seated immediately to his left and right also die. The app cannot know the real seating, so it only warns the Moderator, who eliminates them by hand (same for the Vampire Hunter and the Bad Wolf's 2 adjacent kills). The Alpha Wolf now follows the Hunting Party card in the Caderneta: once per game, only after a Werewolf was eliminated during the day, the wolves may turn their victim into a Werewolf instead of killing; online still enforces the original rule.
 > **Drunk**: the Moderator **chooses** the hidden role (any card except the Drunk; Villager and Werewolf listed first, Villager is the default) — no random draw. In Caderneta mode the choice can also be changed at the night-3 reveal; online it is fixed at scenario time.
-> **Caderneta-only** (implemented in the single-phone Caderneta mode, NOT yet in the online game/database): `bad_wolf`, `fruit_brute`, `wolverine`, `hoodlum`, `vampire`. Caderneta simplifications: Hoodlum reaching its goal only shows a notice to the Moderator (never ends the game); Vampires win only once no wolves live and they are at least half of the living; with a living Vampire, a dead Hunter shows the Moderator the Vampire Hunter rule and a button to kill the closest Vampire (ties are settled by hand).
+> **Caderneta-only** (implemented in the single-phone Caderneta mode, NOT yet in the online game/database): `bad_wolf`, `fruit_brute`, `wolverine`, `hoodlum`, `vampire`. Caderneta simplifications: Hoodlum reaching its goal only shows a notice to the Moderator (never ends the game); Vampires win only once no wolves live and they are at least half of the living; with a living Vampire, a dead Hunter shows the Moderator the Vampire Hunter rule (the Vampire seated closest to him also dies if the Vampires killed him); the Moderator checks the table and eliminates by hand.
 > **NOT yet implemented** online: the five roles above.
 
 ### 7.3 Village Roles (Aldeia)
@@ -492,7 +492,7 @@ For each role:
 | Wake | Never (passive) |
 | **Description (EN)** | If you are eliminated, the players immediately to your left and right are eliminated as well. |
 | **Description (PT)** | Quando você morrer, os dois jogadores sentados ao seu lado morrem junto. |
-| **Mechanics** | Chain death on elimination (any cause). Caderneta-only: `bombTargets` picks the nearest living player on each side. |
+| **Mechanics** | Chain death on elimination (any cause). Caderneta-only: the app warns the Moderator, who eliminates the two seated neighbours by hand (the app does not know the seating). |
 
 #### `mystic_seer` — Mystic Seer / Vidente Mística (Hunting Party)
 | Field | Value |

@@ -2,7 +2,7 @@
 
 import { useState, type Dispatch } from 'react'
 import { hoodlumDone } from '@/lib/caderneta/winner'
-import { aliveCounts, bombTargets, closestVampires, pendingBombers, pendingHunters, winnerOf, type Action, type CadernetaState } from '@/lib/caderneta/state'
+import { aliveCounts, pendingBombers, pendingHunters, winnerOf, type Action, type CadernetaState } from '@/lib/caderneta/state'
 import { DayTools } from './day-tools'
 import { NightStepsList } from './night-steps-list'
 import { PlayersList } from './players-list'
@@ -36,71 +36,40 @@ export function PlayPanel({ state, dispatch }: PlayPanelProps) {
 
       {winner && <WinnerBanner winner={winner} onEnd={() => dispatch({ type: 'end' })} />}
 
-      {hunters.map((h) => {
-        const near = closestVampires(state.players, h.id)
-        const names = near.map((id) => state.players.find((p) => p.id === id)?.name).join(' ou ')
-        return (
-          <div key={h.id} className="rounded-xl border border-fuchsia-800/60 bg-fuchsia-950/20 px-4 py-3 space-y-2 text-xs text-fuchsia-200">
-            <p>
-              🔫 <b>{h.name}</b> (Caçador) morreu e há Vampiros no jogo, então ele é um Caçador de Vampiros: se
-              foi morto <b>pelos vampiros</b>, leva junto o vampiro mais próximo dele na mesa.{' '}
-              {near.length === 1 ? <>O mais próximo é <b>{names}</b>.</> : <>Empate entre <b>{names}</b>: você escolhe quem morre (use &quot;Matar&quot; na lista).</>}{' '}
-              Se ele morreu de outro jeito, nada acontece.
-            </p>
-            <div className="flex gap-2">
-              {near.length === 1 && (
-                <button
-                  type="button"
-                  onClick={() => dispatch({ type: 'hunterShot', id: h.id, target: near[0] })}
-                  className="flex-1 py-2 rounded-lg font-bold bg-fuchsia-700 text-white hover:bg-fuchsia-600 cursor-pointer"
-                >
-                  🔫 Foi morto pelos vampiros
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => dispatch({ type: 'hunterSkip', id: h.id })}
-                className="flex-1 py-2 rounded-lg font-bold border border-neutral-700 text-neutral-300 hover:bg-neutral-800 cursor-pointer"
-              >
-                {near.length === 1 ? 'Morreu de outro jeito' : 'Já resolvi'}
-              </button>
-            </div>
-          </div>
-        )
-      })}
+      {hunters.map((h) => (
+        <div key={h.id} className="rounded-xl border border-fuchsia-800/60 bg-fuchsia-950/20 px-4 py-3 space-y-2 text-xs text-fuchsia-200">
+          <p>
+            🔫 <b>{h.name}</b> (Caçador) morreu e há Vampiros no jogo, então ele é um <b>Caçador de Vampiros</b>.
+            Se ele foi morto <b>pelos vampiros</b>, o vampiro sentado mais perto dele também morre. O app não sabe como
+            vocês estão sentados: <b>você confere na mesa e elimina o vampiro</b> (botão &quot;Matar&quot; na lista).
+            Se ele morreu de outro jeito, nada acontece.
+          </p>
+          <button
+            type="button"
+            onClick={() => dispatch({ type: 'hunterSkip', id: h.id })}
+            className="w-full py-2 rounded-lg font-bold border border-neutral-700 text-neutral-300 hover:bg-neutral-800 cursor-pointer"
+          >
+            Já resolvi
+          </button>
+        </div>
+      ))}
 
-      {bombers.map((b) => {
-        const victims = bombTargets(state.players, b.id)
-          .map((id) => state.players.find((p) => p.id === id)?.name)
-          .filter(Boolean)
-          .join(' e ')
-        return (
-          <div key={b.id} className="rounded-xl border border-orange-800/60 bg-orange-950/20 px-4 py-3 space-y-2 text-xs text-orange-200">
-            <p>
-              💣 <b>{b.name}</b> (Mad Bomber) morreu.{' '}
-              {victims ? <>Leva junto: <b>{victims}</b>.</> : 'Não há ninguém vivo ao lado.'}
-            </p>
-            <div className="flex gap-2">
-              {victims && (
-                <button
-                  type="button"
-                  onClick={() => dispatch({ type: 'bomb', id: b.id })}
-                  className="flex-1 py-2 rounded-lg font-bold bg-orange-700 text-white hover:bg-orange-600 cursor-pointer"
-                >
-                  💥 Eliminar os vizinhos
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => dispatch({ type: 'bombSkip', id: b.id })}
-                className="flex-1 py-2 rounded-lg font-bold border border-neutral-700 text-neutral-300 hover:bg-neutral-800 cursor-pointer"
-              >
-                Já resolvi
-              </button>
-            </div>
-          </div>
-        )
-      })}
+      {bombers.map((b) => (
+        <div key={b.id} className="rounded-xl border border-orange-800/60 bg-orange-950/20 px-4 py-3 space-y-2 text-xs text-orange-200">
+          <p>
+            💣 <b>{b.name}</b> (Mad Bomber) morreu e leva junto os <b>dois jogadores sentados ao lado dele</b> (um de cada
+            lado). O app não sabe como vocês estão sentados: <b>você confere na mesa e elimina os dois</b> (botão
+            &quot;Matar&quot; na lista).
+          </p>
+          <button
+            type="button"
+            onClick={() => dispatch({ type: 'bombSkip', id: b.id })}
+            className="w-full py-2 rounded-lg font-bold border border-neutral-700 text-neutral-300 hover:bg-neutral-800 cursor-pointer"
+          >
+            Já resolvi
+          </button>
+        </div>
+      ))}
 
       {hoodlum && (
         <p className="rounded-xl border border-neutral-600 bg-neutral-900 px-4 py-3 text-xs text-neutral-300">

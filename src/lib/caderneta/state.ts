@@ -72,9 +72,7 @@ export type Action =
   | { type: 'toDay' }
   | { type: 'addStrike'; id: string }
   | { type: 'removeStrike'; id: string }
-  | { type: 'bomb'; id: string }
   | { type: 'bombSkip'; id: string }
-  | { type: 'hunterShot'; id: string; target: string }
   | { type: 'hunterSkip'; id: string }
   | { type: 'end' }
 
@@ -230,23 +228,6 @@ export function reducer(state: CadernetaState, action: Action): CadernetaState {
       return mapPlayer(state, action.id, (p) => ({ ...p, strikes: clampStrikes(p.strikes + 1) }))
     case 'removeStrike':
       return mapPlayer(state, action.id, (p) => ({ ...p, strikes: clampStrikes(p.strikes - 1) }))
-    case 'bomb': {
-      if (state.phase !== 'play') return state
-      const victims = bombTargets(state.players, action.id)
-      return {
-        ...state,
-        players: state.players.map((p) => (victims.includes(p.id) ? { ...p, alive: false } : p)),
-        bomberHandled: [...new Set([...state.bomberHandled, action.id])],
-      }
-    }
-    case 'hunterShot': {
-      if (state.phase !== 'play') return state
-      return {
-        ...state,
-        players: state.players.map((p) => (p.id === action.target ? { ...p, alive: false } : p)),
-        hunterHandled: [...new Set([...state.hunterHandled, action.id])],
-      }
-    }
     case 'hunterSkip':
       return { ...state, hunterHandled: [...new Set([...state.hunterHandled, action.id])] }
     case 'bombSkip':
@@ -259,47 +240,10 @@ export function reducer(state: CadernetaState, action: Action): CadernetaState {
 // ---- selectors ----
 
 /**
- * Who a dead Mad Bomber takes with him: the nearest living player on each side of his seat.
- * The seat order is the order the names were typed (circular). Returns ids, bomber excluded.
+ * With Vampires in the game the Hunter is a Vampire Hunter. The app cannot know who sits where,
+ * so it only reminds the master (who eliminates the right player by hand).
+ * Dead Hunters in a game that still has a living Vampire, not acknowledged yet.
  */
-export function bombTargets(players: readonly CadernetaPlayer[], bomberId: string): string[] {
-  const i = players.findIndex((p) => p.id === bomberId)
-  if (i < 0) return []
-  const n = players.length
-  const nearestAlive = (step: 1 | -1): string | null => {
-    for (let k = 1; k < n; k++) {
-      const p = players[(i + step * k + n * k) % n]
-      if (p.alive) return p.id
-    }
-    return null
-  }
-  const ids = [nearestAlive(-1), nearestAlive(1)].filter((x): x is string => x !== null)
-  return [...new Set(ids)]
-}
-
-/**
- * With Vampires in the game the Hunter is a Vampire Hunter: if the Vampires kill him he takes the
- * closest living Vampire with him. Returns every living Vampire at the smallest seat distance
- * (more than one means a tie the master settles).
- */
-export function closestVampires(players: readonly CadernetaPlayer[], hunterId: string): string[] {
-  const i = players.findIndex((p) => p.id === hunterId)
-  if (i < 0) return []
-  const n = players.length
-  let best = Infinity
-  let ids: string[] = []
-  players.forEach((p, j) => {
-    if (!p.alive || p.role !== 'vampire') return
-    const d = Math.min((j - i + n) % n, (i - j + n) % n)
-    if (d < best) {
-      best = d
-      ids = [p.id]
-    } else if (d === best) ids.push(p.id)
-  })
-  return ids
-}
-
-/** Dead Hunters in a game that still has a living Vampire, not resolved yet. */
 export function pendingHunters(state: CadernetaState): CadernetaPlayer[] {
   if (state.phase !== 'play') return []
   if (!state.players.some((p) => p.alive && p.role === 'vampire')) return []
@@ -308,7 +252,7 @@ export function pendingHunters(state: CadernetaState): CadernetaPlayer[] {
   )
 }
 
-/** Dead Mad Bombers whose blast has not been resolved yet. */
+/** Dead Mad Bombers whose blast the master has not acknowledged yet (he eliminates the neighbours by hand). */
 export function pendingBombers(state: CadernetaState): CadernetaPlayer[] {
   if (state.phase !== 'play') return []
   return state.players.filter(

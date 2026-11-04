@@ -3,8 +3,6 @@ import assert from 'node:assert/strict'
 import {
   addName,
   aliveCounts,
-  bombTargets,
-  closestVampires,
   drawRoles,
   initialState,
   nextStepId,
@@ -207,53 +205,37 @@ test('sanitizeState: ida e volta por JSON e rejeição de lixo', () => {
   assert.equal(sanitizeState({ ...s, phase: 'deal', dealIndex: 99 }), null)
 })
 
-test('Mad Bomber: leva os vivos mais próximos de cada lado (mesa circular) e só uma vez', () => {
-  const names = ['A', 'B', 'C', 'D', 'E', 'F']
-  const roles = ['villager', 'villager', 'mad_bomber', 'villager', 'villager', 'villager']
-  let s = reducer(initialState(), { type: 'setNames', names })
-  s = reducer(s, { type: 'deal', roles, drunkHiddenRole: null })
-  s = reducer(s, { type: 'nextDeal' })
-  for (let i = 1; i < names.length; i++) s = reducer(s, { type: 'nextDeal' })
-  assert.equal(s.phase, 'play')
-  s = reducer(s, { type: 'setAlive', id: 'p2', alive: false })
-  assert.deepEqual(pendingBombers(s).map((p) => p.id), ['p2'])
-  assert.deepEqual(bombTargets(s.players, 'p2'), ['p1', 'p3'])
-  // o vizinho da esquerda já morto: vale o vivo seguinte
-  const s2 = reducer(s, { type: 'setAlive', id: 'p1', alive: false })
-  assert.deepEqual(bombTargets(s2.players, 'p2'), ['p0', 'p3'])
-  s = reducer(s, { type: 'bomb', id: 'p2' })
-  assert.deepEqual(s.players.filter((p) => !p.alive).map((p) => p.id), ['p1', 'p2', 'p3'])
-  assert.deepEqual(pendingBombers(s), [])
-  // reviver o bombardeiro rearma o aviso para a próxima morte
-  s = reducer(s, { type: 'setAlive', id: 'p2', alive: true })
-  s = reducer(s, { type: 'setAlive', id: 'p2', alive: false })
-  assert.equal(pendingBombers(s).length, 1)
+/** A game already in `play` with the given roles. */
+function playing(roles: string[]) {
+  const names = roles.map((_, i) => `J${i}`)
+  let st = reducer(initialState(), { type: 'setNames', names })
+  st = reducer(st, { type: 'deal', roles, drunkHiddenRole: null })
+  for (let i = 0; i < names.length; i++) st = reducer(st, { type: 'nextDeal' })
+  return st
+}
+
+test('Mad Bomber morto gera um aviso (o mestre elimina os vizinhos) até ser dispensado; reviver rearma', () => {
+  let st = playing(['villager', 'villager', 'mad_bomber', 'villager', 'villager', 'villager'])
+  assert.deepEqual(pendingBombers(st), [])
+  st = reducer(st, { type: 'setAlive', id: 'p2', alive: false })
+  assert.deepEqual(pendingBombers(st).map((p) => p.id), ['p2'])
+  // o app NÃO elimina ninguém sozinho: só o mestre sabe quem está ao lado
+  assert.equal(st.players.filter((p) => !p.alive).length, 1)
+  st = reducer(st, { type: 'bombSkip', id: 'p2' })
+  assert.deepEqual(pendingBombers(st), [])
+  st = reducer(st, { type: 'setAlive', id: 'p2', alive: true })
+  st = reducer(st, { type: 'setAlive', id: 'p2', alive: false })
+  assert.equal(pendingBombers(st).length, 1)
 })
 
-test('bombTargets: na mesa circular o último e o primeiro são vizinhos; sozinho não leva ninguém', () => {
-  const mk = (alive: boolean[]) => alive.map((a, i) => ({ id: `p${i}`, name: `${i}`, role: 'villager', alive: a, tags: [], note: '', strikes: 0 }))
-  assert.deepEqual(bombTargets(mk([false, true, true, true]), 'p0').sort(), ['p1', 'p3'])
-  assert.deepEqual(bombTargets(mk([false, false, false, true]), 'p0'), ['p3'])
-  assert.deepEqual(bombTargets(mk([false, false]), 'p0'), [])
-})
-
-test('Caçador de Vampiros: só avisa com vampiro vivo; leva o mais próximo; empate fica para o mestre', () => {
-  const names = ['A', 'B', 'C', 'D', 'E', 'F']
-  const roles = ['hunter', 'villager', 'vampire', 'villager', 'vampire', 'villager']
-  let s = reducer(initialState(), { type: 'setNames', names })
-  s = reducer(s, { type: 'deal', roles, drunkHiddenRole: null })
-  for (let i = 0; i < names.length; i++) s = reducer(s, { type: 'nextDeal' })
-  assert.deepEqual(pendingHunters(s), [])
-  s = reducer(s, { type: 'setAlive', id: 'p0', alive: false })
-  assert.deepEqual(pendingHunters(s).map((p) => p.id), ['p0'])
-  // p2 está a 2 assentos do caçador (p0), p4 também (circular): empate
-  assert.deepEqual(closestVampires(s.players, 'p0').sort(), ['p2', 'p4'])
-  const s2 = reducer(s, { type: 'setAlive', id: 'p2', alive: false })
-  assert.deepEqual(closestVampires(s2.players, 'p0'), ['p4'])
-  const s3 = reducer(s2, { type: 'hunterShot', id: 'p0', target: 'p4' })
-  assert.equal(s3.players[4].alive, false)
-  assert.deepEqual(pendingHunters(s3), [])
+test('Caçador de Vampiros: só avisa com vampiro vivo e não elimina ninguém sozinho', () => {
+  let st = playing(['hunter', 'villager', 'vampire', 'villager', 'vampire', 'villager'])
+  assert.deepEqual(pendingHunters(st), [])
+  st = reducer(st, { type: 'setAlive', id: 'p0', alive: false })
+  assert.deepEqual(pendingHunters(st).map((p) => p.id), ['p0'])
+  assert.equal(st.players.filter((p) => !p.alive).length, 1)
+  assert.deepEqual(pendingHunters(reducer(st, { type: 'hunterSkip', id: 'p0' })), [])
   // sem vampiro vivo não há aviso
-  assert.deepEqual(pendingHunters(reducer(s, { type: 'hunterSkip', id: 'p0' })), [])
-  assert.equal(pendingHunters(reducer(reducer(s, { type: 'setAlive', id: 'p2', alive: false }), { type: 'setAlive', id: 'p4', alive: false })).length, 0)
+  const noVamps = reducer(reducer(st, { type: 'setAlive', id: 'p2', alive: false }), { type: 'setAlive', id: 'p4', alive: false })
+  assert.deepEqual(pendingHunters(noVamps), [])
 })

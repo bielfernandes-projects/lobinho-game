@@ -43,8 +43,8 @@ export function ScenarioScreen({ counts, onConfirm, onBack }: ScenarioScreenProp
             <p className="text-xs opacity-90 leading-relaxed mt-1">{card.description}</p>
             {card.id === 'hunter' && (counts.vampire ?? 0) > 0 && (
               <p className="text-xs font-bold leading-relaxed mt-1">
-                Com Vampiros no jogo ele é um Caçador de Vampiros: se os vampiros o matarem, ele leva junto o vampiro
-                mais próximo na mesa.
+                Com Vampiros no jogo ele é um Caçador de Vampiros: se os vampiros o matarem, o vampiro sentado mais
+                perto dele também morre (você confere na mesa e elimina).
               </p>
             )}
           </li>
